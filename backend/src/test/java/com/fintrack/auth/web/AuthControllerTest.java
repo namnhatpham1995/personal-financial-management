@@ -2,9 +2,13 @@ package com.fintrack.auth.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fintrack.auth.service.AuthService;
+import com.fintrack.auth.service.JwtService;
+import com.fintrack.auth.service.UserDetailsServiceImpl;
 import com.fintrack.auth.web.dto.TokenResponse;
+import com.fintrack.common.config.AppProperties;
 import com.fintrack.common.config.SecurityConfig;
 import com.fintrack.common.security.JwtAuthenticationFilter;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -27,6 +31,16 @@ class AuthControllerTest {
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
     @MockBean AuthService authService;
+    // SecurityConfig and JwtAuthenticationFilter need these beans in the WebMvcTest slice
+    @MockBean JwtService jwtService;
+    @MockBean UserDetailsServiceImpl userDetailsService;
+    @MockBean AppProperties appProperties;
+
+    @BeforeEach
+    void setUp() {
+        // SecurityConfig.corsConfigurationSource() calls appProperties.getCors().getAllowedOrigins()
+        when(appProperties.getCors()).thenReturn(new AppProperties.Cors());
+    }
 
     @Test
     void register_validRequest_returns201WithTokens() throws Exception {
