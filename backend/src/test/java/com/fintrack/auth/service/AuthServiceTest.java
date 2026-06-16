@@ -51,7 +51,8 @@ class AuthServiceTest {
         jwtProps.setAccessTokenExpiryMs(900_000L);
         jwtProps.setRefreshTokenExpiryMs(604_800_000L);
 
-        when(appProperties.getJwt()).thenReturn(jwtProps);
+        // lenient: only needed by tests that reach issueTokens(); others throw first
+        lenient().when(appProperties.getJwt()).thenReturn(jwtProps);
 
         userRole = new Role("ROLE_USER");
         userRole.setId(1L);

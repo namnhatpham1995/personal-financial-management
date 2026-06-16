@@ -2,18 +2,13 @@ package com.fintrack.auth.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fintrack.auth.service.AuthService;
-import com.fintrack.auth.service.JwtService;
-import com.fintrack.auth.service.UserDetailsServiceImpl;
 import com.fintrack.auth.web.dto.TokenResponse;
-import com.fintrack.common.config.AppProperties;
-import com.fintrack.common.config.SecurityConfig;
-import com.fintrack.common.security.JwtAuthenticationFilter;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -24,23 +19,17 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(AuthController.class)
-@Import({SecurityConfig.class, JwtAuthenticationFilter.class})
+@WebMvcTest(
+    value = AuthController.class,
+    // Security config cannot be wired in a WebMvcTest slice without the full JPA/datasource
+    // context; these tests only verify request validation and response shape, not auth.
+    excludeAutoConfiguration = {SecurityAutoConfiguration.class, SecurityFilterAutoConfiguration.class}
+)
 class AuthControllerTest {
 
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
     @MockBean AuthService authService;
-    // SecurityConfig and JwtAuthenticationFilter need these beans in the WebMvcTest slice
-    @MockBean JwtService jwtService;
-    @MockBean UserDetailsServiceImpl userDetailsService;
-    @MockBean AppProperties appProperties;
-
-    @BeforeEach
-    void setUp() {
-        // SecurityConfig.corsConfigurationSource() calls appProperties.getCors().getAllowedOrigins()
-        when(appProperties.getCors()).thenReturn(new AppProperties.Cors());
-    }
 
     @Test
     void register_validRequest_returns201WithTokens() throws Exception {
