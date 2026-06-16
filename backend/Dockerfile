@@ -2,12 +2,11 @@
 FROM eclipse-temurin:21-jdk-alpine AS build
 WORKDIR /workspace
 
-COPY gradlew settings.gradle.kts build.gradle.kts ./
-COPY gradle ./gradle
-RUN chmod +x gradlew && ./gradlew dependencies --no-daemon
+COPY pom.xml ./
+RUN apk add --no-cache maven && mvn dependency:go-offline -q
 
 COPY src ./src
-RUN ./gradlew bootJar --no-daemon -x test
+RUN mvn package -DskipTests -q
 
 # ── Stage 2: Runtime ──────────────────────────────────────────────────────────
 FROM eclipse-temurin:21-jre-alpine
@@ -16,7 +15,7 @@ WORKDIR /app
 RUN addgroup -S fintrack && adduser -S fintrack -G fintrack
 USER fintrack
 
-COPY --from=build /workspace/build/libs/*.jar app.jar
+COPY --from=build /workspace/target/*.jar app.jar
 
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "-Dspring.profiles.active=prod", "app.jar"]
