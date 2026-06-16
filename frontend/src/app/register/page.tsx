@@ -30,8 +30,17 @@ export default function RegisterPage() {
     try {
       await registerUser(values);
       router.push("/dashboard");
-    } catch {
-      toast.error("Registration failed. Email may already be in use.");
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 409) {
+        toast.error("Email is already in use.");
+      } else if (status === 400) {
+        toast.error("Invalid registration details. Please check your input.");
+      } else if (status === 500) {
+        toast.error("Server error. Please try again later.");
+      } else {
+        toast.error("Registration failed. Please try again.");
+      }
     }
   };
 
