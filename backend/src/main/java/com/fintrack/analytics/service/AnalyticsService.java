@@ -76,7 +76,7 @@ public class AnalyticsService {
                 : BigDecimal.ZERO;
         if (spent == null) spent = BigDecimal.ZERO;
 
-        BigDecimal limit = budget.getLimitAmount();
+        BigDecimal limit = budget.getAmountLimit();
         BigDecimal remaining = limit.subtract(spent);
         BigDecimal percent = limit.compareTo(BigDecimal.ZERO) == 0
                 ? BigDecimal.ZERO
@@ -84,7 +84,7 @@ public class AnalyticsService {
 
         return new BudgetProgressDto(
                 budget.getId(),
-                budget.getName(),
+                budget.getCategory() != null ? budget.getCategory().getName() : null,
                 budget.getCategory() != null ? budget.getCategory().getName() : null,
                 limit,
                 spent,

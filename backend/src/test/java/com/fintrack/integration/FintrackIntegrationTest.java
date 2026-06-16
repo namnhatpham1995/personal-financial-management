@@ -41,6 +41,11 @@ class FintrackIntegrationTest {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
+        // CI runs with SPRING_PROFILES_ACTIVE=test which loads application-test.yml
+        // (H2 driver, flyway disabled). Override those to use the real PostgreSQL container.
+        registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
+        registry.add("spring.flyway.enabled", () -> "true");
+        registry.add("spring.jpa.hibernate.ddl-auto", () -> "none");
     }
 
     @Autowired MockMvc mockMvc;
@@ -86,7 +91,7 @@ class FintrackIntegrationTest {
                         ))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name").value("My Cash"))
-                .andExpect(jsonPath("$.currentBalance").value("100.0000"));
+                .andExpect(jsonPath("$.currentBalance").value(100.0));
     }
 
     @Test
