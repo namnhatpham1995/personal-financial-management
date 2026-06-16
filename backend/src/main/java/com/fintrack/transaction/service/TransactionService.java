@@ -12,6 +12,7 @@ import com.fintrack.common.exception.ResourceNotFoundException;
 import com.fintrack.transaction.domain.Transaction;
 import com.fintrack.transaction.mapper.TransactionMapper;
 import com.fintrack.transaction.repository.TransactionRepository;
+import com.fintrack.transaction.repository.TransactionSpecification;
 import com.fintrack.transaction.web.dto.CreateTransactionRequest;
 import com.fintrack.transaction.web.dto.TransactionResponse;
 import com.fintrack.transaction.web.dto.UpdateTransactionRequest;
@@ -19,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -80,8 +82,17 @@ public class TransactionService {
         Sort sort = Sort.by(Sort.Direction.fromOptionalString(sortDir).orElse(Sort.Direction.DESC), sortBy == null ? "transactionDate" : sortBy);
         Pageable pageable = PageRequest.of(Math.max(page, 0), size, sort);
 
+        Specification<Transaction> spec = Specification
+                .where(TransactionSpecification.byUserId(userId))
+                .and(TransactionSpecification.byAccountId(accountId))
+                .and(TransactionSpecification.byStartDate(startDate))
+                .and(TransactionSpecification.byEndDate(endDate))
+                .and(TransactionSpecification.byCategoryId(categoryId))
+                .and(TransactionSpecification.byType(type))
+                .and(TransactionSpecification.byNoteContaining(note));
+
         return PageResponse.of(
-                transactionRepository.findByFilters(userId, accountId, startDate, endDate, categoryId, type, note, pageable),
+                transactionRepository.findAll(spec, pageable),
                 transactionMapper::toResponse);
     }
 
