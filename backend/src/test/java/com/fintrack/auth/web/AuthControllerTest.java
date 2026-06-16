@@ -3,12 +3,16 @@ package com.fintrack.auth.web;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fintrack.auth.service.AuthService;
 import com.fintrack.auth.web.dto.TokenResponse;
+import com.fintrack.common.ratelimit.AuthRateLimitFilter;
+import com.fintrack.common.security.JwtAuthenticationFilter;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -21,9 +25,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(
     value = AuthController.class,
-    // Security config cannot be wired in a WebMvcTest slice without the full JPA/datasource
-    // context; these tests only verify request validation and response shape, not auth.
-    excludeAutoConfiguration = {SecurityAutoConfiguration.class, SecurityFilterAutoConfiguration.class}
+    excludeAutoConfiguration = {SecurityAutoConfiguration.class, SecurityFilterAutoConfiguration.class},
+    // JwtAuthenticationFilter and AuthRateLimitFilter are @Component Filters with service-layer
+    // dependencies that aren't loaded in the WebMvcTest slice — exclude them from scan.
+    excludeFilters = @ComponentScan.Filter(
+        type = FilterType.ASSIGNABLE_TYPE,
+        classes = {JwtAuthenticationFilter.class, AuthRateLimitFilter.class}
+    )
 )
 class AuthControllerTest {
 

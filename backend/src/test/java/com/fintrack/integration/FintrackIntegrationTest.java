@@ -91,7 +91,7 @@ class FintrackIntegrationTest {
                         ))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name").value("My Cash"))
-                .andExpect(jsonPath("$.currentBalance").value("100.0000"));
+                .andExpect(jsonPath("$.currentBalance").value(100.0));
     }
 
     @Test
