@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/fintrack
+    username: fintrack
+    password: fintrack
+  jpa:
+    show-sql: true
+
+logging:
+  level:
+    com.fintrack: DEBUG
+    org.springframework.security: DEBUG

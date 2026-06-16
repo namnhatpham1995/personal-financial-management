@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    # Overridden by @DynamicPropertySource in Testcontainers tests
+    url: jdbc:postgresql://localhost:5432/fintrack_test
+    username: test
+    password: test
+  jpa:
+    show-sql: false
+  flyway:
+    enabled: true
+
+logging:
+  level:
+    com.fintrack: INFO
+    org.testcontainers: WARN
+    com.github.dockerjava: WARN
