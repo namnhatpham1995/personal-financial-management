@@ -26,8 +26,8 @@ export interface TransactionFilters {
   accountId?: number;
   categoryId?: number;
   type?: string;
-  from?: string;
-  to?: string;
+  startDate?: string;
+  endDate?: string;
   note?: string;
   page?: number;
   size?: number;

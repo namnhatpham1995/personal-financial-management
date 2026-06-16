@@ -28,7 +28,7 @@ export default function TransactionsPage() {
   const [showForm, setShowForm] = useState(false);
   const [filters, setFilters] = useState<TransactionFilters>({ page: 0, size: 20 });
 
-  const { data: pageData, isLoading } = useQuery({
+  const { data: pageData, isLoading, isError } = useQuery({
     queryKey: ["transactions", filters],
     queryFn: () => transactionService.list(filters),
   });
@@ -93,12 +93,12 @@ export default function TransactionsPage() {
         <input
           type="date"
           className={inputCls + " max-w-xs"}
-          onChange={(e) => setFilters((f) => ({ ...f, from: e.target.value || undefined, page: 0 }))}
+          onChange={(e) => setFilters((f) => ({ ...f, startDate: e.target.value || undefined, page: 0 }))}
         />
         <input
           type="date"
           className={inputCls + " max-w-xs"}
-          onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value || undefined, page: 0 }))}
+          onChange={(e) => setFilters((f) => ({ ...f, endDate: e.target.value || undefined, page: 0 }))}
         />
       </div>
 
@@ -142,6 +142,8 @@ export default function TransactionsPage() {
 
       {isLoading ? (
         <p className="text-muted-foreground">Loading…</p>
+      ) : isError ? (
+        <p className="text-destructive">Failed to load transactions. Check your connection or try refreshing.</p>
       ) : (
         <>
           <div className="overflow-hidden rounded-xl border border-border bg-card">
