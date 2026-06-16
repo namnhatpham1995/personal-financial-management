@@ -3,6 +3,7 @@ package com.fintrack.category.repository;
 import com.fintrack.category.domain.Category;
 import com.fintrack.common.domain.TransactionType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
@@ -29,7 +30,6 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     Optional<Category> findSystemCategory(String name, TransactionType type);
 
     @Modifying
-    @org.springframework.data.jpa.repository.Query(
-            "UPDATE Transaction t SET t.category.id = :toId WHERE t.category.id = :fromId")
+    @Query("UPDATE Transaction t SET t.category.id = :toId WHERE t.category.id = :fromId")
     void reassignTransactionCategory(Long fromId, Long toId);
 }
