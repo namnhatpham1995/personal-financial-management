@@ -4,10 +4,10 @@
 # Build & Runtime
 # ══════════════════════════════════════════════════════════════════════════════
 
-# Gradle (backend)
-backend/.gradle/
-backend/build/
-!backend/gradle/wrapper/gradle-wrapper.jar
+# Maven (backend)
+backend/target/
+.m2/
+.mvn/
 
 # Next.js (frontend)
 frontend/node_modules/
