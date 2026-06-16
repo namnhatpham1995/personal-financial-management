@@ -33,10 +33,7 @@ jobs:
         with:
           java-version: "21"
           distribution: temurin
-          cache: gradle
-
-      - name: Grant execute permission for gradlew
-        run: chmod +x backend/gradlew
+          cache: maven
 
       - name: Build and run tests
         working-directory: backend
@@ -46,14 +43,14 @@ jobs:
           DB_USERNAME: test
           DB_PASSWORD: test
           JWT_SECRET: ci-test-secret-that-is-long-enough-256-bits-required
-        run: ./gradlew build --no-daemon
+        run: mvn clean verify
 
       - name: Upload test report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: backend-test-report
-          path: backend/build/reports/tests/
+          path: backend/target/surefire-reports/
 
   frontend:
     name: Frontend — Lint & Type-check
@@ -67,7 +64,7 @@ jobs:
         with:
           node-version: "20"
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: "**/package-lock.json"
 
       - name: Install dependencies
         working-directory: frontend
