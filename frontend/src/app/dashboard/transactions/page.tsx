@@ -1,5 +1,7 @@
 "use client";
 
+import { Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { transactionService, TransactionFilters, Transaction } from "@/services/transaction-service";
 import type { UpdateTransactionPayload } from "@/services/transaction-service";
@@ -12,8 +14,70 @@ import { Plus, Trash2, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TransactionForm } from "./transaction-form";
 import type { TransactionFormValues } from "./transaction-form";
+import { RecurringTab } from "./recurring-tab";
 
 export default function TransactionsPage() {
+  return (
+    <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
+      <TransactionsContent />
+    </Suspense>
+  );
+}
+
+function TransactionsContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const activeTab = searchParams.get("tab") ?? "history";
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Transactions</h1>
+        {activeTab === "history" && <AddTransactionButton />}
+        {activeTab === "recurring" && null}
+      </div>
+
+      {/* Tab bar */}
+      <div className="flex gap-1 border-b border-border">
+        {(["history", "recurring"] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() =>
+              router.push(
+                tab === "history"
+                  ? "/dashboard/transactions"
+                  : "/dashboard/transactions?tab=recurring",
+                { scroll: false }
+              )
+            }
+            className={cn(
+              "px-4 py-2 text-sm font-medium capitalize transition-colors",
+              activeTab === tab
+                ? "border-b-2 border-primary text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "recurring" ? (
+        <RecurringTab />
+      ) : (
+        <HistoryTab />
+      )}
+    </div>
+  );
+}
+
+function AddTransactionButton() {
+  // Rendered separately so HistoryTab can wire it to its own state via context —
+  // for now the button lives inside HistoryTab and this slot is intentionally empty.
+  return null;
+}
+
+function HistoryTab() {
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
@@ -42,22 +106,14 @@ export default function TransactionsPage() {
 
   const createMutation = useMutation({
     mutationFn: (data: TransactionFormValues) => transactionService.create(data),
-    onSuccess: () => {
-      invalidateAfterMutation();
-      closeForm();
-      toast.success("Transaction added");
-    },
+    onSuccess: () => { invalidateAfterMutation(); closeForm(); toast.success("Transaction added"); },
     onError: () => toast.error("Failed to create transaction"),
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: UpdateTransactionPayload }) =>
       transactionService.update(id, data),
-    onSuccess: () => {
-      invalidateAfterMutation();
-      closeForm();
-      toast.success("Transaction updated");
-    },
+    onSuccess: () => { invalidateAfterMutation(); closeForm(); toast.success("Transaction updated"); },
     onError: () => toast.error("Failed to update transaction"),
   });
 
@@ -70,23 +126,12 @@ export default function TransactionsPage() {
     },
   });
 
-  const closeForm = () => {
-    setShowForm(false);
-    setEditingTx(null);
-  };
+  const closeForm = () => { setShowForm(false); setEditingTx(null); };
 
-  const startEdit = (tx: Transaction) => {
-    setEditingTx(tx);
-    setShowForm(true);
-  };
+  const startEdit = (tx: Transaction) => { setEditingTx(tx); setShowForm(true); };
 
   const handleAddClick = () => {
-    // Reset to create mode if already in edit mode, otherwise toggle
-    if (editingTx) {
-      setEditingTx(null);
-    } else {
-      setShowForm((prev) => !prev);
-    }
+    if (editingTx) { setEditingTx(null); } else { setShowForm((prev) => !prev); }
   };
 
   const onSubmit = (values: TransactionFormValues) => {
@@ -112,8 +157,7 @@ export default function TransactionsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Transactions</h1>
+      <div className="flex justify-end">
         <button
           onClick={handleAddClick}
           className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
@@ -171,21 +215,29 @@ export default function TransactionsPage() {
               </thead>
               <tbody className="divide-y divide-border">
                 {transactions.length === 0 ? (
-                  <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">No transactions found</td></tr>
+                  <tr>
+                    <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                      No transactions found
+                    </td>
+                  </tr>
                 ) : (
                   transactions.map((tx) => (
                     <tr key={tx.id} className="hover:bg-muted/30">
                       <td className="px-4 py-3">{formatDate(tx.transactionDate)}</td>
                       <td className="px-4 py-3">{tx.accountName}</td>
                       <td className="px-4 py-3">
-                        <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium",
+                        <span className={cn(
+                          "rounded-full px-2 py-0.5 text-xs font-medium",
                           tx.transactionType === "INCOME" ? "bg-green-100 text-green-700" :
                           tx.transactionType === "EXPENSE" ? "bg-red-100 text-red-700" :
                           "bg-blue-100 text-blue-700"
-                        )}>{tx.transactionType}</span>
+                        )}>
+                          {tx.transactionType}
+                        </span>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">{tx.categoryName ?? "—"}</td>
-                      <td className={cn("px-4 py-3 font-medium",
+                      <td className={cn(
+                        "px-4 py-3 font-medium",
                         tx.transactionType === "INCOME" ? "text-green-600" : "text-foreground"
                       )}>
                         {tx.transactionType === "INCOME" ? "+" : tx.transactionType === "EXPENSE" ? "−" : ""}

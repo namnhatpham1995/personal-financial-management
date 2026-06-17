@@ -9,8 +9,6 @@ import {
   LayoutDashboard,
   Wallet,
   ArrowLeftRight,
-  RefreshCw,
-  BarChart3,
   Tag,
   LogOut,
 } from "lucide-react";
@@ -19,9 +17,7 @@ const navItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/accounts", label: "Accounts", icon: Wallet },
   { href: "/dashboard/transactions", label: "Transactions", icon: ArrowLeftRight },
-  { href: "/dashboard/recurring", label: "Recurring", icon: RefreshCw },
-  { href: "/dashboard/categories", label: "Categories & Limit", icon: Tag },
-  { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/dashboard/categories", label: "Categories", icon: Tag },
 ];
 
 interface SidebarProps {
