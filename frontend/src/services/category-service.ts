@@ -3,17 +3,18 @@ import { apiClient } from "@/lib/api-client";
 export interface Category {
   id: number;
   name: string;
-  transactionType: "INCOME" | "EXPENSE" | "TRANSFER";
+  transactionType: "INCOME" | "EXPENSE";
   system: boolean;
 }
 
 export interface CreateCategoryPayload {
   name: string;
-  transactionType: "INCOME" | "EXPENSE" | "TRANSFER";
+  transactionType: "INCOME" | "EXPENSE";
 }
 
 export interface UpdateCategoryPayload {
   name: string;
+  transactionType?: "INCOME" | "EXPENSE";
 }
 
 export const categoryService = {

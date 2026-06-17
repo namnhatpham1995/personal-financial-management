@@ -1,34 +1,43 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  categoryService,
-  Category,
-  CreateCategoryPayload,
-} from "@/services/category-service";
-import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Lock, Check, X } from "lucide-react";
+import { Plus } from "lucide-react";
 import { isAxiosError } from "axios";
-
-// ─── Schemas ─────────────────────────────────────────────────────────────────
+import {
+  categoryService,
+  type Category,
+  type CreateCategoryPayload,
+} from "@/services/category-service";
+import {
+  budgetService,
+  type Budget,
+  type CreateBudgetPayload,
+} from "@/services/budget-service";
+import { CategoryRow, type LimitPayload } from "./category-row";
 
 const createSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
-  transactionType: z.enum(["INCOME", "EXPENSE", "TRANSFER"]),
-});
-
-const renameSchema = z.object({
-  name: z.string().min(1, "Name is required").max(100),
+  transactionType: z.enum(["INCOME", "EXPENSE"]),
 });
 
 type CreateValues = z.infer<typeof createSchema>;
-type RenameValues = z.infer<typeof renameSchema>;
+type CategoryType = Category["transactionType"];
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+function buildBudgetMap(budgets: Budget[]): Map<number, Budget> {
+  const map = new Map<number, Budget>();
+  for (const budget of budgets) {
+    const existing = map.get(budget.categoryId);
+    if (!existing || budget.period === "MONTHLY") {
+      map.set(budget.categoryId, budget);
+    }
+  }
+  return map;
+}
 
 export default function CategoriesPage() {
   const qc = useQueryClient();
@@ -36,20 +45,29 @@ export default function CategoriesPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
-  const { data: categories = [], isLoading } = useQuery({
+  const { data: categories = [], isLoading: catsLoading } = useQuery({
     queryKey: ["categories"],
     queryFn: categoryService.list,
   });
 
-  const systemCategories = categories.filter((c) => c.system);
-  const userCategories = categories.filter((c) => !c.system);
+  const { data: budgets = [] } = useQuery({
+    queryKey: ["budgets"],
+    queryFn: budgetService.list,
+  });
 
-  // ─── Mutations ──────────────────────────────────────────────────────────
+  const budgetMap = buildBudgetMap(budgets);
+  const userCategories = categories.filter((category) => !category.system);
+  const systemCategories = categories.filter((category) => category.system);
+
+  const invalidateCategoriesAndBudgets = () => {
+    qc.invalidateQueries({ queryKey: ["categories"] });
+    qc.invalidateQueries({ queryKey: ["budgets"] });
+  };
 
   const createMutation = useMutation({
     mutationFn: (data: CreateCategoryPayload) => categoryService.create(data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["categories"] });
+      invalidateCategoriesAndBudgets();
       setShowForm(false);
       toast.success("Category created");
     },
@@ -66,7 +84,7 @@ export default function CategoriesPage() {
     mutationFn: ({ id, name }: { id: number; name: string }) =>
       categoryService.update(id, { name }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["categories"] });
+      invalidateCategoriesAndBudgets();
       setEditingId(null);
       toast.success("Category renamed");
     },
@@ -81,12 +99,35 @@ export default function CategoriesPage() {
     },
   });
 
+  const typeMutation = useMutation({
+    mutationFn: ({
+      id,
+      name,
+      transactionType,
+    }: {
+      id: number;
+      name: string;
+      transactionType: CategoryType;
+    }) => categoryService.update(id, { name, transactionType }),
+    onSuccess: () => {
+      invalidateCategoriesAndBudgets();
+      toast.success("Category type updated");
+    },
+    onError: (err) => {
+      if (isAxiosError(err) && err.response?.status === 409) {
+        toast.error("A category with that name already exists for the new type");
+      } else {
+        toast.error("Failed to update type");
+      }
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (id: number) => categoryService.delete(id),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["categories"] });
+      invalidateCategoriesAndBudgets();
       setConfirmDeleteId(null);
-      toast.success("Category deleted — usages reassigned to Uncategorized");
+      toast.success("Category deleted - usages reassigned to Uncategorized");
     },
     onError: (err) => {
       if (isAxiosError(err) && err.response?.status === 403) {
@@ -97,12 +138,77 @@ export default function CategoriesPage() {
     },
   });
 
+  const createLimitMutation = useMutation({
+    mutationFn: (data: CreateBudgetPayload) => budgetService.create(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["budgets"] });
+      toast.success("Limit set");
+    },
+    onError: () => toast.error("Failed to set limit"),
+  });
+
+  const updateLimitMutation = useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: Partial<CreateBudgetPayload>;
+    }) => budgetService.update(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["budgets"] });
+      toast.success("Limit updated");
+    },
+    onError: () => toast.error("Failed to update limit"),
+  });
+
+  const removeLimitMutation = useMutation({
+    mutationFn: (id: number) => budgetService.delete(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["budgets"] });
+      toast.success("Limit removed");
+    },
+    onError: () => toast.error("Failed to remove limit"),
+  });
+
+  const rowProps = (category: Category, readonly: boolean) => ({
+    category,
+    budget: budgetMap.get(category.id),
+    isEditing: editingId === category.id,
+    isConfirmingDelete: confirmDeleteId === category.id,
+    onEditStart: () => setEditingId(category.id),
+    onEditCancel: () => setEditingId(null),
+    onRename: (name: string) => renameMutation.mutate({ id: category.id, name }),
+    onTypeChange: readonly
+      ? undefined
+      : (transactionType: CategoryType) =>
+          typeMutation.mutate({
+            id: category.id,
+            name: category.name,
+            transactionType,
+          }),
+    onDeleteRequest: () => setConfirmDeleteId(category.id),
+    onDeleteCancel: () => setConfirmDeleteId(null),
+    onDeleteConfirm: () => deleteMutation.mutate(category.id),
+    onSetLimit: (data: LimitPayload) => createLimitMutation.mutate(data),
+    onUpdateLimit: (budgetId: number, data: Omit<LimitPayload, "categoryId">) =>
+      updateLimitMutation.mutate({ id: budgetId, data }),
+    onRemoveLimit: (budgetId: number) => removeLimitMutation.mutate(budgetId),
+    isRenamePending: renameMutation.isPending,
+    isDeletePending: deleteMutation.isPending && confirmDeleteId === category.id,
+    isLimitPending:
+      createLimitMutation.isPending ||
+      updateLimitMutation.isPending ||
+      removeLimitMutation.isPending,
+    readonly,
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Categories</h1>
+        <h1 className="text-2xl font-bold">Categories &amp; Limit</h1>
         <button
-          onClick={() => { setShowForm(!showForm); }}
+          onClick={() => setShowForm(!showForm)}
           className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
           <Plus className="h-4 w-4" /> New Category
@@ -111,55 +217,28 @@ export default function CategoriesPage() {
 
       {showForm && (
         <CreateForm
-          onSubmit={(v) => createMutation.mutate(v)}
+          onSubmit={(values) => createMutation.mutate(values)}
           onCancel={() => setShowForm(false)}
           isPending={createMutation.isPending}
         />
       )}
 
-      {isLoading ? (
-        <p className="text-muted-foreground">Loading…</p>
+      {catsLoading ? (
+        <p className="text-muted-foreground">Loading...</p>
       ) : (
         <div className="space-y-6">
           {userCategories.length > 0 && (
             <Section title="My Categories">
-              {userCategories.map((cat) => (
-                <CategoryRow
-                  key={cat.id}
-                  category={cat}
-                  isEditing={editingId === cat.id}
-                  isConfirmingDelete={confirmDeleteId === cat.id}
-                  onEditStart={() => setEditingId(cat.id)}
-                  onEditCancel={() => setEditingId(null)}
-                  onRename={(name) => renameMutation.mutate({ id: cat.id, name })}
-                  onDeleteRequest={() => setConfirmDeleteId(cat.id)}
-                  onDeleteCancel={() => setConfirmDeleteId(null)}
-                  onDeleteConfirm={() => deleteMutation.mutate(cat.id)}
-                  isRenamePending={renameMutation.isPending}
-                  isDeletePending={deleteMutation.isPending && confirmDeleteId === cat.id}
-                />
+              {userCategories.map((category) => (
+                <CategoryRow key={category.id} {...rowProps(category, false)} />
               ))}
             </Section>
           )}
 
           {systemCategories.length > 0 && (
-            <Section title="Default Categories" subtitle="Read-only — available to all users">
-              {systemCategories.map((cat) => (
-                <CategoryRow
-                  key={cat.id}
-                  category={cat}
-                  isEditing={false}
-                  isConfirmingDelete={false}
-                  onEditStart={() => {}}
-                  onEditCancel={() => {}}
-                  onRename={() => {}}
-                  onDeleteRequest={() => {}}
-                  onDeleteCancel={() => {}}
-                  onDeleteConfirm={() => {}}
-                  isRenamePending={false}
-                  isDeletePending={false}
-                  readonly
-                />
+            <Section title="Default Categories" subtitle="Read-only - available to all users">
+              {systemCategories.map((category) => (
+                <CategoryRow key={category.id} {...rowProps(category, true)} />
               ))}
             </Section>
           )}
@@ -173,8 +252,6 @@ export default function CategoriesPage() {
   );
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
 function Section({
   title,
   subtitle,
@@ -182,7 +259,7 @@ function Section({
 }: {
   title: string;
   subtitle?: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <div>
@@ -199,152 +276,12 @@ function Section({
   );
 }
 
-interface CategoryRowProps {
-  category: Category;
-  isEditing: boolean;
-  isConfirmingDelete: boolean;
-  onEditStart: () => void;
-  onEditCancel: () => void;
-  onRename: (name: string) => void;
-  onDeleteRequest: () => void;
-  onDeleteCancel: () => void;
-  onDeleteConfirm: () => void;
-  isRenamePending: boolean;
-  isDeletePending: boolean;
-  readonly?: boolean;
-}
-
-function CategoryRow({
-  category,
-  isEditing,
-  isConfirmingDelete,
-  onEditStart,
-  onEditCancel,
-  onRename,
-  onDeleteRequest,
-  onDeleteCancel,
-  onDeleteConfirm,
-  isRenamePending,
-  isDeletePending,
-  readonly = false,
-}: CategoryRowProps) {
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<RenameValues>({
-    resolver: zodResolver(renameSchema),
-    defaultValues: { name: category.name },
-  });
-
-  const handleEditStart = () => {
-    reset({ name: category.name });
-    onEditStart();
-  };
-
-  const typeBadge =
-    category.transactionType === "INCOME"
-      ? "bg-emerald-100 text-emerald-700"
-      : category.transactionType === "EXPENSE"
-      ? "bg-rose-100 text-rose-700"
-      : "bg-sky-100 text-sky-700";
-
-  return (
-    <div className="px-4 py-3">
-      {isEditing ? (
-        <form
-          onSubmit={handleSubmit((v) => onRename(v.name))}
-          className="flex items-center gap-2"
-        >
-          <input
-            {...register("name")}
-            autoFocus
-            className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-          {errors.name && (
-            <span className="text-xs text-destructive">{errors.name.message}</span>
-          )}
-          <button
-            type="submit"
-            disabled={isRenamePending}
-            className="rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-          >
-            <Check className="h-3.5 w-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => { reset(); onEditCancel(); }}
-            className="rounded-md border px-3 py-1.5 text-xs hover:bg-accent"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        </form>
-      ) : isConfirmingDelete ? (
-        <div className="flex items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">
-            Delete <span className="font-medium text-foreground">{category.name}</span>?
-            Existing transactions, budgets, and recurring items will move to{" "}
-            <span className="font-medium">Uncategorized</span>.
-          </p>
-          <div className="flex shrink-0 gap-2">
-            <button
-              onClick={onDeleteConfirm}
-              disabled={isDeletePending}
-              className="rounded-md bg-destructive px-3 py-1.5 text-xs text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
-            >
-              {isDeletePending ? "Deleting…" : "Delete"}
-            </button>
-            <button
-              onClick={onDeleteCancel}
-              className="rounded-md border px-3 py-1.5 text-xs hover:bg-accent"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span className="font-medium">{category.name}</span>
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs font-medium ${typeBadge}`}
-            >
-              {category.transactionType}
-            </span>
-          </div>
-          {readonly ? (
-            <Lock className="h-3.5 w-3.5 text-muted-foreground" aria-label="System category — read-only" />
-          ) : (
-            <div className="flex gap-1">
-              <button
-                onClick={handleEditStart}
-                className="rounded p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                aria-label="Rename"
-              >
-                <Pencil className="h-3.5 w-3.5" />
-              </button>
-              <button
-                onClick={onDeleteRequest}
-                className="rounded p-1.5 text-muted-foreground hover:bg-accent hover:text-destructive"
-                aria-label="Delete"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 function CreateForm({
   onSubmit,
   onCancel,
   isPending,
 }: {
-  onSubmit: (v: CreateValues) => void;
+  onSubmit: (values: CreateValues) => void;
   onCancel: () => void;
   isPending: boolean;
 }) {
@@ -358,7 +295,7 @@ function CreateForm({
     <div className="rounded-xl border border-border bg-card p-5">
       <h2 className="mb-4 font-semibold">New Category</h2>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-wrap items-end gap-4">
-        <div className="flex-1 min-w-40">
+        <div className="min-w-40 flex-1">
           <label className="mb-1 block text-sm font-medium">Name</label>
           <input
             {...register("name")}
@@ -377,7 +314,6 @@ function CreateForm({
           >
             <option value="EXPENSE">Expense</option>
             <option value="INCOME">Income</option>
-            <option value="TRANSFER">Transfer</option>
           </select>
         </div>
         <div className="flex gap-2">
@@ -386,7 +322,7 @@ function CreateForm({
             disabled={isPending}
             className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
-            {isPending ? "Saving…" : "Save"}
+            {isPending ? "Saving..." : "Save"}
           </button>
           <button
             type="button"

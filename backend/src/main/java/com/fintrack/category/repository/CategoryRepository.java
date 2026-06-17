@@ -34,8 +34,8 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     void reassignTransactionCategory(Long fromId, Long toId);
 
     /**
-     * Drops budgets pointing to `fromId` when the user already has an "Uncategorized"
-     * budget for the same period — prevents uq_budget_user_category_period violation.
+     * Drops budgets pointing to fromId when the user already has an Uncategorized
+     * budget for the same period, preventing uq_budget_user_category_period conflicts.
      */
     @Modifying
     @Query(value = """
