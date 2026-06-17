@@ -60,12 +60,21 @@ public class CategoryService {
         Category category = findVisibleOrThrow(userId, categoryId);
         guardSystemCategory(category);
 
-        // Reassign transactions in this category to "Uncategorized" for its type
+        // Resolve matching-type "Uncategorized" for all reassignments
         Category uncategorized = categoryRepository
                 .findSystemCategory("Uncategorized", category.getTransactionType())
                 .orElseThrow(() -> new IllegalStateException("System 'Uncategorized' category not found"));
+        Long toId = uncategorized.getId();
 
-        categoryRepository.reassignTransactionCategory(categoryId, uncategorized.getId());
+        // Reassign all references before deletion to prevent FK cascade side-effects:
+        // 1. Transactions (category_id nullable — SET NULL on cascade, reassign explicitly)
+        categoryRepository.reassignTransactionCategory(categoryId, toId);
+        // 2. Budgets — drop any that would violate uq_budget_user_category_period, then reassign the rest
+        categoryRepository.dropConflictingBudgets(categoryId, toId);
+        categoryRepository.reassignBudgetCategory(categoryId, toId);
+        // 3. Recurring transactions (category_id nullable — SET NULL on cascade, reassign explicitly)
+        categoryRepository.reassignRecurringCategory(categoryId, toId);
+
         categoryRepository.delete(category);
     }
 
