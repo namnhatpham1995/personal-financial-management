@@ -2,11 +2,11 @@ import { apiClient } from "@/lib/api-client";
 
 export interface Budget {
   id: number;
-  name: string;
-  categoryId?: number;
-  categoryName?: string;
-  limitAmount: string;
+  categoryId: number;
+  categoryName: string;
+  amountLimit: string;
   period: "MONTHLY" | "YEARLY";
+  startDate: string;
   spent: string;
   remaining: string;
   percentUsed: string;
@@ -14,10 +14,10 @@ export interface Budget {
 }
 
 export interface CreateBudgetPayload {
-  name: string;
-  categoryId?: number;
-  limitAmount: string;
+  categoryId: number;
   period: string;
+  amountLimit: string;
+  startDate: string;
 }
 
 export const budgetService = {

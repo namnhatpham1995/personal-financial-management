@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { budgetService, CreateBudgetPayload } from "@/services/budget-service";
+import { categoryService } from "@/services/category-service";
 import { formatCurrency } from "@/lib/utils";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -12,12 +13,21 @@ import { Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const schema = z.object({
-  name: z.string().min(1),
-  limitAmount: z.string().min(1),
+  categoryId: z.coerce.number().min(1, "Select a category"),
+  limitAmount: z.string().min(1, "Enter a limit amount"),
   period: z.enum(["MONTHLY", "YEARLY"]),
+  startDate: z.string().min(1, "Select a start date"),
 });
 
 type FormValues = z.infer<typeof schema>;
+
+function getPeriodStart(period: "MONTHLY" | "YEARLY"): string {
+  const today = new Date();
+  if (period === "MONTHLY") {
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
+  }
+  return `${today.getFullYear()}-01-01`;
+}
 
 export default function BudgetsPage() {
   const qc = useQueryClient();
@@ -27,6 +37,13 @@ export default function BudgetsPage() {
     queryKey: ["budgets"],
     queryFn: budgetService.list,
   });
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ["categories"],
+    queryFn: categoryService.list,
+  });
+
+  const expenseCategories = categories.filter((c) => c.transactionType === "EXPENSE");
 
   const createMutation = useMutation({
     mutationFn: (data: CreateBudgetPayload) => budgetService.create(data),
@@ -46,8 +63,25 @@ export default function BudgetsPage() {
     },
   });
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } =
-    useForm<FormValues>({ resolver: zodResolver(schema) });
+  const { register, handleSubmit, reset, watch, formState: { errors, isSubmitting } } =
+    useForm<FormValues>({
+      resolver: zodResolver(schema),
+      defaultValues: {
+        period: "MONTHLY",
+        startDate: getPeriodStart("MONTHLY"),
+      },
+    });
+
+  const selectedPeriod = watch("period") as "MONTHLY" | "YEARLY";
+
+  const onSubmit = (v: FormValues) => {
+    createMutation.mutate({
+      categoryId: v.categoryId,
+      period: v.period,
+      amountLimit: v.limitAmount,
+      startDate: v.startDate,
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -64,24 +98,57 @@ export default function BudgetsPage() {
       {showForm && (
         <div className="rounded-xl border border-border bg-card p-5">
           <h2 className="mb-4 font-semibold">Create Budget</h2>
-          <form onSubmit={handleSubmit((v) => createMutation.mutate(v))} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Name" error={errors.name?.message}>
-              <input {...register("name")} className={inputCls} />
-            </Field>
-            <Field label="Period" error={errors.period?.message}>
-              <select {...register("period")} className={inputCls}>
-                <option>MONTHLY</option>
-                <option>YEARLY</option>
-              </select>
-            </Field>
-            <Field label="Limit Amount" error={errors.limitAmount?.message}>
-              <input type="number" step="0.01" {...register("limitAmount")} className={inputCls} />
-            </Field>
-            <div className="sm:col-span-2 flex gap-2">
-              <button type="submit" disabled={isSubmitting} className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50">Save</button>
-              <button type="button" onClick={() => setShowForm(false)} className="rounded-md border px-4 py-2 text-sm hover:bg-accent">Cancel</button>
-            </div>
-          </form>
+          {expenseCategories.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No expense categories found. Create a category first before adding a budget.
+            </p>
+          ) : (
+            <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="Category" error={errors.categoryId?.message}>
+                <select {...register("categoryId")} className={inputCls}>
+                  <option value="">Select category…</option>
+                  {expenseCategories.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Period" error={errors.period?.message}>
+                <select
+                  {...register("period")}
+                  className={inputCls}
+                  onChange={(e) => {
+                    const p = e.target.value as "MONTHLY" | "YEARLY";
+                    reset((prev) => ({ ...prev, period: p, startDate: getPeriodStart(p) }));
+                  }}
+                >
+                  <option value="MONTHLY">MONTHLY</option>
+                  <option value="YEARLY">YEARLY</option>
+                </select>
+              </Field>
+              <Field label="Limit Amount" error={errors.limitAmount?.message}>
+                <input type="number" step="0.01" {...register("limitAmount")} className={inputCls} />
+              </Field>
+              <Field label="Start Date" error={errors.startDate?.message}>
+                <input type="date" {...register("startDate")} className={inputCls} />
+              </Field>
+              <div className="sm:col-span-2 flex gap-2">
+                <button
+                  type="submit"
+                  disabled={isSubmitting || createMutation.isPending}
+                  className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                >
+                  Save
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="rounded-md border px-4 py-2 text-sm hover:bg-accent"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
         </div>
       )}
 
@@ -95,8 +162,8 @@ export default function BudgetsPage() {
               <div key={b.id} className={cn("rounded-xl border bg-card p-5 shadow-sm", b.overBudget ? "border-destructive/40" : "border-border")}>
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="font-semibold">{b.name}</p>
-                    <p className="text-xs text-muted-foreground">{b.period} · {b.categoryName ?? "All categories"}</p>
+                    <p className="font-semibold">{b.categoryName}</p>
+                    <p className="text-xs text-muted-foreground">{b.period}</p>
                   </div>
                   <button onClick={() => deleteMutation.mutate(b.id)} className="text-muted-foreground hover:text-destructive">
                     <Trash2 className="h-4 w-4" />
@@ -106,7 +173,7 @@ export default function BudgetsPage() {
                 <div className="mt-3">
                   <div className="mb-1 flex justify-between text-sm">
                     <span>{formatCurrency(b.spent)}</span>
-                    <span className="text-muted-foreground">of {formatCurrency(b.limitAmount)}</span>
+                    <span className="text-muted-foreground">of {formatCurrency(b.amountLimit)}</span>
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-muted">
                     <div
