@@ -2,8 +2,8 @@ package com.fintrack.analytics.web;
 
 import com.fintrack.analytics.service.AnalyticsService;
 import com.fintrack.analytics.web.dto.BudgetProgressDto;
+import com.fintrack.analytics.web.dto.CurrencyNetWorthDto;
 import com.fintrack.analytics.web.dto.IncomeExpenseTrendDto;
-import com.fintrack.analytics.web.dto.NetWorthDto;
 import com.fintrack.analytics.web.dto.SpendingByCategoryDto;
 import com.fintrack.common.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
@@ -52,8 +52,8 @@ public class AnalyticsController {
     }
 
     @GetMapping("/net-worth")
-    @Operation(summary = "Net worth: total assets minus liabilities across all accounts")
-    public NetWorthDto netWorth(
+    @Operation(summary = "Net worth per currency: assets minus liabilities, grouped by account currency")
+    public List<CurrencyNetWorthDto> netWorth(
             @AuthenticationPrincipal UserPrincipal principal) {
         return analyticsService.getNetWorth(principal.getUserId());
     }

@@ -8,7 +8,7 @@ import { Check, X, Pencil, Trash2, Lock, Plus } from "lucide-react";
 import { Category } from "@/services/category-service";
 import { Budget } from "@/services/budget-service";
 import { LimitBar } from "@/components/limit-bar";
-import { formatCurrency } from "@/lib/utils";
+import { formatAmount } from "@/lib/utils";
 
 const renameSchema = z.object({ name: z.string().min(1, "Name is required").max(100) });
 type RenameValues = z.infer<typeof renameSchema>;
@@ -145,7 +145,7 @@ export function CategoryRow({
           {isExpense && !readonly && (
             budget ? (
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <span>{formatCurrency(budget.spent)} / {formatCurrency(budget.amountLimit)}</span>
+                <span>{formatAmount(budget.spent)} / {formatAmount(budget.amountLimit)}</span>
                 <span>{budget.period === "MONTHLY" ? "mo" : "yr"}</span>
                 <button onClick={openLimitForm} className="rounded p-1 hover:bg-accent hover:text-accent-foreground" aria-label="Edit limit">
                   <Pencil className="h-3 w-3" />

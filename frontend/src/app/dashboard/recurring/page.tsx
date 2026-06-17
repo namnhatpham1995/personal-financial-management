@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { recurringService, CreateRecurringPayload } from "@/services/recurring-service";
 import { accountService } from "@/services/account-service";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatAmount, formatDate } from "@/lib/utils";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -129,7 +129,7 @@ export default function RecurringPage() {
                     )}>{item.transactionType}</span>
                     {!item.active && <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">Paused</span>}
                   </div>
-                  <p className="mt-1 text-lg font-bold">{formatCurrency(item.amount)}</p>
+                  <p className="mt-1 text-lg font-bold">{formatAmount(item.amount)}</p>
                   <p className="text-sm text-muted-foreground">
                     Every {item.intervalValue > 1 ? `${item.intervalValue} ` : ""}{item.frequency.toLowerCase()} · {item.accountName}
                   </p>

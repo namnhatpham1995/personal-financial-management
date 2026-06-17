@@ -4,8 +4,8 @@ import com.fintrack.account.domain.Account;
 import com.fintrack.account.repository.AccountRepository;
 import com.fintrack.analytics.repository.AnalyticsRepository;
 import com.fintrack.analytics.web.dto.BudgetProgressDto;
+import com.fintrack.analytics.web.dto.CurrencyNetWorthDto;
 import com.fintrack.analytics.web.dto.IncomeExpenseTrendDto;
-import com.fintrack.analytics.web.dto.NetWorthDto;
 import com.fintrack.analytics.web.dto.SpendingByCategoryDto;
 import com.fintrack.budget.domain.Budget;
 import com.fintrack.budget.repository.BudgetRepository;
@@ -18,6 +18,8 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -45,27 +47,29 @@ public class AnalyticsService {
     }
 
     @Transactional(readOnly = true)
-    public NetWorthDto getNetWorth(Long userId) {
+    public List<CurrencyNetWorthDto> getNetWorth(Long userId) {
         List<Account> accounts = accountRepository.findAllByUserId(userId);
+        Map<String, List<Account>> byCurrency = accounts.stream()
+                .collect(Collectors.groupingBy(Account::getCurrency));
 
-        BigDecimal assets = BigDecimal.ZERO;
-        BigDecimal liabilities = BigDecimal.ZERO;
-
-        List<NetWorthDto.AccountBalanceDto> accountDtos = accounts.stream().map(a -> {
-            return new NetWorthDto.AccountBalanceDto(
-                    a.getId(), a.getName(), a.getAccountType().name(), a.getCurrentBalance());
-        }).toList();
-
-        for (Account a : accounts) {
-            // CREDIT_CARD balances represent liabilities (debt owed)
-            if (a.getAccountType().name().equals("CREDIT_CARD")) {
-                liabilities = liabilities.add(a.getCurrentBalance());
-            } else {
-                assets = assets.add(a.getCurrentBalance());
+        return byCurrency.entrySet().stream().map(entry -> {
+            String currency = entry.getKey();
+            List<Account> group = entry.getValue();
+            BigDecimal assets = BigDecimal.ZERO;
+            BigDecimal liabilities = BigDecimal.ZERO;
+            for (Account a : group) {
+                if ("CREDIT_CARD".equals(a.getAccountType().name())) {
+                    liabilities = liabilities.add(a.getCurrentBalance());
+                } else {
+                    assets = assets.add(a.getCurrentBalance());
+                }
             }
-        }
-
-        return new NetWorthDto(assets, liabilities, assets.subtract(liabilities), accountDtos);
+            List<CurrencyNetWorthDto.AccountBalanceDto> dtos = group.stream()
+                    .map(a -> new CurrencyNetWorthDto.AccountBalanceDto(
+                            a.getId(), a.getName(), a.getAccountType().name(), a.getCurrentBalance()))
+                    .toList();
+            return new CurrencyNetWorthDto(currency, assets, liabilities, assets.subtract(liabilities), dtos);
+        }).toList();
     }
 
     private BudgetProgressDto buildProgress(Budget budget, LocalDate today) {

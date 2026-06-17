@@ -10,6 +10,7 @@ public record TransactionResponse(
         Long id,
         TransactionType transactionType,
         BigDecimal amount,
+        String currency,
         LocalDate transactionDate,
         Long accountId,
         String accountName,

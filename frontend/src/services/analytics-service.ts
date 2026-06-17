@@ -1,6 +1,7 @@
 import { apiClient } from "@/lib/api-client";
 
 export interface SpendingByCategory {
+  currency: string;
   categoryId: number;
   categoryName: string;
   total: string;
@@ -8,6 +9,7 @@ export interface SpendingByCategory {
 }
 
 export interface IncomeExpenseTrend {
+  currency: string;
   year: number;
   month: number;
   totalIncome: string;
@@ -26,16 +28,20 @@ export interface BudgetProgress {
   overBudget: boolean;
 }
 
-export interface NetWorth {
+export interface AccountBalanceSummary {
+  accountId: number;
+  accountName: string;
+  accountType: string;
+  balance: string;
+}
+
+/** Per-currency net worth bucket returned by GET /analytics/net-worth */
+export interface CurrencyNetWorth {
+  currency: string;
   totalAssets: string;
   totalLiabilities: string;
   netWorth: string;
-  accounts: Array<{
-    accountId: number;
-    accountName: string;
-    accountType: string;
-    balance: string;
-  }>;
+  accounts: AccountBalanceSummary[];
 }
 
 export const analyticsService = {
@@ -52,5 +58,5 @@ export const analyticsService = {
   budgetProgress: () =>
     apiClient.get<BudgetProgress[]>("/analytics/budget-progress").then((r) => r.data),
 
-  netWorth: () => apiClient.get<NetWorth>("/analytics/net-worth").then((r) => r.data),
+  netWorth: () => apiClient.get<CurrencyNetWorth[]>("/analytics/net-worth").then((r) => r.data),
 };

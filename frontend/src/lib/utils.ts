@@ -5,8 +5,21 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(amount: number | string, currency = "USD"): string {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(Number(amount));
+/** Format a plain number with grouping — use when currency is unavailable (e.g. budget limits). */
+export function formatAmount(amount: number | string): string {
+  return new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
+    Number(amount)
+  );
+}
+
+export function formatCurrency(amount: number | string, currency: string): string {
+  return (
+    new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
+      Number(amount)
+    ) +
+    " " +
+    currency
+  );
 }
 
 export function formatDate(date: string): string {

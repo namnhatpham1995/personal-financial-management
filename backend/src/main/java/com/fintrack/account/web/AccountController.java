@@ -1,6 +1,7 @@
 package com.fintrack.account.web;
 
 import com.fintrack.account.service.AccountService;
+import com.fintrack.account.web.dto.AccountDeletePreviewDto;
 import com.fintrack.account.web.dto.AccountResponse;
 import com.fintrack.account.web.dto.CreateAccountRequest;
 import com.fintrack.account.web.dto.UpdateAccountRequest;
@@ -58,9 +59,17 @@ public class AccountController {
         return accountService.update(principal.getUserId(), id, request);
     }
 
+    @GetMapping("/{id}/delete-preview")
+    @Operation(summary = "Preview how many transactions will be removed if account is deleted")
+    public AccountDeletePreviewDto deletePreview(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long id) {
+        return accountService.getDeletePreview(principal.getUserId(), id);
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @Operation(summary = "Delete an account (blocked if transactions exist)")
+    @Operation(summary = "Delete an account and all its connected transactions")
     public ResponseEntity<Void> delete(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long id) {
