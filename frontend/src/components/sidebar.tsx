@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 import {
@@ -23,12 +24,53 @@ const navItems = [
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  open?: boolean;
+  onClose?: () => void;
+}
+
+export function Sidebar({ open = false, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
+  // Close drawer on route change
+  useEffect(() => {
+    onClose?.();
+  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
-    <aside className="flex h-full w-56 flex-col border-r border-border bg-card px-4 py-6">
+    <>
+      {/* Desktop: static sidebar (always visible on md+) */}
+      <aside className="hidden md:flex h-full w-56 flex-shrink-0 flex-col border-r border-border bg-card px-4 py-6">
+        <SidebarContent pathname={pathname} user={user} logout={logout} onClose={onClose} />
+      </aside>
+
+      {/* Mobile: off-canvas drawer */}
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border bg-card px-4 py-6 transition-transform duration-300 md:hidden",
+          open ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        <SidebarContent pathname={pathname} user={user} logout={logout} onClose={onClose} />
+      </aside>
+    </>
+  );
+}
+
+function SidebarContent({
+  pathname,
+  user,
+  logout,
+  onClose,
+}: {
+  pathname: string;
+  user: { email?: string } | null;
+  logout: () => void;
+  onClose?: () => void;
+}) {
+  return (
+    <>
       <div className="mb-8">
         <span className="text-xl font-bold text-primary">Fintrack</span>
       </div>
@@ -38,6 +80,7 @@ export function Sidebar() {
           <Link
             key={href}
             href={href}
+            onClick={() => onClose?.()}
             className={cn(
               "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
               pathname === href
@@ -61,6 +104,6 @@ export function Sidebar() {
           Sign out
         </button>
       </div>
-    </aside>
+    </>
   );
 }
