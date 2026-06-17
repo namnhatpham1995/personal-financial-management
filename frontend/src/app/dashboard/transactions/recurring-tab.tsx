@@ -24,7 +24,7 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-export default function RecurringPage() {
+export function RecurringTab() {
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
 
@@ -40,7 +40,11 @@ export default function RecurringPage() {
 
   const createMutation = useMutation({
     mutationFn: (data: CreateRecurringPayload) => recurringService.create(data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["recurring"] }); setShowForm(false); toast.success("Created"); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["recurring"] });
+      setShowForm(false);
+      toast.success("Created");
+    },
     onError: () => toast.error("Failed to create"),
   });
 
@@ -64,20 +68,22 @@ export default function RecurringPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Recurring Transactions</h1>
+      <div className="flex justify-end">
         <button
           onClick={() => { setShowForm(!showForm); reset(); }}
           className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
-          <Plus className="h-4 w-4" /> New
+          <Plus className="h-4 w-4" /> New Rule
         </button>
       </div>
 
       {showForm && (
         <div className="rounded-xl border border-border bg-card p-5">
           <h2 className="mb-4 font-semibold">New Recurring Rule</h2>
-          <form onSubmit={handleSubmit((v) => createMutation.mutate(v))} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <form
+            onSubmit={handleSubmit((v) => createMutation.mutate(v))}
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2"
+          >
             <Field label="Account" error={errors.accountId?.message}>
               <select {...register("accountId")} className={inputCls}>
                 {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
@@ -105,9 +111,21 @@ export default function RecurringPage() {
             <Field label="Note" error={errors.note?.message}>
               <input {...register("note")} className={inputCls} />
             </Field>
-            <div className="sm:col-span-2 flex gap-2">
-              <button type="submit" disabled={isSubmitting} className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50">Save</button>
-              <button type="button" onClick={() => setShowForm(false)} className="rounded-md border px-4 py-2 text-sm hover:bg-accent">Cancel</button>
+            <div className="flex gap-2 sm:col-span-2">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowForm(false)}
+                className="rounded-md border px-4 py-2 text-sm hover:bg-accent"
+              >
+                Cancel
+              </button>
             </div>
           </form>
         </div>
@@ -117,47 +135,81 @@ export default function RecurringPage() {
         <p className="text-muted-foreground">Loading…</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
-          {items.map((item) => (
-            <div key={item.id} className={cn("rounded-xl border bg-card p-5 shadow-sm", !item.active ? "opacity-60" : "border-border")}>
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium",
-                      item.transactionType === "INCOME" ? "bg-green-100 text-green-700" :
-                      item.transactionType === "EXPENSE" ? "bg-red-100 text-red-700" :
-                      "bg-blue-100 text-blue-700"
-                    )}>{item.transactionType}</span>
-                    {!item.active && <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">Paused</span>}
+          {items.length === 0 ? (
+            <p className="text-sm text-muted-foreground sm:col-span-2">No recurring rules yet.</p>
+          ) : (
+            items.map((item) => (
+              <div
+                key={item.id}
+                className={cn(
+                  "rounded-xl border bg-card p-5 shadow-sm",
+                  !item.active ? "opacity-60" : "border-border"
+                )}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className={cn(
+                        "rounded-full px-2 py-0.5 text-xs font-medium",
+                        item.transactionType === "INCOME" ? "bg-green-100 text-green-700" :
+                        item.transactionType === "EXPENSE" ? "bg-red-100 text-red-700" :
+                        "bg-blue-100 text-blue-700"
+                      )}>
+                        {item.transactionType}
+                      </span>
+                      {!item.active && (
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                          Paused
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1 text-lg font-bold">{formatAmount(item.amount)}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Every {item.intervalValue > 1 ? `${item.intervalValue} ` : ""}
+                      {item.frequency.toLowerCase()} · {item.accountName}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Next: {formatDate(item.nextRunDate)}
+                    </p>
                   </div>
-                  <p className="mt-1 text-lg font-bold">{formatAmount(item.amount)}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Every {item.intervalValue > 1 ? `${item.intervalValue} ` : ""}{item.frequency.toLowerCase()} · {item.accountName}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">Next: {formatDate(item.nextRunDate)}</p>
-                </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => item.active ? pauseMutation.mutate(item.id) : resumeMutation.mutate(item.id)}
-                    className="rounded-md p-1.5 text-muted-foreground hover:bg-accent"
-                  >
-                    {item.active ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                  </button>
-                  <button onClick={() => deleteMutation.mutate(item.id)} className="rounded-md p-1.5 text-muted-foreground hover:text-destructive">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() =>
+                        item.active ? pauseMutation.mutate(item.id) : resumeMutation.mutate(item.id)
+                      }
+                      className="rounded-md p-1.5 text-muted-foreground hover:bg-accent"
+                    >
+                      {item.active ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                    </button>
+                    <button
+                      onClick={() => deleteMutation.mutate(item.id)}
+                      className="rounded-md p-1.5 text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       )}
     </div>
   );
 }
 
-const inputCls = "w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring";
+const inputCls =
+  "w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring";
 
-function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+function Field({
+  label,
+  error,
+  children,
+}: {
+  label: string;
+  error?: string;
+  children: React.ReactNode;
+}) {
   return (
     <div>
       <label className="mb-1 block text-sm font-medium">{label}</label>
