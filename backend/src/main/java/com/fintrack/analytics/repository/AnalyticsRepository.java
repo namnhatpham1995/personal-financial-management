@@ -14,7 +14,7 @@ public interface AnalyticsRepository extends JpaRepository<Transaction, Long> {
 
     @Query("""
             SELECT new com.fintrack.analytics.web.dto.SpendingByCategoryDto(
-                c.id, c.name,
+                t.account.currency, c.id, c.name,
                 COALESCE(SUM(t.amount), 0),
                 COUNT(t.id)
             )
@@ -23,8 +23,8 @@ public interface AnalyticsRepository extends JpaRepository<Transaction, Long> {
             WHERE t.user.id = :userId
               AND t.transactionType = com.fintrack.common.domain.TransactionType.EXPENSE
               AND t.transactionDate BETWEEN :from AND :to
-            GROUP BY c.id, c.name
-            ORDER BY SUM(t.amount) DESC
+            GROUP BY t.account.currency, c.id, c.name
+            ORDER BY t.account.currency, SUM(t.amount) DESC
             """)
     List<SpendingByCategoryDto> spendingByCategory(
             @Param("userId") Long userId,
@@ -34,6 +34,7 @@ public interface AnalyticsRepository extends JpaRepository<Transaction, Long> {
 
     @Query("""
             SELECT new com.fintrack.analytics.web.dto.IncomeExpenseTrendDto(
+                t.account.currency,
                 YEAR(t.transactionDate),
                 MONTH(t.transactionDate),
                 COALESCE(SUM(CASE WHEN t.transactionType = com.fintrack.common.domain.TransactionType.INCOME  THEN t.amount ELSE 0 END), 0),
@@ -48,8 +49,8 @@ public interface AnalyticsRepository extends JpaRepository<Transaction, Long> {
                   com.fintrack.common.domain.TransactionType.EXPENSE
               )
               AND t.transactionDate BETWEEN :from AND :to
-            GROUP BY YEAR(t.transactionDate), MONTH(t.transactionDate)
-            ORDER BY YEAR(t.transactionDate), MONTH(t.transactionDate)
+            GROUP BY t.account.currency, YEAR(t.transactionDate), MONTH(t.transactionDate)
+            ORDER BY t.account.currency, YEAR(t.transactionDate), MONTH(t.transactionDate)
             """)
     List<IncomeExpenseTrendDto> incomeExpenseTrend(
             @Param("userId") Long userId,

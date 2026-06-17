@@ -189,7 +189,7 @@ export default function TransactionsPage() {
                         tx.transactionType === "INCOME" ? "text-green-600" : "text-foreground"
                       )}>
                         {tx.transactionType === "INCOME" ? "+" : tx.transactionType === "EXPENSE" ? "−" : ""}
-                        {formatCurrency(tx.amount)}
+                        {formatCurrency(tx.amount, tx.currency)}
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">{tx.note ?? "—"}</td>
                       <td className="px-4 py-3">

@@ -4,6 +4,7 @@ export interface Transaction {
   id: number;
   accountId: number;
   accountName: string;
+  currency: string;
   categoryId?: number;
   categoryName?: string;
   transactionType: "INCOME" | "EXPENSE" | "TRANSFER";

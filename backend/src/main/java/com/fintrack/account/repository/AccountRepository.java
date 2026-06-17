@@ -3,6 +3,7 @@ package com.fintrack.account.repository;
 import com.fintrack.account.domain.Account;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,8 +16,11 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
 
     boolean existsByIdAndUserId(Long id, Long userId);
 
-    @Query("SELECT COUNT(t) > 0 FROM Transaction t WHERE t.account.id = :accountId")
+    @Query("SELECT COUNT(t) > 0 FROM Transaction t WHERE t.account.id = :accountId OR t.transferAccount.id = :accountId")
     boolean hasTransactions(Long accountId);
+
+    @Query("SELECT COUNT(t) FROM Transaction t WHERE t.account.id = :accountId OR t.transferAccount.id = :accountId")
+    long countConnectedTransactions(@Param("accountId") Long accountId);
 
     @Query("""
             SELECT COALESCE(SUM(

@@ -1,13 +1,13 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { analyticsService } from "@/services/analytics-service";
+import { analyticsService, CurrencyNetWorth } from "@/services/analytics-service";
 import { accountService } from "@/services/account-service";
 import { formatCurrency } from "@/lib/utils";
 import { TrendingUp, TrendingDown, Wallet, AlertCircle } from "lucide-react";
 
 export default function DashboardPage() {
-  const { data: netWorth } = useQuery({
+  const { data: netWorthByCurrency = [] } = useQuery({
     queryKey: ["netWorth"],
     queryFn: analyticsService.netWorth,
   });
@@ -23,30 +23,20 @@ export default function DashboardPage() {
   });
 
   const overBudget = budgetProgress.filter((b) => b.overBudget);
+  const multiCurrency = netWorthByCurrency.length > 1;
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Overview</h1>
 
-      {/* Net worth summary */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard
-          title="Net Worth"
-          value={formatCurrency(netWorth?.netWorth ?? 0)}
-          icon={<Wallet className="h-5 w-5 text-primary" />}
-        />
-        <StatCard
-          title="Total Assets"
-          value={formatCurrency(netWorth?.totalAssets ?? 0)}
-          icon={<TrendingUp className="h-5 w-5 text-green-500" />}
-          positive
-        />
-        <StatCard
-          title="Total Liabilities"
-          value={formatCurrency(netWorth?.totalLiabilities ?? 0)}
-          icon={<TrendingDown className="h-5 w-5 text-destructive" />}
-        />
-      </div>
+      {/* Net worth — one section per currency */}
+      {netWorthByCurrency.length === 0 ? (
+        <p className="text-muted-foreground text-sm">No accounts yet. Create one to see your overview.</p>
+      ) : (
+        netWorthByCurrency.map((bucket) => (
+          <CurrencyNetWorthSection key={bucket.currency} bucket={bucket} showCurrencyLabel={multiCurrency} />
+        ))
+      )}
 
       {/* Account balances */}
       <section>
@@ -76,8 +66,7 @@ export default function DashboardPage() {
               >
                 <AlertCircle className="h-4 w-4 text-destructive" />
                 <span>
-                  <strong>{b.budgetName}</strong> is over budget by{" "}
-                  {formatCurrency(Math.abs(Number(b.remaining)))}
+                  <strong>{b.budgetName}</strong> is over budget
                 </span>
               </div>
             ))}
@@ -85,6 +74,40 @@ export default function DashboardPage() {
         </section>
       )}
     </div>
+  );
+}
+
+function CurrencyNetWorthSection({
+  bucket,
+  showCurrencyLabel,
+}: {
+  bucket: CurrencyNetWorth;
+  showCurrencyLabel: boolean;
+}) {
+  return (
+    <section>
+      {showCurrencyLabel && (
+        <h2 className="mb-3 text-base font-semibold text-muted-foreground">{bucket.currency}</h2>
+      )}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard
+          title="Net Worth"
+          value={formatCurrency(bucket.netWorth, bucket.currency)}
+          icon={<Wallet className="h-5 w-5 text-primary" />}
+        />
+        <StatCard
+          title="Total Assets"
+          value={formatCurrency(bucket.totalAssets, bucket.currency)}
+          icon={<TrendingUp className="h-5 w-5 text-green-500" />}
+          positive
+        />
+        <StatCard
+          title="Total Liabilities"
+          value={formatCurrency(bucket.totalLiabilities, bucket.currency)}
+          icon={<TrendingDown className="h-5 w-5 text-destructive" />}
+        />
+      </div>
+    </section>
   );
 }
 
