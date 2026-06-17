@@ -38,7 +38,7 @@ interface Props {
 export function TransactionForm({ editingTx, accounts, categories, isPending, onCancel, onSubmit }: Props) {
   const isEditing = editingTx !== null;
 
-  const { register, handleSubmit, watch, reset, formState: { errors } } = useForm<TransactionFormValues>({
+  const { register, handleSubmit, watch, reset, setValue, formState: { errors } } = useForm<TransactionFormValues>({
     resolver: zodResolver(schema),
   });
 
@@ -55,11 +55,23 @@ export function TransactionForm({ editingTx, accounts, categories, isPending, on
         categoryId: editingTx.categoryId,
       });
     } else {
-      reset({});
+      reset({ transactionType: "INCOME" });
     }
   }, [editingTx, reset]);
 
   const txType = watch("transactionType");
+  const categoryId = watch("categoryId");
+
+  // Clear stale category when type changes (create mode only — edit mode pre-fills from existing tx)
+  useEffect(() => {
+    if (!editingTx && categoryId) {
+      const stillValid = categories.some((c) => c.id === categoryId && c.transactionType === txType);
+      if (!stillValid) {
+        setValue("categoryId", undefined);
+      }
+    }
+  }, [txType]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const relevantCategories = txType
     ? categories.filter((c) => c.transactionType === txType)
     : categories;
