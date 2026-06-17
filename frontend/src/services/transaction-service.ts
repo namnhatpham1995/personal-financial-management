@@ -45,6 +45,14 @@ export interface CreateTransactionPayload {
   transferAccountId?: number;
 }
 
+/** Fields accepted by PUT /transactions/{id} — type and account are immutable */
+export interface UpdateTransactionPayload {
+  amount?: string;
+  transactionDate?: string;
+  categoryId?: number;
+  note?: string;
+}
+
 export const transactionService = {
   list: (filters: TransactionFilters = {}) =>
     apiClient
@@ -53,7 +61,7 @@ export const transactionService = {
   get: (id: number) => apiClient.get<Transaction>(`/transactions/${id}`).then((r) => r.data),
   create: (data: CreateTransactionPayload) =>
     apiClient.post<Transaction>("/transactions", data).then((r) => r.data),
-  update: (id: number, data: Partial<CreateTransactionPayload>) =>
+  update: (id: number, data: UpdateTransactionPayload) =>
     apiClient.put<Transaction>(`/transactions/${id}`, data).then((r) => r.data),
   delete: (id: number) => apiClient.delete(`/transactions/${id}`),
 };
