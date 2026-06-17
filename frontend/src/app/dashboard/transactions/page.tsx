@@ -105,7 +105,7 @@ export default function TransactionsPage() {
       {showForm && (
         <div className="rounded-xl border border-border bg-card p-5">
           <h2 className="mb-4 font-semibold">New Transaction</h2>
-          <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Account" error={errors.accountId?.message}>
               <select {...register("accountId")} className={inputCls}>
                 {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
@@ -132,7 +132,7 @@ export default function TransactionsPage() {
             <Field label="Note" error={errors.note?.message}>
               <input {...register("note")} className={inputCls} />
             </Field>
-            <div className="col-span-2 flex gap-2">
+            <div className="sm:col-span-2 flex gap-2">
               <button type="submit" disabled={isSubmitting} className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50">Save</button>
               <button type="button" onClick={() => setShowForm(false)} className="rounded-md border px-4 py-2 text-sm hover:bg-accent">Cancel</button>
             </div>
@@ -146,7 +146,7 @@ export default function TransactionsPage() {
         <p className="text-destructive">Failed to load transactions. Check your connection or try refreshing.</p>
       ) : (
         <>
-          <div className="overflow-hidden rounded-xl border border-border bg-card">
+          <div className="overflow-x-auto rounded-xl border border-border bg-card">
             <table className="w-full text-sm">
               <thead className="border-b border-border bg-muted/50">
                 <tr>

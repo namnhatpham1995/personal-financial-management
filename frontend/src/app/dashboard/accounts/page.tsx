@@ -68,7 +68,7 @@ export default function AccountsPage() {
       {showForm && (
         <div className="rounded-xl border border-border bg-card p-5">
           <h2 className="mb-4 font-semibold">Add Account</h2>
-          <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Name" error={errors.name?.message}>
               <input {...register("name")} className={inputCls} />
             </Field>
@@ -85,7 +85,7 @@ export default function AccountsPage() {
             <Field label="Initial Balance" error={errors.initialBalance?.message}>
               <input {...register("initialBalance")} defaultValue="0" type="number" step="0.01" className={inputCls} />
             </Field>
-            <div className="col-span-2 flex gap-2">
+            <div className="sm:col-span-2 flex gap-2">
               <button type="submit" disabled={isSubmitting} className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
                 Save
               </button>
