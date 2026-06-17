@@ -12,6 +12,7 @@ import {
   PieChart,
   RefreshCw,
   BarChart3,
+  Tag,
   LogOut,
 } from "lucide-react";
 
@@ -21,6 +22,7 @@ const navItems = [
   { href: "/dashboard/transactions", label: "Transactions", icon: ArrowLeftRight },
   { href: "/dashboard/budgets", label: "Budgets", icon: PieChart },
   { href: "/dashboard/recurring", label: "Recurring", icon: RefreshCw },
+  { href: "/dashboard/categories", label: "Categories", icon: Tag },
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
 ];
 
