@@ -48,7 +48,7 @@ export function TransactionForm({ editingTx, accounts, categories, isPending, on
       reset({
         accountId: editingTx.accountId,
         transactionType: editingTx.transactionType,
-        amount: editingTx.amount,
+        amount: String(editingTx.amount ?? ""),
         transactionDate: editingTx.transactionDate,
         note: editingTx.note ?? "",
         transferAccountId: editingTx.transferAccountId,

@@ -65,6 +65,10 @@ repomix-output.xml
 assets/
 external/
 
+# GitHub AI tooling (skills/prompts managed outside repo)
+.github/Skills/
+.github/prompts/
+
 # Git worktrees (local development only)
 worktrees/
 
