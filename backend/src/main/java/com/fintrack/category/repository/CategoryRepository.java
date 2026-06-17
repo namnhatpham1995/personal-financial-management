@@ -33,26 +33,10 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     @Query("UPDATE Transaction t SET t.category.id = :toId WHERE t.category.id = :fromId")
     void reassignTransactionCategory(Long fromId, Long toId);
 
-    /**
-     * Drops budgets pointing to `fromId` when the user already has an "Uncategorized"
-     * budget for the same period — prevents uq_budget_user_category_period violation.
-     */
+    /** Deletes all budgets for the given category (used before category deletion). */
     @Modifying
-    @Query(value = """
-            DELETE FROM budgets b
-            WHERE b.category_id = :fromId
-            AND EXISTS (
-                SELECT 1 FROM budgets b2
-                WHERE b2.user_id = b.user_id
-                  AND b2.category_id = :toId
-                  AND b2.period = b.period
-            )
-            """, nativeQuery = true)
-    void dropConflictingBudgets(Long fromId, Long toId);
-
-    @Modifying
-    @Query("UPDATE Budget b SET b.category.id = :toId WHERE b.category.id = :fromId")
-    void reassignBudgetCategory(Long fromId, Long toId);
+    @Query("DELETE FROM Budget b WHERE b.category.id = :categoryId")
+    void deleteBudgetsByCategory(Long categoryId);
 
     @Modifying
     @Query("UPDATE RecurringTransaction r SET r.category.id = :toId WHERE r.category.id = :fromId")

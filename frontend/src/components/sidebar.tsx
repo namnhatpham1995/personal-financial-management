@@ -20,9 +20,8 @@ const navItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/accounts", label: "Accounts", icon: Wallet },
   { href: "/dashboard/transactions", label: "Transactions", icon: ArrowLeftRight },
-  { href: "/dashboard/budgets", label: "Budgets", icon: PieChart },
   { href: "/dashboard/recurring", label: "Recurring", icon: RefreshCw },
-  { href: "/dashboard/categories", label: "Categories", icon: Tag },
+  { href: "/dashboard/categories", label: "Categories & Limit", icon: Tag },
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
 ];
 

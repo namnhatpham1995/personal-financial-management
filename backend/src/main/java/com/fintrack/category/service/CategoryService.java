@@ -13,8 +13,10 @@ import com.fintrack.common.exception.ConflictException;
 import com.fintrack.common.exception.ForbiddenException;
 import com.fintrack.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -33,6 +35,7 @@ public class CategoryService {
 
     @Transactional
     public CategoryResponse create(Long userId, CreateCategoryRequest request) {
+        rejectTransferType(request.transactionType());
         if (categoryRepository.existsByUserIdAndNameIgnoreCaseAndTransactionType(
                 userId, request.name(), request.transactionType())) {
             throw new ConflictException("Category '" + request.name() + "' already exists for this type");
@@ -47,11 +50,27 @@ public class CategoryService {
     public CategoryResponse update(Long userId, Long categoryId, UpdateCategoryRequest request) {
         Category category = findVisibleOrThrow(userId, categoryId);
         guardSystemCategory(category);
-        if (categoryRepository.existsByUserIdAndNameIgnoreCaseAndTransactionType(
-                userId, request.name(), category.getTransactionType())) {
-            throw new ConflictException("Category '" + request.name() + "' already exists for this type");
+
+        TransactionType targetType = request.transactionType() != null
+                ? request.transactionType()
+                : category.getTransactionType();
+        rejectTransferType(targetType);
+
+        boolean nameChanged = !category.getName().equalsIgnoreCase(request.name());
+        boolean typeChanged = request.transactionType() != null
+                && request.transactionType() != category.getTransactionType();
+
+        if (nameChanged || typeChanged) {
+            if (categoryRepository.existsByUserIdAndNameIgnoreCaseAndTransactionType(
+                    userId, request.name(), targetType)) {
+                throw new ConflictException("Category '" + request.name() + "' already exists for this type");
+            }
         }
+
         category.setName(request.name());
+        if (typeChanged) {
+            category.setTransactionType(targetType);
+        }
         return categoryMapper.toResponse(categoryRepository.save(category));
     }
 
@@ -60,19 +79,16 @@ public class CategoryService {
         Category category = findVisibleOrThrow(userId, categoryId);
         guardSystemCategory(category);
 
-        // Resolve matching-type "Uncategorized" for all reassignments
+        // Resolve matching-type "Uncategorized" for transaction/recurring reassignment
         Category uncategorized = categoryRepository
                 .findSystemCategory("Uncategorized", category.getTransactionType())
                 .orElseThrow(() -> new IllegalStateException("System 'Uncategorized' category not found"));
         Long toId = uncategorized.getId();
 
-        // Reassign all references before deletion to prevent FK cascade side-effects:
-        // 1. Transactions (category_id nullable — SET NULL on cascade, reassign explicitly)
+        // 1. Delete budgets — they belong to this category and are removed with it
+        categoryRepository.deleteBudgetsByCategory(categoryId);
+        // 2. Reassign transactions and recurring transactions to Uncategorized (history preserved)
         categoryRepository.reassignTransactionCategory(categoryId, toId);
-        // 2. Budgets — drop any that would violate uq_budget_user_category_period, then reassign the rest
-        categoryRepository.dropConflictingBudgets(categoryId, toId);
-        categoryRepository.reassignBudgetCategory(categoryId, toId);
-        // 3. Recurring transactions (category_id nullable — SET NULL on cascade, reassign explicitly)
         categoryRepository.reassignRecurringCategory(categoryId, toId);
 
         categoryRepository.delete(category);
@@ -90,6 +106,12 @@ public class CategoryService {
     private void guardSystemCategory(Category category) {
         if (category.isSystem()) {
             throw new ForbiddenException("System-default categories cannot be modified or deleted");
+        }
+    }
+
+    private void rejectTransferType(TransactionType type) {
+        if (type == TransactionType.TRANSFER) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Category type must be INCOME or EXPENSE");
         }
     }
 }

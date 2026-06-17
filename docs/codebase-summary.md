@@ -15,6 +15,7 @@
 ### Database Migrations
 - `V1__baseline_schema.sql` — full schema: users, roles, accounts, categories, transactions, budgets, recurring_transactions
 - `V2__seed_roles_and_default_categories.sql` — ROLE_USER, ROLE_ADMIN, 13 expense + 7 income system categories
+- `V3__rename_other_default_categories.sql` — renames "Other Income"/"Other Expense" defaults to "Other" (type field distinguishes them)
 
 ### Feature Modules
 
@@ -22,7 +23,7 @@
 |---|---|---|
 | auth | `AuthController` → `AuthService` | JWT issue, rotation, SHA-256 refresh token hashing |
 | account | `AccountController` → `AccountService` | `adjustBalance()` + `recomputeBalance()` |
-| category | `CategoryController` → `CategoryService` | System categories read-only; delete reassigns to "Uncategorized" |
+| category | `CategoryController` → `CategoryService` | System categories read-only; delete **removes budgets** + reassigns transactions/recurring to "Uncategorized"; type is editable (INCOME/EXPENSE only — TRANSFER rejected) |
 | transaction | `TransactionController` → `TransactionService` | Paginated + filtered list; balance delta on CRUD |
 | budget | `BudgetController` → `BudgetService` | Real-time progress via `sumSpentInPeriod()` |
 | recurring | `RecurringTransactionController` + `RecurringTransactionScheduler` | Daily scheduler, idempotent via unique constraint |
@@ -40,11 +41,14 @@
 |---|---|
 | `src/lib/api-client.ts` | Axios instance with auto-refresh interceptor |
 | `src/lib/auth-context.tsx` | Auth state (user, login, register, logout) |
-| `src/app/providers.tsx` | QueryClient + AuthProvider + Toaster |
+| `src/app/providers.tsx` | QueryClient + AuthProvider + Toaster (top-center) |
 | `src/components/auth-guard.tsx` | Redirect unauthenticated users to /login |
-| `src/components/sidebar.tsx` | Navigation sidebar |
+| `src/components/sidebar.tsx` | Navigation sidebar (no separate Budgets entry) |
+| `src/components/limit-bar.tsx` | Reusable spend-vs-limit bar: blue/gray under limit; green/red over limit |
 | `src/services/*.ts` | Typed API service modules per feature |
 | `src/app/dashboard/page.tsx` | Overview: net worth, accounts, budget alerts |
+| `src/app/dashboard/categories/page.tsx` | "Categories & Limit" — categories + inline spending-limit management |
+| `src/app/dashboard/categories/category-row.tsx` | CategoryRow: type dropdown (INCOME/EXPENSE), inline limit form, LimitBar |
 | `src/app/dashboard/analytics/page.tsx` | Recharts: bar (income/expense), pie (spending), budget bars |
 
 ## Test Coverage

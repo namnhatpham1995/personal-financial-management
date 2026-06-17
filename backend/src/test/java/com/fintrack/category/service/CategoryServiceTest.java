@@ -5,7 +5,10 @@ import com.fintrack.auth.repository.UserRepository;
 import com.fintrack.category.domain.Category;
 import com.fintrack.category.mapper.CategoryMapper;
 import com.fintrack.category.repository.CategoryRepository;
+import com.fintrack.category.web.dto.CreateCategoryRequest;
+import com.fintrack.category.web.dto.UpdateCategoryRequest;
 import com.fintrack.common.domain.TransactionType;
+import com.fintrack.common.exception.ConflictException;
 import com.fintrack.common.exception.ForbiddenException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,6 +16,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -63,6 +67,30 @@ class CategoryServiceTest {
                 .build();
     }
 
+    // ─── delete: budget deletion ───────────────────────────────────────────────
+
+    @Test
+    void delete_deletesBudgetsForCategory() {
+        givenCategoryVisible();
+        givenUncategorizedFound();
+
+        categoryService.delete(USER_ID, CATEGORY_ID);
+
+        verify(categoryRepository).deleteBudgetsByCategory(CATEGORY_ID);
+    }
+
+    @Test
+    void delete_deletesbudgetsBeforeReassigningTransactions() {
+        givenCategoryVisible();
+        givenUncategorizedFound();
+
+        categoryService.delete(USER_ID, CATEGORY_ID);
+
+        var inOrder = inOrder(categoryRepository);
+        inOrder.verify(categoryRepository).deleteBudgetsByCategory(CATEGORY_ID);
+        inOrder.verify(categoryRepository).reassignTransactionCategory(CATEGORY_ID, UNCATEGORIZED_ID);
+    }
+
     // ─── delete: transaction reassignment ─────────────────────────────────────
 
     @Test
@@ -73,34 +101,6 @@ class CategoryServiceTest {
         categoryService.delete(USER_ID, CATEGORY_ID);
 
         verify(categoryRepository).reassignTransactionCategory(CATEGORY_ID, UNCATEGORIZED_ID);
-    }
-
-    // ─── delete: budget reassignment (regression for ON DELETE CASCADE bug) ───
-
-    @Test
-    void delete_reassignsBudgetsToUncategorized_notDeleted() {
-        givenCategoryVisible();
-        givenUncategorizedFound();
-
-        categoryService.delete(USER_ID, CATEGORY_ID);
-
-        // Conflict-drop must happen before reassign
-        var inOrder = inOrder(categoryRepository);
-        inOrder.verify(categoryRepository).dropConflictingBudgets(CATEGORY_ID, UNCATEGORIZED_ID);
-        inOrder.verify(categoryRepository).reassignBudgetCategory(CATEGORY_ID, UNCATEGORIZED_ID);
-    }
-
-    @Test
-    void delete_dropsConflictingBudgetsBeforeReassign() {
-        givenCategoryVisible();
-        givenUncategorizedFound();
-
-        categoryService.delete(USER_ID, CATEGORY_ID);
-
-        // dropConflictingBudgets must be called before reassignBudgetCategory
-        var inOrder = inOrder(categoryRepository);
-        inOrder.verify(categoryRepository).dropConflictingBudgets(CATEGORY_ID, UNCATEGORIZED_ID);
-        inOrder.verify(categoryRepository).reassignBudgetCategory(CATEGORY_ID, UNCATEGORIZED_ID);
     }
 
     // ─── delete: recurring transaction reassignment ───────────────────────────
@@ -120,37 +120,84 @@ class CategoryServiceTest {
     @Test
     void delete_systemCategory_throwsForbidden() {
         Category systemCat = Category.builder()
-                .id(CATEGORY_ID)
-                .name("Salary")
-                .transactionType(TransactionType.INCOME)
-                .system(true)
-                .build();
+                .id(CATEGORY_ID).name("Salary")
+                .transactionType(TransactionType.INCOME).system(true).build();
         when(categoryRepository.findByIdAndVisibleToUser(CATEGORY_ID, USER_ID))
                 .thenReturn(Optional.of(systemCat));
 
         assertThatThrownBy(() -> categoryService.delete(USER_ID, CATEGORY_ID))
                 .isInstanceOf(ForbiddenException.class);
 
-        verify(categoryRepository, never()).reassignTransactionCategory(any(), any());
-        verify(categoryRepository, never()).dropConflictingBudgets(any(), any());
+        verify(categoryRepository, never()).deleteBudgetsByCategory(any());
         verify(categoryRepository, never()).delete(any(Category.class));
     }
 
     // ─── delete: full sequence ────────────────────────────────────────────────
 
     @Test
-    void delete_allReassignmentsHappenBeforeDeletion() {
+    void delete_fullSequence_budgetsDeletedThenTransactionsReassignedThenCategoryRemoved() {
         givenCategoryVisible();
         givenUncategorizedFound();
 
         categoryService.delete(USER_ID, CATEGORY_ID);
 
         var inOrder = inOrder(categoryRepository);
+        inOrder.verify(categoryRepository).deleteBudgetsByCategory(CATEGORY_ID);
         inOrder.verify(categoryRepository).reassignTransactionCategory(CATEGORY_ID, UNCATEGORIZED_ID);
-        inOrder.verify(categoryRepository).dropConflictingBudgets(CATEGORY_ID, UNCATEGORIZED_ID);
-        inOrder.verify(categoryRepository).reassignBudgetCategory(CATEGORY_ID, UNCATEGORIZED_ID);
         inOrder.verify(categoryRepository).reassignRecurringCategory(CATEGORY_ID, UNCATEGORIZED_ID);
         inOrder.verify(categoryRepository).delete(userCategory);
+    }
+
+    // ─── create: TRANSFER type rejected ───────────────────────────────────────
+
+    @Test
+    void create_transferType_throwsBadRequest() {
+        var request = new CreateCategoryRequest("Transfers", TransactionType.TRANSFER);
+
+        assertThatThrownBy(() -> categoryService.create(USER_ID, request))
+                .isInstanceOf(ResponseStatusException.class);
+
+        verify(categoryRepository, never()).save(any());
+    }
+
+    // ─── update: TRANSFER type rejected ───────────────────────────────────────
+
+    @Test
+    void update_transferType_throwsBadRequest() {
+        givenCategoryVisible();
+        var request = new UpdateCategoryRequest("Food", TransactionType.TRANSFER);
+
+        assertThatThrownBy(() -> categoryService.update(USER_ID, CATEGORY_ID, request))
+                .isInstanceOf(ResponseStatusException.class);
+
+        verify(categoryRepository, never()).save(any());
+    }
+
+    // ─── update: type change allowed ──────────────────────────────────────────
+
+    @Test
+    void update_typeChange_updatesType() {
+        givenCategoryVisible();
+        when(categoryRepository.existsByUserIdAndNameIgnoreCaseAndTransactionType(
+                USER_ID, "Food", TransactionType.INCOME)).thenReturn(false);
+        when(categoryRepository.save(any())).thenReturn(userCategory);
+
+        categoryService.update(USER_ID, CATEGORY_ID, new UpdateCategoryRequest("Food", TransactionType.INCOME));
+
+        assertThat(userCategory.getTransactionType()).isEqualTo(TransactionType.INCOME);
+    }
+
+    @Test
+    void update_typeChange_conflictingName_throws409() {
+        givenCategoryVisible();
+        when(categoryRepository.existsByUserIdAndNameIgnoreCaseAndTransactionType(
+                USER_ID, "Food", TransactionType.INCOME)).thenReturn(true);
+
+        assertThatThrownBy(() -> categoryService.update(USER_ID, CATEGORY_ID,
+                new UpdateCategoryRequest("Food", TransactionType.INCOME)))
+                .isInstanceOf(ConflictException.class);
+
+        verify(categoryRepository, never()).save(any());
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
