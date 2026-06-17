@@ -18,7 +18,8 @@ import {
   type Budget,
   type CreateBudgetPayload,
 } from "@/services/budget-service";
-import { CategoryRow, type LimitPayload } from "./category-row";
+import { CategoryRow, type CategoryRowProps, type LimitPayload } from "./category-row";
+import { CategoryTypeGroup } from "./category-type-group";
 
 const createSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
@@ -229,17 +230,13 @@ export default function CategoriesPage() {
         <div className="space-y-6">
           {userCategories.length > 0 && (
             <Section title="My Categories">
-              {userCategories.map((category) => (
-                <CategoryRow key={category.id} {...rowProps(category, false)} />
-              ))}
+              <CategoryTypeGroups categories={userCategories} rowProps={(c) => rowProps(c, false)} />
             </Section>
           )}
 
           {systemCategories.length > 0 && (
             <Section title="Default Categories" subtitle="Read-only - available to all users">
-              {systemCategories.map((category) => (
-                <CategoryRow key={category.id} {...rowProps(category, true)} />
-              ))}
+              <CategoryTypeGroups categories={systemCategories} rowProps={(c) => rowProps(c, true)} />
             </Section>
           )}
 
@@ -249,6 +246,36 @@ export default function CategoriesPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function CategoryTypeGroups({
+  categories,
+  rowProps,
+}: {
+  categories: Category[];
+  rowProps: (c: Category) => CategoryRowProps;
+}) {
+  const income = categories.filter((c) => c.transactionType === "INCOME");
+  const expense = categories.filter((c) => c.transactionType === "EXPENSE");
+
+  return (
+    <>
+      {income.length > 0 && (
+        <CategoryTypeGroup type="INCOME" label="Income" count={income.length}>
+          {income.map((c) => (
+            <CategoryRow key={c.id} {...rowProps(c)} />
+          ))}
+        </CategoryTypeGroup>
+      )}
+      {expense.length > 0 && (
+        <CategoryTypeGroup type="EXPENSE" label="Expense" count={expense.length}>
+          {expense.map((c) => (
+            <CategoryRow key={c.id} {...rowProps(c)} />
+          ))}
+        </CategoryTypeGroup>
+      )}
+    </>
   );
 }
 
