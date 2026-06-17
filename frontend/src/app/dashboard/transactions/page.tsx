@@ -1,31 +1,22 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { transactionService, TransactionFilters, CreateTransactionPayload } from "@/services/transaction-service";
+import { transactionService, TransactionFilters, Transaction } from "@/services/transaction-service";
+import type { UpdateTransactionPayload } from "@/services/transaction-service";
 import { accountService } from "@/services/account-service";
+import { categoryService } from "@/services/category-service";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { toast } from "sonner";
-import { Plus, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Trash2, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const schema = z.object({
-  accountId: z.coerce.number(),
-  transactionType: z.enum(["INCOME", "EXPENSE", "TRANSFER"]),
-  amount: z.string().min(1),
-  transactionDate: z.string().min(1),
-  note: z.string().optional(),
-  transferAccountId: z.coerce.number().optional(),
-});
-
-type FormValues = z.infer<typeof schema>;
+import { TransactionForm } from "./transaction-form";
+import type { TransactionFormValues } from "./transaction-form";
 
 export default function TransactionsPage() {
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [filters, setFilters] = useState<TransactionFilters>({ page: 0, size: 20 });
 
   const { data: pageData, isLoading, isError } = useQuery({
@@ -38,16 +29,36 @@ export default function TransactionsPage() {
     queryFn: accountService.list,
   });
 
+  const { data: categories = [] } = useQuery({
+    queryKey: ["categories"],
+    queryFn: categoryService.list,
+  });
+
+  const invalidateAfterMutation = () => {
+    qc.invalidateQueries({ queryKey: ["transactions"] });
+    qc.invalidateQueries({ queryKey: ["accounts"] });
+    qc.invalidateQueries({ queryKey: ["netWorth"] });
+  };
+
   const createMutation = useMutation({
-    mutationFn: (data: CreateTransactionPayload) => transactionService.create(data),
+    mutationFn: (data: TransactionFormValues) => transactionService.create(data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["transactions"] });
-      qc.invalidateQueries({ queryKey: ["accounts"] });
-      qc.invalidateQueries({ queryKey: ["netWorth"] });
-      setShowForm(false);
+      invalidateAfterMutation();
+      closeForm();
       toast.success("Transaction added");
     },
     onError: () => toast.error("Failed to create transaction"),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: UpdateTransactionPayload }) =>
+      transactionService.update(id, data),
+    onSuccess: () => {
+      invalidateAfterMutation();
+      closeForm();
+      toast.success("Transaction updated");
+    },
+    onError: () => toast.error("Failed to update transaction"),
   });
 
   const deleteMutation = useMutation({
@@ -59,22 +70,52 @@ export default function TransactionsPage() {
     },
   });
 
-  const { register, handleSubmit, watch, reset, formState: { errors, isSubmitting } } =
-    useForm<FormValues>({ resolver: zodResolver(schema) });
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingTx(null);
+  };
 
-  const txType = watch("transactionType");
-  const onSubmit = (values: FormValues) => createMutation.mutate(values);
+  const startEdit = (tx: Transaction) => {
+    setEditingTx(tx);
+    setShowForm(true);
+  };
+
+  const handleAddClick = () => {
+    // Reset to create mode if already in edit mode, otherwise toggle
+    if (editingTx) {
+      setEditingTx(null);
+    } else {
+      setShowForm((prev) => !prev);
+    }
+  };
+
+  const onSubmit = (values: TransactionFormValues) => {
+    if (editingTx) {
+      updateMutation.mutate({
+        id: editingTx.id,
+        data: {
+          amount: values.amount,
+          transactionDate: values.transactionDate,
+          categoryId: values.categoryId,
+          note: values.note,
+        },
+      });
+    } else {
+      createMutation.mutate(values);
+    }
+  };
 
   const transactions = pageData?.content ?? [];
   const totalPages = pageData?.totalPages ?? 1;
   const currentPage = filters.page ?? 0;
+  const isMutating = createMutation.isPending || updateMutation.isPending;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Transactions</h1>
         <button
-          onClick={() => { setShowForm(!showForm); reset(); }}
+          onClick={handleAddClick}
           className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
           <Plus className="h-4 w-4" /> Add
@@ -103,41 +144,14 @@ export default function TransactionsPage() {
       </div>
 
       {showForm && (
-        <div className="rounded-xl border border-border bg-card p-5">
-          <h2 className="mb-4 font-semibold">New Transaction</h2>
-          <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Account" error={errors.accountId?.message}>
-              <select {...register("accountId")} className={inputCls}>
-                {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-              </select>
-            </Field>
-            <Field label="Type" error={errors.transactionType?.message}>
-              <select {...register("transactionType")} className={inputCls}>
-                {["INCOME", "EXPENSE", "TRANSFER"].map((t) => <option key={t}>{t}</option>)}
-              </select>
-            </Field>
-            <Field label="Amount" error={errors.amount?.message}>
-              <input type="number" step="0.01" {...register("amount")} className={inputCls} />
-            </Field>
-            <Field label="Date" error={errors.transactionDate?.message}>
-              <input type="date" {...register("transactionDate")} className={inputCls} />
-            </Field>
-            {txType === "TRANSFER" && (
-              <Field label="Transfer to Account" error={errors.transferAccountId?.message}>
-                <select {...register("transferAccountId")} className={inputCls}>
-                  {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                </select>
-              </Field>
-            )}
-            <Field label="Note" error={errors.note?.message}>
-              <input {...register("note")} className={inputCls} />
-            </Field>
-            <div className="sm:col-span-2 flex gap-2">
-              <button type="submit" disabled={isSubmitting} className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50">Save</button>
-              <button type="button" onClick={() => setShowForm(false)} className="rounded-md border px-4 py-2 text-sm hover:bg-accent">Cancel</button>
-            </div>
-          </form>
-        </div>
+        <TransactionForm
+          editingTx={editingTx}
+          accounts={accounts}
+          categories={categories}
+          isPending={isMutating}
+          onCancel={closeForm}
+          onSubmit={onSubmit}
+        />
       )}
 
       {isLoading ? (
@@ -179,9 +193,22 @@ export default function TransactionsPage() {
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">{tx.note ?? "—"}</td>
                       <td className="px-4 py-3">
-                        <button onClick={() => deleteMutation.mutate(tx.id)} className="text-muted-foreground hover:text-destructive">
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => startEdit(tx)}
+                            title="Edit transaction"
+                            className="text-muted-foreground hover:text-foreground"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => deleteMutation.mutate(tx.id)}
+                            title="Delete transaction"
+                            className="text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -220,13 +247,3 @@ export default function TransactionsPage() {
 
 const inputCls =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring";
-
-function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="mb-1 block text-sm font-medium">{label}</label>
-      {children}
-      {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
-    </div>
-  );
-}
