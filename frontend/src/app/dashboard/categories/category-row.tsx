@@ -42,7 +42,6 @@ export interface CategoryRowProps {
   onEditStart: () => void;
   onEditCancel: () => void;
   onRename: (name: string) => void;
-  onTypeChange?: (type: "INCOME" | "EXPENSE") => void;
   onDeleteRequest: () => void;
   onDeleteCancel: () => void;
   onDeleteConfirm: () => void;
@@ -57,7 +56,7 @@ export interface CategoryRowProps {
 
 export function CategoryRow({
   category, budget, isEditing, isConfirmingDelete,
-  onEditStart, onEditCancel, onRename, onTypeChange,
+  onEditStart, onEditCancel, onRename,
   onDeleteRequest, onDeleteCancel, onDeleteConfirm,
   onSetLimit, onUpdateLimit, onRemoveLimit,
   isRenamePending, isDeletePending, isLimitPending,
@@ -91,10 +90,6 @@ export function CategoryRow({
     }
     setShowLimitForm(false);
   };
-
-  const typeBadgeCls = category.transactionType === "INCOME"
-    ? "bg-emerald-100 text-emerald-700"
-    : "bg-rose-100 text-rose-700";
 
   if (isEditing) {
     return (
@@ -144,18 +139,6 @@ export function CategoryRow({
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <span className="font-medium truncate">{category.name}</span>
-          {readonly ? (
-            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${typeBadgeCls}`}>
-              {category.transactionType === "INCOME" ? "Income" : "Expense"}
-            </span>
-          ) : (
-            <select value={category.transactionType}
-              onChange={(e) => onTypeChange?.(e.target.value as "INCOME" | "EXPENSE")}
-              className="rounded-md border border-input bg-background px-2 py-0.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-ring">
-              <option value="EXPENSE">Expense</option>
-              <option value="INCOME">Income</option>
-            </select>
-          )}
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
