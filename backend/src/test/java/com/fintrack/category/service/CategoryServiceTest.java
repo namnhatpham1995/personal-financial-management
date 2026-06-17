@@ -21,18 +21,26 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.Instant;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class CategoryServiceTest {
 
-    @Mock CategoryRepository categoryRepository;
-    @Mock UserRepository userRepository;
-    @Mock CategoryMapper categoryMapper;
+    @Mock
+    CategoryRepository categoryRepository;
+    @Mock
+    UserRepository userRepository;
+    @Mock
+    CategoryMapper categoryMapper;
 
-    @InjectMocks CategoryService categoryService;
+    @InjectMocks
+    CategoryService categoryService;
 
     private static final Long USER_ID = 1L;
     private static final Long CATEGORY_ID = 10L;
@@ -67,32 +75,6 @@ class CategoryServiceTest {
                 .build();
     }
 
-    // ─── delete: budget deletion ───────────────────────────────────────────────
-
-    @Test
-    void delete_deletesBudgetsForCategory() {
-        givenCategoryVisible();
-        givenUncategorizedFound();
-
-        categoryService.delete(USER_ID, CATEGORY_ID);
-
-        verify(categoryRepository).deleteBudgetsByCategory(CATEGORY_ID);
-    }
-
-    @Test
-    void delete_deletesbudgetsBeforeReassigningTransactions() {
-        givenCategoryVisible();
-        givenUncategorizedFound();
-
-        categoryService.delete(USER_ID, CATEGORY_ID);
-
-        var inOrder = inOrder(categoryRepository);
-        inOrder.verify(categoryRepository).deleteBudgetsByCategory(CATEGORY_ID);
-        inOrder.verify(categoryRepository).reassignTransactionCategory(CATEGORY_ID, UNCATEGORIZED_ID);
-    }
-
-    // ─── delete: transaction reassignment ─────────────────────────────────────
-
     @Test
     void delete_reassignsTransactionsToUncategorized() {
         givenCategoryVisible();
@@ -103,7 +85,17 @@ class CategoryServiceTest {
         verify(categoryRepository).reassignTransactionCategory(CATEGORY_ID, UNCATEGORIZED_ID);
     }
 
-    // ─── delete: recurring transaction reassignment ───────────────────────────
+    @Test
+    void delete_reassignsBudgetsToUncategorized_notDeleted() {
+        givenCategoryVisible();
+        givenUncategorizedFound();
+
+        categoryService.delete(USER_ID, CATEGORY_ID);
+
+        var inOrder = inOrder(categoryRepository);
+        inOrder.verify(categoryRepository).dropConflictingBudgets(CATEGORY_ID, UNCATEGORIZED_ID);
+        inOrder.verify(categoryRepository).reassignBudgetCategory(CATEGORY_ID, UNCATEGORIZED_ID);
+    }
 
     @Test
     void delete_reassignsRecurringTransactionsToUncategorized() {
@@ -115,40 +107,41 @@ class CategoryServiceTest {
         verify(categoryRepository).reassignRecurringCategory(CATEGORY_ID, UNCATEGORIZED_ID);
     }
 
-    // ─── delete: system category guard ────────────────────────────────────────
-
     @Test
     void delete_systemCategory_throwsForbidden() {
         Category systemCat = Category.builder()
-                .id(CATEGORY_ID).name("Salary")
-                .transactionType(TransactionType.INCOME).system(true).build();
+                .id(CATEGORY_ID)
+                .name("Salary")
+                .transactionType(TransactionType.INCOME)
+                .system(true)
+                .build();
         when(categoryRepository.findByIdAndVisibleToUser(CATEGORY_ID, USER_ID))
                 .thenReturn(Optional.of(systemCat));
 
         assertThatThrownBy(() -> categoryService.delete(USER_ID, CATEGORY_ID))
                 .isInstanceOf(ForbiddenException.class);
 
-        verify(categoryRepository, never()).deleteBudgetsByCategory(any());
+        verify(categoryRepository, never()).reassignTransactionCategory(any(), any());
+        verify(categoryRepository, never()).dropConflictingBudgets(any(), any());
+        verify(categoryRepository, never()).reassignBudgetCategory(any(), any());
+        verify(categoryRepository, never()).reassignRecurringCategory(any(), any());
         verify(categoryRepository, never()).delete(any(Category.class));
     }
 
-    // ─── delete: full sequence ────────────────────────────────────────────────
-
     @Test
-    void delete_fullSequence_budgetsDeletedThenTransactionsReassignedThenCategoryRemoved() {
+    void delete_allReassignmentsHappenBeforeDeletion() {
         givenCategoryVisible();
         givenUncategorizedFound();
 
         categoryService.delete(USER_ID, CATEGORY_ID);
 
         var inOrder = inOrder(categoryRepository);
-        inOrder.verify(categoryRepository).deleteBudgetsByCategory(CATEGORY_ID);
         inOrder.verify(categoryRepository).reassignTransactionCategory(CATEGORY_ID, UNCATEGORIZED_ID);
+        inOrder.verify(categoryRepository).dropConflictingBudgets(CATEGORY_ID, UNCATEGORIZED_ID);
+        inOrder.verify(categoryRepository).reassignBudgetCategory(CATEGORY_ID, UNCATEGORIZED_ID);
         inOrder.verify(categoryRepository).reassignRecurringCategory(CATEGORY_ID, UNCATEGORIZED_ID);
         inOrder.verify(categoryRepository).delete(userCategory);
     }
-
-    // ─── create: TRANSFER type rejected ───────────────────────────────────────
 
     @Test
     void create_transferType_throwsBadRequest() {
@@ -160,8 +153,6 @@ class CategoryServiceTest {
         verify(categoryRepository, never()).save(any());
     }
 
-    // ─── update: TRANSFER type rejected ───────────────────────────────────────
-
     @Test
     void update_transferType_throwsBadRequest() {
         givenCategoryVisible();
@@ -172,8 +163,6 @@ class CategoryServiceTest {
 
         verify(categoryRepository, never()).save(any());
     }
-
-    // ─── update: type change allowed ──────────────────────────────────────────
 
     @Test
     void update_typeChange_updatesType() {
@@ -199,8 +188,6 @@ class CategoryServiceTest {
 
         verify(categoryRepository, never()).save(any());
     }
-
-    // ─── Helpers ──────────────────────────────────────────────────────────────
 
     private void givenCategoryVisible() {
         when(categoryRepository.findByIdAndVisibleToUser(CATEGORY_ID, USER_ID))

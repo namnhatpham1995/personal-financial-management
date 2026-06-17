@@ -79,16 +79,14 @@ public class CategoryService {
         Category category = findVisibleOrThrow(userId, categoryId);
         guardSystemCategory(category);
 
-        // Resolve matching-type "Uncategorized" for transaction/recurring reassignment
         Category uncategorized = categoryRepository
                 .findSystemCategory("Uncategorized", category.getTransactionType())
                 .orElseThrow(() -> new IllegalStateException("System 'Uncategorized' category not found"));
         Long toId = uncategorized.getId();
 
-        // 1. Delete budgets — they belong to this category and are removed with it
-        categoryRepository.deleteBudgetsByCategory(categoryId);
-        // 2. Reassign transactions and recurring transactions to Uncategorized (history preserved)
         categoryRepository.reassignTransactionCategory(categoryId, toId);
+        categoryRepository.dropConflictingBudgets(categoryId, toId);
+        categoryRepository.reassignBudgetCategory(categoryId, toId);
         categoryRepository.reassignRecurringCategory(categoryId, toId);
 
         categoryRepository.delete(category);
@@ -100,8 +98,6 @@ public class CategoryService {
         return categoryRepository.findByIdAndVisibleToUser(categoryId, userId)
                 .orElseThrow(() -> ResourceNotFoundException.of("Category", categoryId));
     }
-
-    // ─── Helpers ──────────────────────────────────────────────────────────────
 
     private void guardSystemCategory(Category category) {
         if (category.isSystem()) {

@@ -124,8 +124,8 @@ export function CategoryRow({
         <div className="flex items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
             Delete <span className="font-medium text-foreground">{category.name}</span>?
-            {budget && " Its budget limit will be removed."}{" "}
-            Transactions and recurring items will move to <span className="font-medium">Uncategorized</span>.
+            {" "}Transactions, budgets, and recurring items will move to{" "}
+            <span className="font-medium">Uncategorized</span>.
           </p>
           <div className="flex shrink-0 gap-2">
             <button onClick={onDeleteConfirm} disabled={isDeletePending}
