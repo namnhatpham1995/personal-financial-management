@@ -27,7 +27,6 @@ const createSchema = z.object({
 });
 
 type CreateValues = z.infer<typeof createSchema>;
-type CategoryType = Category["transactionType"];
 
 function buildBudgetMap(budgets: Budget[]): Map<number, Budget> {
   const map = new Map<number, Budget>();
@@ -100,29 +99,6 @@ export default function CategoriesPage() {
     },
   });
 
-  const typeMutation = useMutation({
-    mutationFn: ({
-      id,
-      name,
-      transactionType,
-    }: {
-      id: number;
-      name: string;
-      transactionType: CategoryType;
-    }) => categoryService.update(id, { name, transactionType }),
-    onSuccess: () => {
-      invalidateCategoriesAndBudgets();
-      toast.success("Category type updated");
-    },
-    onError: (err) => {
-      if (isAxiosError(err) && err.response?.status === 409) {
-        toast.error("A category with that name already exists for the new type");
-      } else {
-        toast.error("Failed to update type");
-      }
-    },
-  });
-
   const deleteMutation = useMutation({
     mutationFn: (id: number) => categoryService.delete(id),
     onSuccess: () => {
@@ -180,14 +156,6 @@ export default function CategoriesPage() {
     onEditStart: () => setEditingId(category.id),
     onEditCancel: () => setEditingId(null),
     onRename: (name: string) => renameMutation.mutate({ id: category.id, name }),
-    onTypeChange: readonly
-      ? undefined
-      : (transactionType: CategoryType) =>
-          typeMutation.mutate({
-            id: category.id,
-            name: category.name,
-            transactionType,
-          }),
     onDeleteRequest: () => setConfirmDeleteId(category.id),
     onDeleteCancel: () => setConfirmDeleteId(null),
     onDeleteConfirm: () => deleteMutation.mutate(category.id),
