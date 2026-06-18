@@ -4,6 +4,7 @@ import com.fintrack.audit.domain.ActivityEvent;
 import com.fintrack.audit.domain.ActivityEventRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -16,6 +17,7 @@ import java.util.Map;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@ConditionalOnBean(ActivityEventRepository.class)
 public class ActivityRecorder {
 
     private final ActivityEventRepository repository;

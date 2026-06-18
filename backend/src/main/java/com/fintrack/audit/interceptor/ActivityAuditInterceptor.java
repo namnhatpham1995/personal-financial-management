@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.MDC;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -20,6 +21,7 @@ import java.util.Set;
  */
 @Component
 @RequiredArgsConstructor
+@ConditionalOnBean(ActivityRecorder.class)
 public class ActivityAuditInterceptor implements HandlerInterceptor {
 
     private static final Set<String> MUTATION_METHODS = Set.of("POST", "PUT", "DELETE");

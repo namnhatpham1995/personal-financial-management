@@ -63,7 +63,7 @@ class ActivityAuditInterceptorTest {
 
     @Test
     void afterCompletion_getRequest_doesNotRecord() throws Exception {
-        authenticateAs(1L);
+        // Interceptor returns before reading auth — no auth setup needed
         when(request.getMethod()).thenReturn("GET");
 
         interceptor.afterCompletion(request, response, null, null);
@@ -73,7 +73,7 @@ class ActivityAuditInterceptorTest {
 
     @Test
     void afterCompletion_postWith400_doesNotRecord() throws Exception {
-        authenticateAs(1L);
+        // Interceptor returns on non-2xx before reading auth — no auth setup needed
         when(request.getMethod()).thenReturn("POST");
         when(response.getStatus()).thenReturn(400);
 
