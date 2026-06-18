@@ -11,7 +11,7 @@ A full-stack personal finance management application.
 | Auth | JWT (JJWT 0.12.6), rotating refresh tokens, SHA-256 hashed storage |
 | Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS, Recharts |
 | API Client | Axios with auto-refresh interceptor, TanStack Query |
-| Testing | JUnit 5, Mockito, Testcontainers, @DataJpaTest, @WebMvcTest |
+| Testing | JUnit 5, Mockito (unit tests), Testcontainers (integration), JaCoCo coverage gate |
 | Infrastructure | Docker, Docker Compose, GitHub Actions CI/CD |
 
 ## Architecture Highlights
@@ -47,7 +47,7 @@ docker compose up
 **Backend:**
 ```bash
 cd backend
-./gradlew bootRun --args='--spring.profiles.active=local'
+mvn spring-boot:run -Dspring-boot.run.arguments="--spring.profiles.active=local"
 ```
 
 **Frontend:**
@@ -62,7 +62,7 @@ npm run dev
 **Backend:**
 ```bash
 cd backend
-./gradlew test
+mvn clean verify
 ```
 
 **Frontend:**
