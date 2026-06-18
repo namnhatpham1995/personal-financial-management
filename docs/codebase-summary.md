@@ -26,7 +26,7 @@
 | category | `CategoryController` → `CategoryService` | System categories read-only; delete **removes budgets** + reassigns transactions/recurring to "Uncategorized"; type is editable (INCOME/EXPENSE only — TRANSFER rejected) |
 | transaction | `TransactionController` → `TransactionService` | Paginated + filtered list; balance delta on CRUD |
 | budget | `BudgetController` → `BudgetService` | Real-time progress via `sumSpentInPeriod()` |
-| recurring | `RecurringTransactionController` + `RecurringTransactionScheduler` + `RecurringOccurrenceProcessor` | Daily scheduler, per-occurrence `@Transactional` boundary, idempotent via unique constraint |
+| recurring | `RecurringTransactionController` + `RecurringTransactionScheduler` | Daily scheduler, idempotent via unique constraint |
 | analytics | `AnalyticsController` → `AnalyticsService` | 4 aggregation endpoints; JPQL queries in `AnalyticsRepository` |
 
 ### Common Infrastructure
@@ -53,23 +53,9 @@
 
 ## Test Coverage
 
-### Unit Tests (Mockito, no Spring context)
-| Test | Scope |
-|---|---|
-| `AuthServiceTest` | register, login, refresh, bad credentials |
-| `TransactionServiceTest` | balance deltas (INCOME/EXPENSE/TRANSFER), update/delete reversal, TRANSFER null-dest guard |
-| `BudgetServiceTest` | spent/remaining/percent math, zero-limit, over-budget, exactly-at-limit edge cases |
-| `RecurringTransactionServiceTest` | `computeNextRunDate` for all frequencies + intervals, pause/resume re-anchoring |
-| `RecurringOccurrenceProcessorTest` | transaction generation, idempotent duplicate skip, deactivation on end-date/max-occurrences |
-| `JwtServiceTest` | token round-trip, expired token, tampered signature, wrong user rejection |
-
-### Integration Tests
 | Test | Type | Scope |
 |---|---|---|
+| `AuthServiceTest` | Unit (Mockito) | register, login, refresh, bad credentials |
 | `AccountRepositoryTest` | @DataJpaTest (H2) | user-scoped queries |
 | `AuthControllerTest` | @WebMvcTest | register/login request validation |
 | `FintrackIntegrationTest` | Testcontainers (PostgreSQL) | register → create account → list accounts → 401 |
-
-### Coverage Enforcement
-- **JaCoCo** builds coverage report on every `mvn verify` (HTML: `backend/target/site/jacoco/`)
-- **Coverage gate**: CI fails if service-layer line coverage drops below 60% (configured in `pom.xml`)

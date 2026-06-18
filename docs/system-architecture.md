@@ -70,14 +70,10 @@ Every transaction mutation calls `AccountService.adjustBalance(accountId, delta)
 ## Recurring Transaction Scheduler
 
 Daily at 01:00 UTC (`@Scheduled(cron="0 0 1 * * *")`):
-1. `RecurringTransactionScheduler` fetches all active definitions where `next_run_date <= today`
-2. Delegates each definition to `RecurringOccurrenceProcessor.process()` (separate bean with `@Transactional` boundary)
-   - Insert transaction — unique constraint `(recurring_id, occurrence_date)` prevents duplicates on retry
-   - Apply balance delta (catch `DataIntegrityViolationException` idempotently — no double-apply)
-   - Advance `next_run_date` by `frequency × interval`
-   - Deactivate if `end_date` passed or `max_occurrences` reached
-
-**Design note**: Per-occurrence processing isolated in a separate injectable bean so the Spring AOP proxy applies the `@Transactional` boundary correctly (cross-bean delegation, not self-invocation).
+1. Fetch all active definitions where `next_run_date <= today`
+2. Insert transaction — unique constraint `(recurring_id, occurrence_date)` prevents duplicates
+3. Advance `next_run_date` by `frequency × interval`
+4. Deactivate if `end_date` passed or `max_occurrences` reached
 
 ## Database Schema
 
