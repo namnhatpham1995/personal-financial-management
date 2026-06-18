@@ -24,16 +24,13 @@ A full-stack personal finance management application.
 - **Rate limiting** — Bucket4j per-IP limit on all `/auth/**` endpoints
 - **Structured logging** — Logstash JSON encoder in prod/test; correlation ID on every request
 
-## Why Two Databases (Polyglot Persistence)
+## Why Two Databases
 
-This app deliberately uses **PostgreSQL and MongoDB side by side**. The point is not "use NoSQL" — it is matching each datastore to the workload it is actually good at, and being clear about where the boundary sits.
+PostgreSQL is the right home for financial data: accounts, transactions, balances, and budgets all benefit from ACID guarantees and exact `DECIMAL(19,4)` arithmetic.
 
-- **PostgreSQL is the system of record.** All business data — accounts, transactions, balances, budgets, categories — stays relational. Money requires ACID transactions and exact `DECIMAL(19,4)` arithmetic; balances are maintained transactionally. None of this is moved to MongoDB.
-- **MongoDB holds only the audit/activity log.** Recording *who did what, when* is the opposite workload: append-only, never joined, queried by `(user, time)`, growing without bound, and **schema-varies-per-event** (a login event carries an IP; a budget edit carries before/after values). Forcing that into a relational table means a wide, NULL-heavy table or a `JSONB` column — i.e. documents with extra steps. It is a textbook document-store fit.
+The activity/audit log is a different shape of data entirely — append-only, queried only by `(user, time)`, and **schema-varies-per-event** (a login event carries an IP address; a budget edit carries before/after values). MongoDB fits naturally here: documents, a compound index on `(userId, ts)`, and no migrations needed when a new event type adds extra fields.
 
-Capture is **additive and best-effort**: a single request interceptor writes the event after the business write succeeds, so existing services are untouched and a MongoDB outage never fails or rolls back the underlying operation.
-
-**Tradeoff:** two datastores cost more to run, back up, and monitor. For a small product, Postgres `JSONB` could serve the same need with one database; the split pays off at scale and under audit/retention requirements. It is included here to demonstrate polyglot persistence and the judgment of *where not to use NoSQL* (transactions stay in SQL).
+Capture is best-effort via a request interceptor that fires after the business write succeeds, so a MongoDB hiccup never touches the main operation.
 
 ## Getting Started
 
