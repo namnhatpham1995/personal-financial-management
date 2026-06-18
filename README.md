@@ -7,7 +7,8 @@ A full-stack personal finance management application.
 | Layer | Technology |
 |---|---|
 | Backend | Java 21, Spring Boot 3.3.4, Spring Security, Flyway |
-| Database | PostgreSQL 16, DECIMAL(19,4) for all monetary values |
+| Database (SQL) | PostgreSQL 16, DECIMAL(19,4) for all monetary values — system of record |
+| Database (NoSQL) | MongoDB — append-only audit/activity log only |
 | Auth | JWT (JJWT 0.12.6), rotating refresh tokens, SHA-256 hashed storage |
 | Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS, Recharts |
 | API Client | Axios with auto-refresh interceptor, TanStack Query |
@@ -22,6 +23,17 @@ A full-stack personal finance management application.
 - **Idempotent recurring generation** — unique constraint `(recurring_id, occurrence_date)` prevents duplicate transactions on scheduler retry
 - **Rate limiting** — Bucket4j per-IP limit on all `/auth/**` endpoints
 - **Structured logging** — Logstash JSON encoder in prod/test; correlation ID on every request
+
+## Why Two Databases (Polyglot Persistence)
+
+This app deliberately uses **PostgreSQL and MongoDB side by side**. The point is not "use NoSQL" — it is matching each datastore to the workload it is actually good at, and being clear about where the boundary sits.
+
+- **PostgreSQL is the system of record.** All business data — accounts, transactions, balances, budgets, categories — stays relational. Money requires ACID transactions and exact `DECIMAL(19,4)` arithmetic; balances are maintained transactionally. None of this is moved to MongoDB.
+- **MongoDB holds only the audit/activity log.** Recording *who did what, when* is the opposite workload: append-only, never joined, queried by `(user, time)`, growing without bound, and **schema-varies-per-event** (a login event carries an IP; a budget edit carries before/after values). Forcing that into a relational table means a wide, NULL-heavy table or a `JSONB` column — i.e. documents with extra steps. It is a textbook document-store fit.
+
+Capture is **additive and best-effort**: a single request interceptor writes the event after the business write succeeds, so existing services are untouched and a MongoDB outage never fails or rolls back the underlying operation.
+
+**Tradeoff:** two datastores cost more to run, back up, and monitor. For a small product, Postgres `JSONB` could serve the same need with one database; the split pays off at scale and under audit/retention requirements. It is included here to demonstrate polyglot persistence and the judgment of *where not to use NoSQL* (transactions stay in SQL).
 
 ## Getting Started
 
