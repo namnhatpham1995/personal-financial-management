@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface CategoryTypeGroupProps {
   type: "INCOME" | "EXPENSE";
@@ -8,21 +9,9 @@ interface CategoryTypeGroupProps {
   children: ReactNode;
 }
 
-const typeStyles = {
-  INCOME: {
-    label: "text-emerald-600",
-    chip: "bg-emerald-100 text-emerald-700",
-  },
-  EXPENSE: {
-    label: "text-rose-600",
-    chip: "bg-rose-100 text-rose-700",
-  },
-};
-
 export function CategoryTypeGroup({ type, label, count, children }: CategoryTypeGroupProps) {
   const [open, setOpen] = useState(false);
   const groupId = `category-type-group-${type.toLowerCase()}`;
-  const styles = typeStyles[type];
 
   return (
     <div>
@@ -31,21 +20,19 @@ export function CategoryTypeGroup({ type, label, count, children }: CategoryType
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
         aria-controls={groupId}
-        className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium hover:bg-accent/50 transition-colors"
+        className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium hover:bg-slate-800/40 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className={styles.label}>{label}</span>
-          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${styles.chip}`}>
-            {count}
-          </span>
+          <span className={type === "INCOME" ? "text-emerald-400" : "text-rose-400"}>{label}</span>
+          <Badge variant={type === "INCOME" ? "income" : "expense"}>{count}</Badge>
         </div>
         <ChevronDown
-          className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+          className={`h-4 w-4 text-slate-500 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
         />
       </button>
 
       {open && (
-        <div id={groupId} className="divide-y divide-border pl-4">
+        <div id={groupId} className="divide-y divide-slate-800/40 pl-4">
           {children}
         </div>
       )}

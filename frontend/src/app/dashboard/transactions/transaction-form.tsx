@@ -16,7 +16,6 @@ const schema = z.object({
   transactionDate: z.string().min(1),
   note: z.string().optional(),
   transferAccountId: z.coerce.number().optional(),
-  // Coerce empty string from <select> to undefined so it's omitted in the payload
   categoryId: z.preprocess(
     (v) => (v === "" || v === undefined || v === null ? undefined : Number(v)),
     z.number().positive().optional()
@@ -26,7 +25,6 @@ const schema = z.object({
 export type TransactionFormValues = z.infer<typeof schema>;
 
 interface Props {
-  /** null = create mode, Transaction = edit mode */
   editingTx: Transaction | null;
   accounts: Account[];
   categories: Category[];
@@ -42,7 +40,6 @@ export function TransactionForm({ editingTx, accounts, categories, isPending, on
     resolver: zodResolver(schema),
   });
 
-  // Pre-fill form when entering edit mode; reset to empty on cancel/create
   useEffect(() => {
     if (editingTx) {
       reset({
@@ -62,13 +59,10 @@ export function TransactionForm({ editingTx, accounts, categories, isPending, on
   const txType = watch("transactionType");
   const categoryId = watch("categoryId");
 
-  // Clear stale category when type changes (create mode only — edit mode pre-fills from existing tx)
   useEffect(() => {
     if (!editingTx && categoryId) {
       const stillValid = categories.some((c) => c.id === categoryId && c.transactionType === txType);
-      if (!stillValid) {
-        setValue("categoryId", undefined);
-      }
+      if (!stillValid) setValue("categoryId", undefined);
     }
   }, [txType]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -77,24 +71,18 @@ export function TransactionForm({ editingTx, accounts, categories, isPending, on
     : categories;
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5">
-      <h2 className="mb-4 font-semibold">{isEditing ? "Edit Transaction" : "New Transaction"}</h2>
+    <div className="rounded-xl border border-slate-800/60 bg-slate-900/40 backdrop-blur-sm p-5">
+      <h2 className="mb-4 font-semibold tracking-tight text-slate-100">
+        {isEditing ? "Edit Transaction" : "New Transaction"}
+      </h2>
       <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field label="Account" error={errors.accountId?.message}>
-          <select
-            {...register("accountId")}
-            disabled={isEditing}
-            className={cn(inputCls, isEditing && "cursor-not-allowed opacity-60")}
-          >
+          <select {...register("accountId")} disabled={isEditing} className={cn(inputCls, isEditing && "cursor-not-allowed opacity-50")}>
             {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
           </select>
         </Field>
         <Field label="Type" error={errors.transactionType?.message}>
-          <select
-            {...register("transactionType")}
-            disabled={isEditing}
-            className={cn(inputCls, isEditing && "cursor-not-allowed opacity-60")}
-          >
+          <select {...register("transactionType")} disabled={isEditing} className={cn(inputCls, isEditing && "cursor-not-allowed opacity-50")}>
             {["INCOME", "EXPENSE", "TRANSFER"].map((t) => <option key={t}>{t}</option>)}
           </select>
         </Field>
@@ -106,11 +94,7 @@ export function TransactionForm({ editingTx, accounts, categories, isPending, on
         </Field>
         {txType === "TRANSFER" && (
           <Field label="Transfer to Account" error={errors.transferAccountId?.message}>
-            <select
-              {...register("transferAccountId")}
-              disabled={isEditing}
-              className={cn(inputCls, isEditing && "cursor-not-allowed opacity-60")}
-            >
+            <select {...register("transferAccountId")} disabled={isEditing} className={cn(inputCls, isEditing && "cursor-not-allowed opacity-50")}>
               {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
           </Field>
@@ -128,14 +112,14 @@ export function TransactionForm({ editingTx, accounts, categories, isPending, on
           <button
             type="submit"
             disabled={isPending}
-            className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors"
           >
             {isEditing ? "Save Changes" : "Save"}
           </button>
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-md border px-4 py-2 text-sm hover:bg-accent"
+            className="rounded-lg border border-slate-800/60 px-4 py-2 text-sm text-slate-400 hover:bg-slate-800/60 hover:text-slate-100 transition-colors"
           >
             Cancel
           </button>
@@ -146,14 +130,14 @@ export function TransactionForm({ editingTx, accounts, categories, isPending, on
 }
 
 const inputCls =
-  "w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring";
+  "w-full rounded-lg border border-slate-800/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-colors";
 
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="mb-1 block text-sm font-medium">{label}</label>
+      <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">{label}</label>
       {children}
-      {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
+      {error && <p className="mt-1 text-xs text-rose-400">{error}</p>}
     </div>
   );
 }
