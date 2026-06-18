@@ -39,6 +39,19 @@ Capture is best-effort via a request interceptor that fires after the business w
 - Node.js 20
 - Docker & Docker Compose
 
+### Railway Deployment
+
+Set these environment variables on the **backend service**:
+
+| Variable | Value |
+|---|---|
+| `SPRING_DATA_MONGODB_URI` | `mongodb://<MONGOUSER>:<MONGOPASSWORD>@<MONGOHOST>:27017/fintrack_audit?authSource=admin` |
+| `DB_URL` | Railway PostgreSQL `DATABASE_URL` (jdbc format) |
+| `JWT_SECRET` | 32+ char random secret |
+| `CORS_ALLOWED_ORIGINS` | Your frontend URL |
+
+> **MongoDB note:** Railway's `MONGO_URL` variable does not include the database name. You must append `/fintrack_audit?authSource=admin` — without it the app fails to start with "Database name must not be empty".
+
 ### Quick Start (Docker)
 
 ```bash
