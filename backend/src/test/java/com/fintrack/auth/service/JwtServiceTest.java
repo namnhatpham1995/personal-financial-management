@@ -67,10 +67,14 @@ class JwtServiceTest {
         UserDetails ud = userDetails("dave@example.com");
         String token = jwtService.generateAccessToken(ud, 4L);
 
-        // Flip one character in the signature (last segment)
+        // Flip a character in the middle of the signature segment.
+        // Avoid the last character — Base64URL's last char for a 32-byte payload uses only
+        // 4 of 6 bits (2 are padding zeros), so some replacements leave decoded bytes unchanged.
         String[] parts = token.split("\\.");
-        String tamperedSig = parts[2].substring(0, parts[2].length() - 1) + "X";
-        String tampered = parts[0] + "." + parts[1] + "." + tamperedSig;
+        char[] sigChars = parts[2].toCharArray();
+        int mid = sigChars.length / 2;
+        sigChars[mid] = (sigChars[mid] == 'A') ? 'B' : 'A';
+        String tampered = parts[0] + "." + parts[1] + "." + new String(sigChars);
 
         assertThat(jwtService.isTokenValid(tampered, ud)).isFalse();
     }

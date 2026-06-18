@@ -7,7 +7,8 @@ A full-stack personal finance management application.
 | Layer | Technology |
 |---|---|
 | Backend | Java 21, Spring Boot 3.3.4, Spring Security, Flyway |
-| Database | PostgreSQL 16, DECIMAL(19,4) for all monetary values |
+| Database (SQL) | PostgreSQL 16, DECIMAL(19,4) for all monetary values — system of record |
+| Database (NoSQL) | MongoDB — append-only audit/activity log only |
 | Auth | JWT (JJWT 0.12.6), rotating refresh tokens, SHA-256 hashed storage |
 | Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS, Recharts |
 | API Client | Axios with auto-refresh interceptor, TanStack Query |
@@ -22,6 +23,14 @@ A full-stack personal finance management application.
 - **Idempotent recurring generation** — unique constraint `(recurring_id, occurrence_date)` prevents duplicate transactions on scheduler retry
 - **Rate limiting** — Bucket4j per-IP limit on all `/auth/**` endpoints
 - **Structured logging** — Logstash JSON encoder in prod/test; correlation ID on every request
+
+## Why Two Databases
+
+PostgreSQL is the right home for financial data: accounts, transactions, balances, and budgets all benefit from ACID guarantees and exact `DECIMAL(19,4)` arithmetic.
+
+The activity/audit log is a different shape of data entirely — append-only, queried only by `(user, time)`, and **schema-varies-per-event** (a login event carries an IP address; a budget edit carries before/after values). MongoDB fits naturally here: documents, a compound index on `(userId, ts)`, and no migrations needed when a new event type adds extra fields.
+
+Capture is best-effort via a request interceptor that fires after the business write succeeds, so a MongoDB hiccup never touches the main operation.
 
 ## Getting Started
 

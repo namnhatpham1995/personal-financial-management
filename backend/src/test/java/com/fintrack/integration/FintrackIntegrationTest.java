@@ -2,6 +2,7 @@ package com.fintrack.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fintrack.auth.web.dto.TokenResponse;
+import com.fintrack.audit.domain.ActivityEventRepository;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -14,6 +15,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -36,20 +38,28 @@ class FintrackIntegrationTest {
             .withUsername("test")
             .withPassword("test");
 
+    @Container
+    static MongoDBContainer mongo = new MongoDBContainer("mongo:7-jammy");
+
     @DynamicPropertySource
     static void overrideProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
-        // CI runs with SPRING_PROFILES_ACTIVE=test which loads application-test.yml
-        // (H2 driver, flyway disabled). Override those to use the real PostgreSQL container.
+        // Override H2 defaults from application-test.yml with real containers
         registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
         registry.add("spring.flyway.enabled", () -> "true");
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "none");
+        // application-test.yml sets H2Dialect; override to PostgreSQL to prevent SessionFactory failure
+        registry.add("spring.jpa.properties.hibernate.dialect",
+                () -> "org.hibernate.dialect.PostgreSQLDialect");
+        registry.add("spring.data.mongodb.uri",
+                () -> "mongodb://" + mongo.getHost() + ":" + mongo.getMappedPort(27017) + "/fintrack_test");
     }
 
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
+    @Autowired ActivityEventRepository activityEventRepository;
 
     static String accessToken;
 
@@ -110,5 +120,38 @@ class FintrackIntegrationTest {
     void protectedEndpoint_withNoToken_returns401() throws Exception {
         mockMvc.perform(get("/api/v1/accounts"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @Order(5)
+    void createAccount_writesAuditEventToMongoDB() throws Exception {
+        assertThat(accessToken).as("accessToken must be set by order-1 test").isNotNull();
+
+        long beforeCount = activityEventRepository.count();
+
+        mockMvc.perform(post("/api/v1/accounts")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "name", "Audit Test Account",
+                                "accountType", "BANK",
+                                "currency", "EUR",
+                                "initialBalance", "0.00"
+                        ))))
+                .andExpect(status().isCreated());
+
+        assertThat(activityEventRepository.count()).isGreaterThan(beforeCount);
+    }
+
+    @Test
+    @Order(6)
+    void activityEndpoint_returnsEventsForCurrentUser() throws Exception {
+        assertThat(accessToken).isNotNull();
+
+        mockMvc.perform(get("/api/v1/activity")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content[0].action").isNotEmpty());
     }
 }

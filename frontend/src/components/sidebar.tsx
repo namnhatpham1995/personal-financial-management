@@ -11,6 +11,7 @@ import {
   Wallet,
   ArrowLeftRight,
   Tag,
+  Activity,
   LogOut,
   Sun,
   Moon,
@@ -21,6 +22,7 @@ const navItems = [
   { href: "/dashboard/accounts", label: "Accounts", icon: Wallet },
   { href: "/dashboard/transactions", label: "Transactions", icon: ArrowLeftRight },
   { href: "/dashboard/categories", label: "Categories", icon: Tag },
+  { href: "/dashboard/activity", label: "Activity", icon: Activity },
 ];
 
 interface SidebarProps {

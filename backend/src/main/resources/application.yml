@@ -20,6 +20,9 @@ spring:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: false
+  data:
+    mongodb:
+      uri: ${SPRING_DATA_MONGODB_URI:mongodb://localhost:27017/fintrack_audit}
 
 server:
   port: ${SERVER_PORT:8080}
