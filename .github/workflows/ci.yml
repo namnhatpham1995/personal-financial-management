@@ -52,6 +52,13 @@ jobs:
           name: backend-test-report
           path: backend/target/surefire-reports/
 
+      - name: Upload JaCoCo coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jacoco-report
+          path: backend/target/site/jacoco/
+
   frontend:
     name: Frontend — Lint & Type-check
     runs-on: ubuntu-latest
