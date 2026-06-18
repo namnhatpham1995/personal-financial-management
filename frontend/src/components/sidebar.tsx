@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
+import { useTheme } from "next-themes";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 import {
@@ -11,6 +12,8 @@ import {
   ArrowLeftRight,
   Tag,
   LogOut,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 const navItems = [
@@ -62,6 +65,8 @@ function SidebarContent({
   logout: () => void;
   onClose?: () => void;
 }) {
+  const { theme, setTheme } = useTheme();
+
   return (
     <>
       <div className="mb-8">
@@ -87,8 +92,18 @@ function SidebarContent({
         ))}
       </nav>
 
-      <div className="border-t border-slate-800/60 pt-4">
+      <div className="border-t border-slate-800/60 pt-4 space-y-1">
         <p className="mb-2 truncate text-xs text-slate-500">{user?.email}</p>
+
+        {/* Theme toggle */}
+        <button
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-400 hover:bg-slate-800/60 hover:text-slate-100 transition-colors"
+        >
+          {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          {theme === "dark" ? "Light mode" : "Dark mode"}
+        </button>
+
         <button
           onClick={() => logout()}
           className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-400 hover:bg-slate-800/60 hover:text-slate-100 transition-colors"
