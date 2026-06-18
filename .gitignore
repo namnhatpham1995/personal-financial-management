@@ -18,6 +18,7 @@ frontend/dist/
 # Node/npm
 node_modules/
 package-lock.json
+!frontend/package-lock.json
 yarn.lock
 pnpm-lock.yaml
 /.pnp
@@ -68,6 +69,10 @@ external/
 # GitHub AI tooling (skills/prompts managed outside repo)
 .github/Skills/
 .github/prompts/
+
+# Agent tooling
+.agents/
+skills-lock.json
 
 # Git worktrees (local development only)
 worktrees/
