@@ -46,11 +46,15 @@ class FintrackIntegrationTest {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
-        // Override H2 defaults from application-test.yml with real PostgreSQL container
+        // Override H2 defaults from application-test.yml with real containers
         registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
         registry.add("spring.flyway.enabled", () -> "true");
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "none");
-        registry.add("spring.data.mongodb.uri", mongo::getReplicaSetUrl);
+        // application-test.yml sets H2Dialect; override to PostgreSQL to prevent SessionFactory failure
+        registry.add("spring.jpa.properties.hibernate.dialect",
+                () -> "org.hibernate.dialect.PostgreSQLDialect");
+        registry.add("spring.data.mongodb.uri",
+                () -> "mongodb://" + mongo.getHost() + ":" + mongo.getMappedPort(27017) + "/fintrack_test");
     }
 
     @Autowired MockMvc mockMvc;
