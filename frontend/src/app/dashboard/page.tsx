@@ -14,7 +14,7 @@ import { formatCurrency } from "@/lib/utils";
 import { TrendingUp, TrendingDown, Wallet } from "lucide-react";
 import { CashFlowChart } from "@/components/charts/cash-flow-chart";
 import { SpendingDonutChart } from "@/components/charts/spending-donut-chart";
-import { BudgetProgressList } from "@/components/charts/budget-progress-list";
+import { BudgetProgressManager } from "@/components/charts/budget-progress-manager";
 import { StatTile } from "@/components/ui/stat-tile";
 import { Card } from "@/components/ui/card";
 
@@ -38,10 +38,6 @@ export default function DashboardPage() {
   const { data: accounts = [] } = useQuery({
     queryKey: ["accounts"],
     queryFn: accountService.list,
-  });
-  const { data: budgets = [] } = useQuery({
-    queryKey: ["budgetProgress"],
-    queryFn: analyticsService.budgetProgress,
   });
   const { data: trend = [] } = useQuery({
     queryKey: ["trend", from, to],
@@ -108,7 +104,7 @@ export default function DashboardPage() {
       {/* Budget progress */}
       <Card className="p-5">
         <h2 className="mb-4 font-semibold tracking-tight text-slate-100">Budget Progress</h2>
-        <BudgetProgressList budgets={budgets} />
+        <BudgetProgressManager />
       </Card>
 
       {/* Account cards */}

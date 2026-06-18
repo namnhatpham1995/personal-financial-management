@@ -13,12 +13,7 @@ import {
   type Category,
   type CreateCategoryPayload,
 } from "@/services/category-service";
-import {
-  budgetService,
-  type Budget,
-  type CreateBudgetPayload,
-} from "@/services/budget-service";
-import { CategoryRow, type CategoryRowProps, type LimitPayload } from "./category-row";
+import { CategoryRow, type CategoryRowProps } from "./category-row";
 import { CategoryTypeGroup } from "./category-type-group";
 
 const createSchema = z.object({
@@ -27,17 +22,6 @@ const createSchema = z.object({
 });
 
 type CreateValues = z.infer<typeof createSchema>;
-
-function buildBudgetMap(budgets: Budget[]): Map<number, Budget> {
-  const map = new Map<number, Budget>();
-  for (const budget of budgets) {
-    const existing = map.get(budget.categoryId);
-    if (!existing || budget.period === "MONTHLY") {
-      map.set(budget.categoryId, budget);
-    }
-  }
-  return map;
-}
 
 const inputCls =
   "rounded-lg border border-slate-800/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-colors";
@@ -53,23 +37,16 @@ export default function CategoriesPage() {
     queryFn: categoryService.list,
   });
 
-  const { data: budgets = [] } = useQuery({
-    queryKey: ["budgets"],
-    queryFn: budgetService.list,
-  });
-
-  const budgetMap = buildBudgetMap(budgets);
   const userCategories = categories.filter((c) => !c.system);
   const systemCategories = categories.filter((c) => c.system);
 
-  const invalidateCategoriesAndBudgets = () => {
+  const invalidateCategories = () => {
     qc.invalidateQueries({ queryKey: ["categories"] });
-    qc.invalidateQueries({ queryKey: ["budgets"] });
   };
 
   const createMutation = useMutation({
     mutationFn: (data: CreateCategoryPayload) => categoryService.create(data),
-    onSuccess: () => { invalidateCategoriesAndBudgets(); setShowForm(false); toast.success("Category created"); },
+    onSuccess: () => { invalidateCategories(); setShowForm(false); toast.success("Category created"); },
     onError: (err) => {
       if (isAxiosError(err) && err.response?.status === 409) {
         toast.error("A category with that name already exists for this type");
@@ -81,7 +58,7 @@ export default function CategoriesPage() {
 
   const renameMutation = useMutation({
     mutationFn: ({ id, name }: { id: number; name: string }) => categoryService.update(id, { name }),
-    onSuccess: () => { invalidateCategoriesAndBudgets(); setEditingId(null); toast.success("Category renamed"); },
+    onSuccess: () => { invalidateCategories(); setEditingId(null); toast.success("Category renamed"); },
     onError: (err) => {
       if (isAxiosError(err) && err.response?.status === 409) toast.error("A category with that name already exists for this type");
       else if (isAxiosError(err) && err.response?.status === 403) toast.error("System categories cannot be modified");
@@ -91,34 +68,15 @@ export default function CategoriesPage() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => categoryService.delete(id),
-    onSuccess: () => { invalidateCategoriesAndBudgets(); setConfirmDeleteId(null); toast.success("Category deleted - usages reassigned to Uncategorized"); },
+    onSuccess: () => { invalidateCategories(); setConfirmDeleteId(null); toast.success("Category deleted - usages reassigned to Uncategorized"); },
     onError: (err) => {
       if (isAxiosError(err) && err.response?.status === 403) toast.error("System categories cannot be deleted");
       else toast.error("Failed to delete category");
     },
   });
 
-  const createLimitMutation = useMutation({
-    mutationFn: (data: CreateBudgetPayload) => budgetService.create(data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["budgets"] }); toast.success("Limit set"); },
-    onError: () => toast.error("Failed to set limit"),
-  });
-
-  const updateLimitMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<CreateBudgetPayload> }) => budgetService.update(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["budgets"] }); toast.success("Limit updated"); },
-    onError: () => toast.error("Failed to update limit"),
-  });
-
-  const removeLimitMutation = useMutation({
-    mutationFn: (id: number) => budgetService.delete(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["budgets"] }); toast.success("Limit removed"); },
-    onError: () => toast.error("Failed to remove limit"),
-  });
-
   const rowProps = (category: Category, readonly: boolean): CategoryRowProps => ({
     category,
-    budget: budgetMap.get(category.id),
     isEditing: editingId === category.id,
     isConfirmingDelete: confirmDeleteId === category.id,
     onEditStart: () => setEditingId(category.id),
@@ -127,19 +85,15 @@ export default function CategoriesPage() {
     onDeleteRequest: () => setConfirmDeleteId(category.id),
     onDeleteCancel: () => setConfirmDeleteId(null),
     onDeleteConfirm: () => deleteMutation.mutate(category.id),
-    onSetLimit: (data) => createLimitMutation.mutate(data),
-    onUpdateLimit: (budgetId, data) => updateLimitMutation.mutate({ id: budgetId, data }),
-    onRemoveLimit: (budgetId) => removeLimitMutation.mutate(budgetId),
     isRenamePending: renameMutation.isPending,
     isDeletePending: deleteMutation.isPending && confirmDeleteId === category.id,
-    isLimitPending: createLimitMutation.isPending || updateLimitMutation.isPending || removeLimitMutation.isPending,
     readonly,
   });
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-100">Categories &amp; Limits</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-100">Categories</h1>
         <button
           onClick={() => setShowForm(!showForm)}
           className="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-400 hover:bg-emerald-500/20 transition-colors"
