@@ -54,6 +54,9 @@ export interface CategoryRowProps {
   readonly?: boolean;
 }
 
+const inputCls =
+  "rounded-lg border border-slate-800/60 bg-slate-900/60 px-2 py-1 text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-colors";
+
 export function CategoryRow({
   category, budget, isEditing, isConfirmingDelete,
   onEditStart, onEditCancel, onRename,
@@ -96,16 +99,16 @@ export function CategoryRow({
       <div className="px-4 py-3">
         <form onSubmit={renameForm.handleSubmit((v) => onRename(v.name))} className="flex items-center gap-2">
           <input {...renameForm.register("name")} autoFocus
-            className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+            className={`flex-1 ${inputCls}`} />
           {renameForm.formState.errors.name && (
-            <span className="text-xs text-destructive">{renameForm.formState.errors.name.message}</span>
+            <span className="text-xs text-rose-400">{renameForm.formState.errors.name.message}</span>
           )}
           <button type="submit" disabled={isRenamePending}
-            className="rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
+            className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1.5 text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors">
             <Check className="h-3.5 w-3.5" />
           </button>
           <button type="button" onClick={() => { renameForm.reset(); onEditCancel(); }}
-            className="rounded-md border px-3 py-1.5 text-xs hover:bg-accent">
+            className="rounded-lg border border-slate-800/60 px-2.5 py-1.5 text-slate-400 hover:bg-slate-800/60 transition-colors">
             <X className="h-3.5 w-3.5" />
           </button>
         </form>
@@ -117,17 +120,20 @@ export function CategoryRow({
     return (
       <div className="px-4 py-3">
         <div className="flex items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">
-            Delete <span className="font-medium text-foreground">{category.name}</span>?
+          <p className="text-sm text-slate-400">
+            Delete <span className="font-medium text-slate-100">{category.name}</span>?
             {" "}Transactions, budgets, and recurring items will move to{" "}
-            <span className="font-medium">Uncategorized</span>.
+            <span className="font-medium text-slate-300">Uncategorized</span>.
           </p>
           <div className="flex shrink-0 gap-2">
             <button onClick={onDeleteConfirm} disabled={isDeletePending}
-              className="rounded-md bg-destructive px-3 py-1.5 text-xs text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50">
+              className="rounded-lg bg-rose-500/10 border border-rose-500/20 px-3 py-1.5 text-xs text-rose-400 hover:bg-rose-500/20 disabled:opacity-50 transition-colors">
               {isDeletePending ? "Deleting…" : "Delete"}
             </button>
-            <button onClick={onDeleteCancel} className="rounded-md border px-3 py-1.5 text-xs hover:bg-accent">Cancel</button>
+            <button onClick={onDeleteCancel}
+              className="rounded-lg border border-slate-800/60 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800/60 transition-colors">
+              Cancel
+            </button>
           </div>
         </div>
       </div>
@@ -137,41 +143,40 @@ export function CategoryRow({
   return (
     <div className="px-4 py-2.5 space-y-2">
       <div className="flex items-center justify-between gap-3">
-        <div className="flex min-w-0 flex-1 items-center gap-2">
-          <span className="font-medium truncate">{category.name}</span>
-        </div>
+        <span className="font-medium truncate text-slate-200">{category.name}</span>
 
         <div className="flex shrink-0 items-center gap-2">
           {isExpense && !readonly && (
             budget ? (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1 font-mono tabular-nums text-xs text-slate-500">
                 <span>{formatAmount(budget.spent)} / {formatAmount(budget.amountLimit)}</span>
                 <span>{budget.period === "MONTHLY" ? "mo" : "yr"}</span>
-                <button onClick={openLimitForm} className="rounded p-1 hover:bg-accent hover:text-accent-foreground" aria-label="Edit limit">
+                <button onClick={openLimitForm}
+                  className="rounded p-1 text-slate-500 hover:bg-slate-800/60 hover:text-slate-200 transition-colors" aria-label="Edit limit">
                   <Pencil className="h-3 w-3" />
                 </button>
                 <button onClick={() => onRemoveLimit(budget.id)} disabled={isLimitPending}
-                  className="rounded p-1 hover:bg-accent hover:text-destructive disabled:opacity-50" aria-label="Remove limit">
+                  className="rounded p-1 text-slate-500 hover:bg-rose-500/10 hover:text-rose-400 disabled:opacity-50 transition-colors" aria-label="Remove limit">
                   <X className="h-3 w-3" />
                 </button>
               </div>
             ) : (
               <button onClick={openLimitForm}
-                className="flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground">
+                className="flex items-center gap-1 rounded-lg border border-slate-800/60 px-2 py-0.5 text-xs text-slate-500 hover:bg-slate-800/60 hover:text-slate-200 transition-colors">
                 <Plus className="h-3 w-3" /> Set limit
               </button>
             )
           )}
           {readonly ? (
-            <Lock className="h-3.5 w-3.5 text-muted-foreground" aria-label="Read-only" />
+            <Lock className="h-3.5 w-3.5 text-slate-600" aria-label="Read-only" />
           ) : (
             <div className="flex gap-1">
               <button onClick={() => { renameForm.reset({ name: category.name }); onEditStart(); }}
-                className="rounded p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground" aria-label="Rename">
+                className="rounded p-1.5 text-slate-500 hover:bg-slate-800/60 hover:text-slate-200 transition-colors" aria-label="Rename">
                 <Pencil className="h-3.5 w-3.5" />
               </button>
               <button onClick={onDeleteRequest}
-                className="rounded p-1.5 text-muted-foreground hover:bg-accent hover:text-destructive" aria-label="Delete">
+                className="rounded p-1.5 text-slate-500 hover:bg-rose-500/10 hover:text-rose-400 transition-colors" aria-label="Delete">
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -186,28 +191,29 @@ export function CategoryRow({
       {showLimitForm && (
         <form onSubmit={limitForm.handleSubmit(handleLimitSubmit)} className="flex flex-wrap items-end gap-2 pt-1">
           <div>
-            <label className="mb-1 block text-xs font-medium">Amount</label>
+            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Amount</label>
             <input type="number" step="0.01" {...limitForm.register("amount")}
-              className="w-28 rounded-md border border-input bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-ring" />
+              className={`w-28 ${inputCls}`} />
             {limitForm.formState.errors.amount && (
-              <p className="mt-0.5 text-xs text-destructive">{limitForm.formState.errors.amount.message}</p>
+              <p className="mt-0.5 text-xs text-rose-400">{limitForm.formState.errors.amount.message}</p>
             )}
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium">Period</label>
-            <select {...limitForm.register("period")}
-              className="rounded-md border border-input bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-ring">
+            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Period</label>
+            <select {...limitForm.register("period")} className={inputCls}>
               <option value="MONTHLY">Monthly</option>
               <option value="YEARLY">Yearly</option>
             </select>
           </div>
           <div className="flex gap-1">
             <button type="submit" disabled={isLimitPending}
-              className="rounded-md bg-primary px-3 py-1 text-xs text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
+              className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 text-xs text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors">
               {isLimitPending ? "Saving…" : "Save"}
             </button>
             <button type="button" onClick={() => setShowLimitForm(false)}
-              className="rounded-md border px-3 py-1 text-xs hover:bg-accent">Cancel</button>
+              className="rounded-lg border border-slate-800/60 px-3 py-1 text-xs text-slate-400 hover:bg-slate-800/60 transition-colors">
+              Cancel
+            </button>
           </div>
         </form>
       )}

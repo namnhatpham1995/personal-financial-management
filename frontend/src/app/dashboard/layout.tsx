@@ -10,7 +10,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
-  // Escape key closes drawer; body scroll locked while open
   useEffect(() => {
     if (!drawerOpen) return;
 
@@ -29,13 +28,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <AuthGuard>
-      <div className="flex h-screen overflow-hidden">
+      <div className="flex h-screen overflow-hidden bg-background">
         <Sidebar open={drawerOpen} onClose={closeDrawer} />
 
         {/* Mobile backdrop */}
         {drawerOpen && (
           <div
-            className="fixed inset-0 z-40 bg-black/50 md:hidden"
+            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
             onClick={closeDrawer}
             aria-hidden="true"
           />
@@ -43,18 +42,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <div className="flex flex-1 flex-col overflow-hidden">
           {/* Mobile top bar */}
-          <header className="flex items-center gap-3 border-b border-border bg-card px-4 py-3 md:hidden">
+          <header className="flex items-center gap-3 border-b border-slate-800/60 bg-slate-900/80 backdrop-blur-sm px-4 py-3 md:hidden">
             <button
               onClick={() => setDrawerOpen(true)}
               aria-label="Open navigation"
-              className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-slate-100 transition-colors"
             >
               <Menu className="h-5 w-5" />
             </button>
-            <span className="text-lg font-bold text-primary">Fintrack</span>
+            <span className="text-lg font-bold tracking-tight text-emerald-400">Fintrack</span>
           </header>
 
-          <main className="flex-1 overflow-y-auto bg-muted/40 p-4 md:p-6">{children}</main>
+          <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
         </div>
       </div>
     </AuthGuard>

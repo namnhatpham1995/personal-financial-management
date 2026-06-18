@@ -7,9 +7,9 @@ interface LimitBarProps {
 }
 
 /**
- * Renders a used-vs-limit progress bar.
- * Under limit: blue (used) on gray (unused).
- * Over limit: green (up to limit) + red (overflow), scaled to total spent.
+ * Renders a used-vs-limit progress bar on dark surfaces.
+ * Under limit: emerald fill on slate track.
+ * Over limit: emerald (up to limit) + rose (overflow), scaled to total spent.
  */
 export function LimitBar({ spent, limit, overBudget }: LimitBarProps) {
   const spentNum = Number(spent);
@@ -18,22 +18,22 @@ export function LimitBar({ spent, limit, overBudget }: LimitBarProps) {
   if (!overBudget) {
     const pct = limitNum > 0 ? Math.min((spentNum / limitNum) * 100, 100) : 0;
     return (
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
         <div
-          className="h-full rounded-full bg-blue-500 transition-all"
+          className="h-full rounded-full bg-emerald-500 transition-all"
           style={{ width: `${pct}%` }}
         />
       </div>
     );
   }
 
-  // Over limit: green = limit portion, red = overflow portion
-  const greenPct = spentNum > 0 ? Math.round((limitNum / spentNum) * 100) : 0;
-  const redPct = 100 - greenPct;
+  // Over limit: emerald = limit portion, rose = overflow portion
+  const emeraldPct = spentNum > 0 ? Math.round((limitNum / spentNum) * 100) : 0;
+  const rosePct = 100 - emeraldPct;
   return (
     <div className="flex h-1.5 w-full overflow-hidden rounded-full">
-      <div className="h-full bg-green-500" style={{ width: `${greenPct}%` }} />
-      <div className="h-full bg-red-500" style={{ width: `${redPct}%` }} />
+      <div className="h-full bg-emerald-500" style={{ width: `${emeraldPct}%` }} />
+      <div className="h-full bg-rose-500" style={{ width: `${rosePct}%` }} />
     </div>
   );
 }

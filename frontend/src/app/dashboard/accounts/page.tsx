@@ -14,8 +14,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Plus, Trash2, Pencil } from "lucide-react";
-
-// ── Schemas ──────────────────────────────────────────────────────────────────
+import { Card } from "@/components/ui/card";
 
 const createSchema = z.object({
   name: z.string().min(1),
@@ -33,8 +32,6 @@ const editSchema = z.object({
 
 type CreateFormValues = z.infer<typeof createSchema>;
 type EditFormValues = z.infer<typeof editSchema>;
-
-// ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AccountsPage() {
   const qc = useQueryClient();
@@ -61,22 +58,13 @@ export default function AccountsPage() {
 
   const createMutation = useMutation({
     mutationFn: (data: CreateAccountPayload) => accountService.create(data),
-    onSuccess: () => {
-      invalidateAll();
-      setShowCreateForm(false);
-      toast.success("Account created");
-    },
+    onSuccess: () => { invalidateAll(); setShowCreateForm(false); toast.success("Account created"); },
     onError: () => toast.error("Failed to create account"),
   });
 
   const editMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: UpdateAccountPayload }) =>
-      accountService.update(id, data),
-    onSuccess: () => {
-      invalidateAll();
-      setEditingAccount(null);
-      toast.success("Account updated");
-    },
+    mutationFn: ({ id, data }: { id: number; data: UpdateAccountPayload }) => accountService.update(id, data),
+    onSuccess: () => { invalidateAll(); setEditingAccount(null); toast.success("Account updated"); },
     onError: () => toast.error("Failed to update account"),
   });
 
@@ -95,10 +83,10 @@ export default function AccountsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Accounts</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-100">Accounts</h1>
         <button
           onClick={() => { setShowCreateForm(!showCreateForm); setEditingAccount(null); }}
-          className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          className="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-400 hover:bg-emerald-500/20 transition-colors"
         >
           <Plus className="h-4 w-4" /> New Account
         </button>
@@ -113,42 +101,41 @@ export default function AccountsPage() {
       )}
 
       {isLoading ? (
-        <p className="text-muted-foreground">Loading…</p>
+        <p className="text-slate-500">Loading…</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {accounts.map((acc) => (
-            <div key={acc.id} className="rounded-xl border border-border bg-card p-5 shadow-sm">
+            <Card key={acc.id} className="p-5">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs uppercase text-muted-foreground">{acc.accountType}</p>
-                  <p className="mt-0.5 font-semibold">{acc.name}</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{acc.accountType}</p>
+                  <p className="mt-0.5 font-semibold text-slate-100">{acc.name}</p>
                 </div>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => { setEditingAccount(acc); setShowCreateForm(false); }}
-                    className="text-muted-foreground hover:text-foreground"
+                    className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-800/60 hover:text-slate-200 transition-colors"
                     title="Edit account"
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => setDeleteTarget(acc)}
-                    className="text-muted-foreground hover:text-destructive"
+                    className="rounded-lg p-1.5 text-slate-500 hover:bg-rose-500/10 hover:text-rose-400 transition-colors"
                     title="Delete account"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               </div>
-              <p className="mt-3 text-2xl font-bold">
+              <p className="mt-3 font-mono tabular-nums text-2xl font-bold text-slate-100">
                 {formatCurrency(acc.currentBalance, acc.currency)}
               </p>
-            </div>
+            </Card>
           ))}
         </div>
       )}
 
-      {/* Edit dialog */}
       {editingAccount && (
         <EditAccountDialog
           account={editingAccount}
@@ -158,7 +145,6 @@ export default function AccountsPage() {
         />
       )}
 
-      {/* Delete confirmation dialog */}
       {deleteTarget && (
         <DeleteConfirmDialog
           account={deleteTarget}
@@ -172,27 +158,14 @@ export default function AccountsPage() {
   );
 }
 
-// ── Create form ───────────────────────────────────────────────────────────────
-
-function CreateAccountForm({
-  onSubmit,
-  onCancel,
-  isPending,
-}: {
-  onSubmit: (v: CreateAccountPayload) => void;
-  onCancel: () => void;
-  isPending: boolean;
-}) {
-  const { register, handleSubmit, formState: { errors } } =
-    useForm<CreateFormValues>({ resolver: zodResolver(createSchema) });
+function CreateAccountForm({ onSubmit, onCancel, isPending }: { onSubmit: (v: CreateAccountPayload) => void; onCancel: () => void; isPending: boolean }) {
+  const { register, handleSubmit, formState: { errors } } = useForm<CreateFormValues>({ resolver: zodResolver(createSchema) });
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5">
-      <h2 className="mb-4 font-semibold">Add Account</h2>
+    <div className="rounded-xl border border-slate-800/60 bg-slate-900/40 backdrop-blur-sm p-5">
+      <h2 className="mb-4 font-semibold tracking-tight text-slate-100">Add Account</h2>
       <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label="Name" error={errors.name?.message}>
-          <input {...register("name")} className={inputCls} />
-        </Field>
+        <Field label="Name" error={errors.name?.message}><input {...register("name")} className={inputCls} /></Field>
         <Field label="Type" error={errors.accountType?.message}>
           <select {...register("accountType")} className={inputCls}>
             {ACCOUNT_TYPES.map((t) => <option key={t}>{t}</option>)}
@@ -213,37 +186,18 @@ function CreateAccountForm({
   );
 }
 
-// ── Edit dialog ───────────────────────────────────────────────────────────────
-
-function EditAccountDialog({
-  account,
-  onSubmit,
-  onCancel,
-  isPending,
-}: {
-  account: Account;
-  onSubmit: (v: EditFormValues) => void;
-  onCancel: () => void;
-  isPending: boolean;
-}) {
+function EditAccountDialog({ account, onSubmit, onCancel, isPending }: { account: Account; onSubmit: (v: EditFormValues) => void; onCancel: () => void; isPending: boolean }) {
   const { register, handleSubmit, formState: { errors } } = useForm<EditFormValues>({
     resolver: zodResolver(editSchema),
-    defaultValues: {
-      name: account.name,
-      accountType: account.accountType as EditFormValues["accountType"],
-      currency: account.currency,
-      initialBalance: account.initialBalance,
-    },
+    defaultValues: { name: account.name, accountType: account.accountType as EditFormValues["accountType"], currency: account.currency, initialBalance: account.initialBalance },
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl">
-        <h2 className="mb-4 text-lg font-semibold">Edit Account</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="w-full max-w-md rounded-xl border border-slate-800/60 bg-slate-900/95 p-6 shadow-2xl">
+        <h2 className="mb-4 text-lg font-semibold tracking-tight text-slate-100">Edit Account</h2>
         <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Name" error={errors.name?.message}>
-            <input {...register("name")} className={inputCls} />
-          </Field>
+          <Field label="Name" error={errors.name?.message}><input {...register("name")} className={inputCls} /></Field>
           <Field label="Type" error={errors.accountType?.message}>
             <select {...register("accountType")} className={inputCls}>
               {ACCOUNT_TYPES.map((t) => <option key={t}>{t}</option>)}
@@ -255,9 +209,8 @@ function EditAccountDialog({
           <Field label="Initial Balance" error={errors.initialBalance?.message}>
             <input {...register("initialBalance")} type="number" step="0.01" className={inputCls} />
           </Field>
-          <p className="sm:col-span-2 text-xs text-muted-foreground">
-            Changing initial balance will recompute the current balance. Changing currency relabels
-            existing amounts without converting them.
+          <p className="sm:col-span-2 text-xs text-slate-500">
+            Changing initial balance will recompute the current balance. Changing currency relabels existing amounts without converting them.
           </p>
           <div className="sm:col-span-2 flex gap-2">
             <button type="submit" disabled={isPending} className={primaryBtn}>Save changes</button>
@@ -269,43 +222,28 @@ function EditAccountDialog({
   );
 }
 
-// ── Delete confirmation dialog ────────────────────────────────────────────────
-
-function DeleteConfirmDialog({
-  account,
-  transactionCount,
-  onConfirm,
-  onCancel,
-  isPending,
-}: {
-  account: Account;
-  transactionCount: number | null;
-  onConfirm: () => void;
-  onCancel: () => void;
-  isPending: boolean;
-}) {
+function DeleteConfirmDialog({ account, transactionCount, onConfirm, onCancel, isPending }: { account: Account; transactionCount: number | null; onConfirm: () => void; onCancel: () => void; isPending: boolean }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-xl">
-        <h2 className="mb-2 text-lg font-semibold text-destructive">Delete Account</h2>
-        <p className="text-sm text-muted-foreground">
-          Are you sure you want to delete <strong>{account.name}</strong>?
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="w-full max-w-sm rounded-xl border border-slate-800/60 bg-slate-900/95 p-6 shadow-2xl">
+        <h2 className="mb-2 text-lg font-semibold tracking-tight text-rose-400">Delete Account</h2>
+        <p className="text-sm text-slate-400">
+          Are you sure you want to delete <strong className="text-slate-100">{account.name}</strong>?
         </p>
         {transactionCount === null ? (
-          <p className="mt-2 text-sm text-muted-foreground">Checking connected transactions…</p>
+          <p className="mt-2 text-sm text-slate-500">Checking connected transactions…</p>
         ) : transactionCount === 0 ? (
-          <p className="mt-2 text-sm text-muted-foreground">This account has no transactions.</p>
+          <p className="mt-2 text-sm text-slate-500">This account has no transactions.</p>
         ) : (
-          <p className="mt-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-            <strong>{transactionCount} transaction{transactionCount !== 1 ? "s" : ""}</strong> connected
-            to this account will also be permanently deleted.
+          <p className="mt-2 rounded-lg border border-rose-500/20 bg-rose-500/10 p-3 text-sm text-rose-400">
+            <strong>{transactionCount} transaction{transactionCount !== 1 ? "s" : ""}</strong> connected to this account will also be permanently deleted.
           </p>
         )}
         <div className="mt-4 flex gap-2">
           <button
             onClick={onConfirm}
             disabled={isPending || transactionCount === null}
-            className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-white hover:bg-destructive/90 disabled:opacity-50"
+            className="rounded-lg bg-rose-500/10 border border-rose-500/20 px-4 py-2 text-sm font-medium text-rose-400 hover:bg-rose-500/20 disabled:opacity-50 transition-colors"
           >
             {isPending ? "Deleting…" : "Yes, delete"}
           </button>
@@ -316,30 +254,21 @@ function DeleteConfirmDialog({
   );
 }
 
-// ── Shared ────────────────────────────────────────────────────────────────────
-
 const ACCOUNT_TYPES = ["CASH", "BANK", "CREDIT_CARD", "SAVINGS", "OTHER"];
 
 const inputCls =
-  "w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring";
+  "w-full rounded-lg border border-slate-800/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-colors";
 const primaryBtn =
-  "rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50";
-const secondaryBtn = "rounded-md border px-4 py-2 text-sm hover:bg-accent";
+  "rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors";
+const secondaryBtn =
+  "rounded-lg border border-slate-800/60 px-4 py-2 text-sm text-slate-400 hover:bg-slate-800/60 transition-colors";
 
-function Field({
-  label,
-  error,
-  children,
-}: {
-  label: string;
-  error?: string;
-  children: React.ReactNode;
-}) {
+function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="mb-1 block text-sm font-medium">{label}</label>
+      <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">{label}</label>
       {children}
-      {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
+      {error && <p className="mt-1 text-xs text-rose-400">{error}</p>}
     </div>
   );
 }

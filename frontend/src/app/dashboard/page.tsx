@@ -15,6 +15,8 @@ import { TrendingUp, TrendingDown, Wallet } from "lucide-react";
 import { CashFlowChart } from "@/components/charts/cash-flow-chart";
 import { SpendingDonutChart } from "@/components/charts/spending-donut-chart";
 import { BudgetProgressList } from "@/components/charts/budget-progress-list";
+import { StatTile } from "@/components/ui/stat-tile";
+import { Card } from "@/components/ui/card";
 
 const RANGE_OPTIONS = [
   { label: "1M", months: 1 },
@@ -59,16 +61,16 @@ export default function DashboardPage() {
     <div className="space-y-6">
       {/* Header with time-range toggle — affects charts only */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Overview</h1>
-        <div className="flex rounded-lg border border-border bg-muted p-0.5">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-100">Overview</h1>
+        <div className="flex rounded-lg border border-slate-800/60 bg-slate-900/40 p-0.5">
           {RANGE_OPTIONS.map(({ label, months: m }) => (
             <button
               key={label}
               onClick={() => setMonths(m)}
               className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
                 months === m
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                  : "text-slate-500 hover:text-slate-300"
               }`}
             >
               {label}
@@ -77,9 +79,9 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* KPI cards — always current snapshot, unaffected by range */}
+      {/* KPI cards */}
       {netWorthByCurrency.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-slate-500">
           No accounts yet. Create one to see your overview.
         </p>
       ) : (
@@ -88,9 +90,9 @@ export default function DashboardPage() {
         ))
       )}
 
-      {/* Charts — per currency, driven by selected range */}
+      {/* Charts — per currency */}
       {currencies.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No transaction data for this period.</p>
+        <p className="text-sm text-slate-500">No transaction data for this period.</p>
       ) : (
         currencies.map((currency) => (
           <ChartSection
@@ -103,26 +105,26 @@ export default function DashboardPage() {
         ))
       )}
 
-      {/* Budget progress — all budgets with traffic-light coloring */}
-      <section className="rounded-xl border border-border bg-card p-5">
-        <h2 className="mb-4 font-semibold">Budget Progress</h2>
+      {/* Budget progress */}
+      <Card className="p-5">
+        <h2 className="mb-4 font-semibold tracking-tight text-slate-100">Budget Progress</h2>
         <BudgetProgressList budgets={budgets} />
-      </section>
+      </Card>
 
       {/* Account cards */}
       <section>
-        <h2 className="mb-3 text-lg font-semibold">Accounts</h2>
+        <h2 className="mb-3 text-lg font-semibold tracking-tight text-slate-100">Accounts</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {accounts.map((acc) => (
-            <div key={acc.id} className="rounded-xl border border-border bg-card p-4 shadow-sm">
-              <p className="text-xs font-medium uppercase text-muted-foreground">
+            <Card key={acc.id} className="p-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
                 {acc.accountType}
               </p>
-              <p className="mt-1 font-semibold">{acc.name}</p>
-              <p className="mt-2 text-xl font-bold">
+              <p className="mt-1 font-semibold text-slate-100">{acc.name}</p>
+              <p className="mt-2 font-mono tabular-nums text-xl font-bold text-slate-100">
                 {formatCurrency(acc.currentBalance, acc.currency)}
               </p>
-            </div>
+            </Card>
           ))}
         </div>
       </section>
@@ -140,24 +142,27 @@ function NetWorthCards({
   return (
     <section>
       {showLabel && (
-        <h2 className="mb-3 text-base font-semibold text-muted-foreground">{bucket.currency}</h2>
+        <h2 className="mb-3 text-sm font-semibold tracking-wide uppercase text-slate-500">
+          {bucket.currency}
+        </h2>
       )}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard
+        <StatTile
           title="Net Worth"
           value={formatCurrency(bucket.netWorth, bucket.currency)}
-          icon={<Wallet className="h-5 w-5 text-primary" />}
+          icon={<Wallet className="h-5 w-5" />}
         />
-        <StatCard
+        <StatTile
           title="Total Assets"
           value={formatCurrency(bucket.totalAssets, bucket.currency)}
-          icon={<TrendingUp className="h-5 w-5 text-green-500" />}
-          positive
+          icon={<TrendingUp className="h-5 w-5" />}
+          valueClassName="text-emerald-400"
         />
-        <StatCard
+        <StatTile
           title="Total Liabilities"
           value={formatCurrency(bucket.totalLiabilities, bucket.currency)}
-          icon={<TrendingDown className="h-5 w-5 text-destructive" />}
+          icon={<TrendingDown className="h-5 w-5" />}
+          valueClassName="text-rose-400"
         />
       </div>
     </section>
@@ -178,39 +183,17 @@ function ChartSection({
   return (
     <div className="space-y-4">
       {showLabel && (
-        <h2 className="text-base font-semibold text-muted-foreground">{currency}</h2>
+        <h2 className="text-sm font-semibold tracking-wide uppercase text-slate-500">{currency}</h2>
       )}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-border bg-card p-5">
-          <h2 className="mb-4 font-semibold">Cash Flow</h2>
+        <Card className="p-5">
+          <h2 className="mb-4 font-semibold tracking-tight text-slate-100">Cash Flow</h2>
           <CashFlowChart data={trend} currency={currency} />
-        </div>
-        <div className="rounded-xl border border-border bg-card p-5">
-          <h2 className="mb-4 font-semibold">Spending by Category</h2>
+        </Card>
+        <Card className="p-5">
+          <h2 className="mb-4 font-semibold tracking-tight text-slate-100">Spending by Category</h2>
           <SpendingDonutChart data={spending} currency={currency} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function StatCard({
-  title,
-  value,
-  icon,
-  positive,
-}: {
-  title: string;
-  value: string;
-  icon: React.ReactNode;
-  positive?: boolean;
-}) {
-  return (
-    <div className="flex items-center gap-4 rounded-xl border border-border bg-card p-5 shadow-sm">
-      <div className="rounded-lg bg-muted p-2">{icon}</div>
-      <div>
-        <p className="text-sm text-muted-foreground">{title}</p>
-        <p className={`text-2xl font-bold ${positive ? "text-green-600" : ""}`}>{value}</p>
+        </Card>
       </div>
     </div>
   );

@@ -11,6 +11,8 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { Plus, Trash2, Pause, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 
 const schema = z.object({
   accountId: z.coerce.number(),
@@ -40,11 +42,7 @@ export function RecurringTab() {
 
   const createMutation = useMutation({
     mutationFn: (data: CreateRecurringPayload) => recurringService.create(data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["recurring"] });
-      setShowForm(false);
-      toast.success("Created");
-    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["recurring"] }); setShowForm(false); toast.success("Created"); },
     onError: () => toast.error("Failed to create"),
   });
 
@@ -71,15 +69,15 @@ export function RecurringTab() {
       <div className="flex justify-end">
         <button
           onClick={() => { setShowForm(!showForm); reset(); }}
-          className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          className="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-400 hover:bg-emerald-500/20 transition-colors"
         >
           <Plus className="h-4 w-4" /> New Rule
         </button>
       </div>
 
       {showForm && (
-        <div className="rounded-xl border border-border bg-card p-5">
-          <h2 className="mb-4 font-semibold">New Recurring Rule</h2>
+        <Card className="p-5">
+          <h2 className="mb-4 font-semibold tracking-tight text-slate-100">New Recurring Rule</h2>
           <form
             onSubmit={handleSubmit((v) => createMutation.mutate(v))}
             className="grid grid-cols-1 gap-4 sm:grid-cols-2"
@@ -115,81 +113,69 @@ export function RecurringTab() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors"
               >
                 Save
               </button>
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="rounded-md border px-4 py-2 text-sm hover:bg-accent"
+                className="rounded-lg border border-slate-800/60 px-4 py-2 text-sm text-slate-400 hover:bg-slate-800/60 hover:text-slate-100 transition-colors"
               >
                 Cancel
               </button>
             </div>
           </form>
-        </div>
+        </Card>
       )}
 
       {isLoading ? (
-        <p className="text-muted-foreground">Loading…</p>
+        <p className="text-slate-500">Loading…</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {items.length === 0 ? (
-            <p className="text-sm text-muted-foreground sm:col-span-2">No recurring rules yet.</p>
+            <p className="text-sm text-slate-500 sm:col-span-2">No recurring rules yet.</p>
           ) : (
             items.map((item) => (
-              <div
+              <Card
                 key={item.id}
-                className={cn(
-                  "rounded-xl border bg-card p-5 shadow-sm",
-                  !item.active ? "opacity-60" : "border-border"
-                )}
+                className={cn("p-5", !item.active && "opacity-50")}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className={cn(
-                        "rounded-full px-2 py-0.5 text-xs font-medium",
-                        item.transactionType === "INCOME" ? "bg-green-100 text-green-700" :
-                        item.transactionType === "EXPENSE" ? "bg-red-100 text-red-700" :
-                        "bg-blue-100 text-blue-700"
-                      )}>
+                      <Badge variant={item.transactionType === "INCOME" ? "income" : item.transactionType === "EXPENSE" ? "expense" : "transfer"}>
                         {item.transactionType}
-                      </span>
-                      {!item.active && (
-                        <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                          Paused
-                        </span>
-                      )}
+                      </Badge>
+                      {!item.active && <Badge variant="neutral">Paused</Badge>}
                     </div>
-                    <p className="mt-1 text-lg font-bold">{formatAmount(item.amount)}</p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="mt-2 font-mono tabular-nums text-lg font-bold text-slate-100">
+                      {formatAmount(item.amount)}
+                    </p>
+                    <p className="text-sm text-slate-500">
                       Every {item.intervalValue > 1 ? `${item.intervalValue} ` : ""}
                       {item.frequency.toLowerCase()} · {item.accountName}
                     </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
+                    <p className="mt-1 font-mono tabular-nums text-xs text-slate-500">
                       Next: {formatDate(item.nextRunDate)}
                     </p>
                   </div>
                   <div className="flex items-center gap-1">
                     <button
-                      onClick={() =>
-                        item.active ? pauseMutation.mutate(item.id) : resumeMutation.mutate(item.id)
-                      }
-                      className="rounded-md p-1.5 text-muted-foreground hover:bg-accent"
+                      onClick={() => item.active ? pauseMutation.mutate(item.id) : resumeMutation.mutate(item.id)}
+                      className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-800/60 hover:text-slate-200 transition-colors"
                     >
                       {item.active ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                     </button>
                     <button
                       onClick={() => deleteMutation.mutate(item.id)}
-                      className="rounded-md p-1.5 text-muted-foreground hover:text-destructive"
+                      className="rounded-lg p-1.5 text-slate-500 hover:bg-rose-500/10 hover:text-rose-400 transition-colors"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
-              </div>
+              </Card>
             ))
           )}
         </div>
@@ -199,22 +185,14 @@ export function RecurringTab() {
 }
 
 const inputCls =
-  "w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring";
+  "w-full rounded-lg border border-slate-800/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-colors";
 
-function Field({
-  label,
-  error,
-  children,
-}: {
-  label: string;
-  error?: string;
-  children: React.ReactNode;
-}) {
+function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="mb-1 block text-sm font-medium">{label}</label>
+      <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">{label}</label>
       {children}
-      {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
+      {error && <p className="mt-1 text-xs text-rose-400">{error}</p>}
     </div>
   );
 }
