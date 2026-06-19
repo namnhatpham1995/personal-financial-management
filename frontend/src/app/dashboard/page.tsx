@@ -55,18 +55,17 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header with time-range toggle — affects charts only */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-100">Overview</h1>
-        <div className="flex rounded-lg border border-slate-800/60 bg-slate-900/40 p-0.5">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Overview</h1>
+        <div className="flex rounded-lg border border-border bg-card p-0.5">
           {RANGE_OPTIONS.map(({ label, months: m }) => (
             <button
               key={label}
               onClick={() => setMonths(m)}
               className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
                 months === m
-                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                  : "text-slate-500 hover:text-slate-300"
+                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {label}
@@ -75,9 +74,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* KPI cards */}
       {netWorthByCurrency.length === 0 ? (
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-muted-foreground">
           No accounts yet. Create one to see your overview.
         </p>
       ) : (
@@ -86,9 +84,8 @@ export default function DashboardPage() {
         ))
       )}
 
-      {/* Charts — per currency */}
       {currencies.length === 0 ? (
-        <p className="text-sm text-slate-500">No transaction data for this period.</p>
+        <p className="text-sm text-muted-foreground">No transaction data for this period.</p>
       ) : (
         currencies.map((currency) => (
           <ChartSection
@@ -101,23 +98,21 @@ export default function DashboardPage() {
         ))
       )}
 
-      {/* Budget progress */}
       <Card className="p-5">
-        <h2 className="mb-4 font-semibold tracking-tight text-slate-100">Budget Progress</h2>
+        <h2 className="mb-4 font-semibold tracking-tight text-foreground">Budget Progress</h2>
         <BudgetProgressManager />
       </Card>
 
-      {/* Account cards */}
       <section>
-        <h2 className="mb-3 text-lg font-semibold tracking-tight text-slate-100">Accounts</h2>
+        <h2 className="mb-3 text-lg font-semibold tracking-tight text-foreground">Accounts</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {accounts.map((acc) => (
             <Card key={acc.id} className="p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 {acc.accountType}
               </p>
-              <p className="mt-1 font-semibold text-slate-100">{acc.name}</p>
-              <p className="mt-2 font-mono tabular-nums text-xl font-bold text-slate-100">
+              <p className="mt-1 font-semibold text-foreground">{acc.name}</p>
+              <p className="mt-2 font-mono tabular-nums text-xl font-bold text-foreground">
                 {formatCurrency(acc.currentBalance, acc.currency)}
               </p>
             </Card>
@@ -128,17 +123,11 @@ export default function DashboardPage() {
   );
 }
 
-function NetWorthCards({
-  bucket,
-  showLabel,
-}: {
-  bucket: CurrencyNetWorth;
-  showLabel: boolean;
-}) {
+function NetWorthCards({ bucket, showLabel }: { bucket: CurrencyNetWorth; showLabel: boolean }) {
   return (
     <section>
       {showLabel && (
-        <h2 className="mb-3 text-sm font-semibold tracking-wide uppercase text-slate-500">
+        <h2 className="mb-3 text-sm font-semibold tracking-wide uppercase text-muted-foreground">
           {bucket.currency}
         </h2>
       )}
@@ -152,13 +141,13 @@ function NetWorthCards({
           title="Total Assets"
           value={formatCurrency(bucket.totalAssets, bucket.currency)}
           icon={<TrendingUp className="h-5 w-5" />}
-          valueClassName="text-emerald-400"
+          valueClassName="text-emerald-600 dark:text-emerald-400"
         />
         <StatTile
           title="Total Liabilities"
           value={formatCurrency(bucket.totalLiabilities, bucket.currency)}
           icon={<TrendingDown className="h-5 w-5" />}
-          valueClassName="text-rose-400"
+          valueClassName="text-rose-600 dark:text-rose-400"
         />
       </div>
     </section>
@@ -179,15 +168,17 @@ function ChartSection({
   return (
     <div className="space-y-4">
       {showLabel && (
-        <h2 className="text-sm font-semibold tracking-wide uppercase text-slate-500">{currency}</h2>
+        <h2 className="text-sm font-semibold tracking-wide uppercase text-muted-foreground">
+          {currency}
+        </h2>
       )}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card className="p-5">
-          <h2 className="mb-4 font-semibold tracking-tight text-slate-100">Cash Flow</h2>
+          <h2 className="mb-4 font-semibold tracking-tight text-foreground">Cash Flow</h2>
           <CashFlowChart data={trend} currency={currency} />
         </Card>
         <Card className="p-5">
-          <h2 className="mb-4 font-semibold tracking-tight text-slate-100">Spending by Category</h2>
+          <h2 className="mb-4 font-semibold tracking-tight text-foreground">Spending by Category</h2>
           <SpendingDonutChart data={spending} currency={currency} />
         </Card>
       </div>

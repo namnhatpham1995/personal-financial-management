@@ -13,28 +13,28 @@ function actionLabel(action: string): string {
 }
 
 function actionColor(action: string): string {
-  if (action.includes("deleted")) return "text-red-400";
-  if (action.includes("created")) return "text-emerald-400";
-  if (action.includes("login"))   return "text-sky-400";
-  return "text-slate-300";
+  if (action.includes("deleted")) return "text-rose-600 dark:text-rose-400";
+  if (action.includes("created")) return "text-emerald-600 dark:text-emerald-400";
+  if (action.includes("login"))   return "text-sky-600 dark:text-sky-400";
+  return "text-foreground";
 }
 
 function EventRow({ event }: { event: ActivityEvent }) {
   const date = new Date(event.ts);
   return (
-    <div className="flex items-start gap-4 py-3 border-b border-slate-800/50 last:border-0">
-      <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-slate-800">
-        <Activity className="h-4 w-4 text-slate-400" />
+    <div className="flex items-start gap-4 py-3 border-b border-border last:border-0">
+      <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-secondary">
+        <Activity className="h-4 w-4 text-muted-foreground" />
       </div>
       <div className="flex-1 min-w-0">
         <p className={`text-sm font-medium ${actionColor(event.action)}`}>
           {actionLabel(event.action)}
         </p>
-        <p className="text-xs text-slate-500 mt-0.5">
+        <p className="text-xs text-muted-foreground mt-0.5">
           {date.toLocaleDateString()} {date.toLocaleTimeString()}
         </p>
       </div>
-      <span className="text-xs text-slate-600 hidden sm:block truncate max-w-[120px]">
+      <span className="text-xs text-muted-foreground/60 hidden sm:block truncate max-w-[120px]">
         {event.correlationId?.slice(0, 8)}
       </span>
     </div>
@@ -52,19 +52,19 @@ export default function ActivityPage() {
   return (
     <div className="space-y-6 p-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-100">Recent Activity</h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <h1 className="text-2xl font-bold text-foreground">Recent Activity</h1>
+        <p className="text-sm text-muted-foreground mt-1">
           A log of changes made to your account — stored in MongoDB.
         </p>
       </div>
 
-      <Card className="bg-slate-900/60 border-slate-800/60 p-4">
+      <Card className="p-4">
         {isLoading && (
-          <div className="py-12 text-center text-slate-500 text-sm">Loading…</div>
+          <div className="py-12 text-center text-muted-foreground text-sm">Loading…</div>
         )}
 
         {!isLoading && (!data?.content?.length) && (
-          <div className="py-12 text-center text-slate-500 text-sm">
+          <div className="py-12 text-center text-muted-foreground text-sm">
             No activity yet. Make some changes and come back.
           </div>
         )}
@@ -79,17 +79,17 @@ export default function ActivityPage() {
           <button
             onClick={() => setPage((p) => Math.max(0, p - 1))}
             disabled={page === 0}
-            className="rounded-lg border border-slate-700 p-2 text-slate-400 hover:text-slate-100 disabled:opacity-30"
+            className="rounded-lg border border-border p-2 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
-          <span className="text-sm text-slate-500">
+          <span className="text-sm text-muted-foreground">
             {page + 1} / {data.totalPages}
           </span>
           <button
             onClick={() => setPage((p) => Math.min(data.totalPages - 1, p + 1))}
             disabled={page >= data.totalPages - 1}
-            className="rounded-lg border border-slate-700 p-2 text-slate-400 hover:text-slate-100 disabled:opacity-30"
+            className="rounded-lg border border-border p-2 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
           >
             <ChevronRight className="h-4 w-4" />
           </button>

@@ -4,17 +4,15 @@ type TransactionType = "INCOME" | "EXPENSE" | "TRANSFER";
 
 interface MoneyTextProps {
   amount: number;
-  /** Controls sign prefix and semantic color */
   type?: TransactionType;
-  /** Override color/sign logic; use for raw balances without a type */
   signed?: boolean;
   className?: string;
 }
 
 const typeStyles: Record<TransactionType, string> = {
-  INCOME: "text-emerald-400",
-  EXPENSE: "text-rose-400",
-  TRANSFER: "text-slate-400",
+  INCOME: "text-emerald-500 dark:text-emerald-400",
+  EXPENSE: "text-rose-500 dark:text-rose-400",
+  TRANSFER: "text-muted-foreground",
 };
 
 const typeSign: Record<TransactionType, string> = {
@@ -24,7 +22,13 @@ const typeSign: Record<TransactionType, string> = {
 };
 
 export function MoneyText({ amount, type, signed = false, className }: MoneyTextProps) {
-  const colorClass = type ? typeStyles[type] : signed && amount >= 0 ? "text-emerald-400" : signed ? "text-rose-400" : "text-slate-100";
+  const colorClass = type
+    ? typeStyles[type]
+    : signed && amount >= 0
+    ? "text-emerald-500 dark:text-emerald-400"
+    : signed
+    ? "text-rose-500 dark:text-rose-400"
+    : "text-foreground";
   const sign = type ? typeSign[type] : "";
 
   return (

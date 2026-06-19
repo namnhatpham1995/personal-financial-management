@@ -83,6 +83,15 @@ jobs:
         working-directory: frontend
         run: npm run lint
 
+      - name: No raw palette classes
+        working-directory: frontend
+        run: |
+          if grep -rE "(text|bg|border)-(slate|zinc|gray|neutral)-[0-9]" src/ --include="*.tsx" --include="*.ts" -l; then
+            echo "ERROR: raw palette color classes found — use token-backed utilities instead"
+            exit 1
+          fi
+          echo "OK: no raw palette classes in frontend/src/"
+
       - name: Build
         working-directory: frontend
         env:

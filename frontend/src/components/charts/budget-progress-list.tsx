@@ -20,7 +20,7 @@ interface Props {
 export function BudgetProgressList({ budgets, renderActions, renderDetails }: Props) {
   if (budgets.length === 0) {
     return (
-      <p className="text-sm text-slate-500">No budgets configured. Use Add limit to create one.</p>
+      <p className="text-sm text-muted-foreground">No budgets configured. Use Add limit to create one.</p>
     );
   }
 
@@ -32,20 +32,20 @@ export function BudgetProgressList({ budgets, renderActions, renderDetails }: Pr
         return (
           <div key={b.budgetId}>
             <div className="mb-1.5 flex items-center justify-between gap-3 text-sm">
-              <span className="flex items-center gap-1.5 font-medium text-slate-200">
+              <span className="flex items-center gap-1.5 font-medium text-foreground">
                 {rawPct >= DANGER_THRESHOLD && (
-                  <AlertCircle className="h-3.5 w-3.5 text-rose-400" />
+                  <AlertCircle className="h-3.5 w-3.5 text-rose-500 dark:text-rose-400" />
                 )}
                 {b.budgetName}
               </span>
               <div className="flex shrink-0 items-center gap-2">
-                <span className="font-mono tabular-nums text-xs text-slate-500">
+                <span className="font-mono tabular-nums text-xs text-muted-foreground">
                   {b.spent} / {b.limitAmount}
                 </span>
                 {renderActions?.(b)}
               </div>
             </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-slate-800">
+            <div className="h-1.5 overflow-hidden rounded-full bg-secondary">
               <div
                 className={`h-full rounded-full transition-all ${barColor(rawPct)}`}
                 style={{ width: `${clampedPct}%` }}

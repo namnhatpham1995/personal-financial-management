@@ -16,7 +16,7 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 const inputCls =
-  "w-full rounded-lg border border-slate-800/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-colors";
+  "w-full rounded-lg border border-border bg-card px-3 py-2 text-base text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-colors";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -35,34 +35,40 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="w-full max-w-md rounded-xl border border-slate-800/60 bg-slate-900/40 backdrop-blur-sm p-8">
+      <div className="w-full max-w-md rounded-xl border border-border bg-card p-8 shadow-card">
         <div className="mb-8">
-          <span className="text-xl font-bold tracking-tight text-emerald-400">Fintrack</span>
-          <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-100">Sign in</h1>
-          <p className="mt-1 text-sm text-slate-500">Track your finances with clarity.</p>
+          <span className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
+            Fintrack
+          </span>
+          <h1 className="mt-3 text-2xl font-bold tracking-tight text-foreground">Sign in</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Track your finances with clarity.</p>
         </div>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">Email</label>
+            <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Email
+            </label>
             <input type="email" {...register("email")} className={inputCls} />
-            {errors.email && <p className="mt-1 text-xs text-rose-400">{errors.email.message}</p>}
+            {errors.email && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors.email.message}</p>}
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">Password</label>
+            <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Password
+            </label>
             <input type="password" {...register("password")} className={inputCls} />
-            {errors.password && <p className="mt-1 text-xs text-rose-400">{errors.password.message}</p>}
+            {errors.password && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors.password.message}</p>}
           </div>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2.5 text-sm font-medium text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors"
+            className="w-full rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2.5 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors"
           >
             {isSubmitting ? "Signing in…" : "Sign in"}
           </button>
         </form>
-        <p className="mt-6 text-center text-sm text-slate-500">
+        <p className="mt-6 text-center text-sm text-muted-foreground">
           No account?{" "}
-          <Link href="/register" className="font-medium text-emerald-400 hover:text-emerald-300 transition-colors">
+          <Link href="/register" className="font-medium text-emerald-600 dark:text-emerald-400 hover:underline transition-colors">
             Register
           </Link>
         </p>

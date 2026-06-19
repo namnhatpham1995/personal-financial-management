@@ -17,9 +17,12 @@ import type { TransactionFormValues } from "./transaction-form";
 import { RecurringTab } from "./recurring-tab";
 import { Badge } from "@/components/ui/badge";
 
+const inputCls =
+  "w-full rounded-lg border border-border bg-card px-3 py-2 text-base text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-colors";
+
 export default function TransactionsPage() {
   return (
-    <Suspense fallback={<p className="text-slate-500">Loading…</p>}>
+    <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
       <TransactionsContent />
     </Suspense>
   );
@@ -33,11 +36,10 @@ function TransactionsContent() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-100">Transactions</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Transactions</h1>
       </div>
 
-      {/* Tab bar */}
-      <div className="flex gap-1 border-b border-slate-800/60">
+      <div className="flex gap-1 border-b border-border">
         {(["history", "recurring"] as const).map((tab) => (
           <button
             key={tab}
@@ -52,8 +54,8 @@ function TransactionsContent() {
             className={cn(
               "px-4 py-2 text-sm font-medium capitalize transition-colors",
               activeTab === tab
-                ? "border-b-2 border-emerald-400 text-emerald-400"
-                : "text-slate-500 hover:text-slate-300"
+                ? "border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400"
+                : "text-muted-foreground hover:text-foreground"
             )}
           >
             {tab}
@@ -137,7 +139,6 @@ function HistoryTab() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
-        {/* Filters */}
         <select
           className={inputCls + " max-w-xs"}
           onChange={(e) => setFilters((f) => ({ ...f, type: e.target.value || undefined, page: 0 }))}
@@ -158,7 +159,7 @@ function HistoryTab() {
         <div className="ml-auto">
           <button
             onClick={handleAddClick}
-            className="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+            className="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors"
           >
             <Plus className="h-4 w-4" /> Add
           </button>
@@ -177,60 +178,60 @@ function HistoryTab() {
       )}
 
       {isLoading ? (
-        <p className="text-slate-500">Loading…</p>
+        <p className="text-muted-foreground">Loading…</p>
       ) : isError ? (
-        <p className="text-rose-400">Failed to load transactions. Check your connection or try refreshing.</p>
+        <p className="text-rose-600 dark:text-rose-400">Failed to load transactions. Check your connection or try refreshing.</p>
       ) : (
         <>
-          <div className="overflow-x-auto rounded-xl border border-slate-800/60 bg-slate-900/40 backdrop-blur-sm">
+          <div className="overflow-x-auto rounded-xl border border-border bg-card">
             <table className="w-full text-sm">
-              <thead className="border-b border-slate-800/60">
+              <thead className="border-b border-border">
                 <tr>
                   {["Date", "Account", "Type", "Category", "Amount", "Note", ""].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500">{h}</th>
+                    <th key={h} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/40">
+              <tbody className="divide-y divide-border">
                 {transactions.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
+                    <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
                       No transactions found
                     </td>
                   </tr>
                 ) : (
                   transactions.map((tx) => (
-                    <tr key={tx.id} className="transition-colors hover:bg-slate-800/30">
-                      <td className="px-4 py-3 font-mono tabular-nums text-xs text-slate-400">{formatDate(tx.transactionDate)}</td>
-                      <td className="px-4 py-3 text-slate-300">{tx.accountName}</td>
+                    <tr key={tx.id} className="transition-colors hover:bg-hover-surface">
+                      <td className="px-4 py-3 font-mono tabular-nums text-xs text-muted-foreground">{formatDate(tx.transactionDate)}</td>
+                      <td className="px-4 py-3 text-foreground">{tx.accountName}</td>
                       <td className="px-4 py-3">
                         <Badge variant={tx.transactionType === "INCOME" ? "income" : tx.transactionType === "EXPENSE" ? "expense" : "transfer"}>
                           {tx.transactionType}
                         </Badge>
                       </td>
-                      <td className="px-4 py-3 text-slate-500">{tx.categoryName ?? "—"}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{tx.categoryName ?? "—"}</td>
                       <td className={cn(
                         "px-4 py-3 font-mono tabular-nums font-medium",
-                        tx.transactionType === "INCOME" ? "text-emerald-400" :
-                        tx.transactionType === "EXPENSE" ? "text-rose-400" : "text-slate-400"
+                        tx.transactionType === "INCOME" ? "text-emerald-600 dark:text-emerald-400" :
+                        tx.transactionType === "EXPENSE" ? "text-rose-600 dark:text-rose-400" : "text-muted-foreground"
                       )}>
                         {tx.transactionType === "INCOME" ? "+" : tx.transactionType === "EXPENSE" ? "−" : ""}
                         {formatCurrency(tx.amount, tx.currency)}
                       </td>
-                      <td className="px-4 py-3 text-slate-500">{tx.note ?? "—"}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{tx.note ?? "—"}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => startEdit(tx)}
                             title="Edit transaction"
-                            className="text-slate-500 hover:text-slate-200 transition-colors"
+                            className="text-muted-foreground hover:text-foreground transition-colors"
                           >
                             <Pencil className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => deleteMutation.mutate(tx.id)}
                             title="Delete transaction"
-                            className="text-slate-500 hover:text-rose-400 transition-colors"
+                            className="text-muted-foreground hover:text-rose-500 dark:hover:text-rose-400 transition-colors"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -243,23 +244,22 @@ function HistoryTab() {
             </table>
           </div>
 
-          {/* Pagination */}
           <div className="flex items-center justify-between">
-            <p className="font-mono tabular-nums text-xs text-slate-500">
+            <p className="font-mono tabular-nums text-xs text-muted-foreground">
               Page {currentPage + 1} of {totalPages}
             </p>
             <div className="flex gap-2">
               <button
                 disabled={currentPage === 0}
                 onClick={() => setFilters((f) => ({ ...f, page: currentPage - 1 }))}
-                className="rounded-lg border border-slate-800/60 p-1.5 text-slate-400 hover:bg-slate-800/60 hover:text-slate-100 disabled:opacity-40 transition-colors"
+                className="rounded-lg border border-border p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-40 transition-colors"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
               <button
                 disabled={currentPage >= totalPages - 1}
                 onClick={() => setFilters((f) => ({ ...f, page: currentPage + 1 }))}
-                className="rounded-lg border border-slate-800/60 p-1.5 text-slate-400 hover:bg-slate-800/60 hover:text-slate-100 disabled:opacity-40 transition-colors"
+                className="rounded-lg border border-border p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-40 transition-colors"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -270,6 +270,3 @@ function HistoryTab() {
     </div>
   );
 }
-
-const inputCls =
-  "w-full rounded-lg border border-slate-800/60 bg-slate-900/40 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-colors";

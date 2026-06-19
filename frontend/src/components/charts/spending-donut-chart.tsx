@@ -3,7 +3,7 @@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { SpendingByCategory } from "@/services/analytics-service";
 import { formatCurrency } from "@/lib/utils";
-import { CHART_THEME } from "./cash-flow-chart";
+import { useChartTheme } from "@/lib/use-chart-theme";
 
 interface Props {
   data: SpendingByCategory[];
@@ -11,9 +11,11 @@ interface Props {
 }
 
 export function SpendingDonutChart({ data, currency }: Props) {
+  const theme = useChartTheme();
+
   if (data.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-slate-500">
+      <p className="py-8 text-center text-sm text-muted-foreground">
         No expense data for this period.
       </p>
     );
@@ -38,17 +40,17 @@ export function SpendingDonutChart({ data, currency }: Props) {
             strokeWidth={0}
           >
             {chartData.map((_, i) => (
-              <Cell key={i} fill={CHART_THEME.series[i % CHART_THEME.series.length]} />
+              <Cell key={i} fill={theme.series[i % theme.series.length]} />
             ))}
           </Pie>
           <Tooltip
             formatter={(v: number) => fmt(v)}
             contentStyle={{
-              background: CHART_THEME.tooltipBg,
-              border: `1px solid ${CHART_THEME.tooltipBorder}`,
+              background: theme.tooltipBg,
+              border: `1px solid ${theme.tooltipBorder}`,
               borderRadius: "0.75rem",
               fontSize: 12,
-              color: "#f1f5f9",
+              color: theme.tooltipColor,
             }}
           />
         </PieChart>
@@ -56,14 +58,14 @@ export function SpendingDonutChart({ data, currency }: Props) {
       <ul className="mt-2 space-y-1">
         {chartData.map((d, i) => (
           <li key={d.name} className="flex items-center justify-between text-xs">
-            <span className="flex items-center gap-1.5 text-slate-300">
+            <span className="flex items-center gap-1.5 text-foreground">
               <span
                 className="h-2 w-2 flex-shrink-0 rounded-full"
-                style={{ backgroundColor: CHART_THEME.series[i % CHART_THEME.series.length] }}
+                style={{ backgroundColor: theme.series[i % theme.series.length] }}
               />
               {d.name}
             </span>
-            <span className="font-mono tabular-nums text-slate-500">
+            <span className="font-mono tabular-nums text-muted-foreground">
               {total > 0 ? `${((d.value / total) * 100).toFixed(0)}%` : "—"}
             </span>
           </li>
