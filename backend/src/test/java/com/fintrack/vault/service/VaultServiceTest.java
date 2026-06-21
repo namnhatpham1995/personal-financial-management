@@ -105,8 +105,6 @@ class VaultServiceTest {
     void upload_storesFileAndCreatesDocument() throws IOException {
         MultipartFile file = mock(MultipartFile.class);
         when(file.getOriginalFilename()).thenReturn("receipt.jpg");
-        when(file.getInputStream()).thenReturn(
-                new java.io.ByteArrayInputStream(new byte[0]));
         when(gridFsFileStore.store(any(), eq(1L))).thenReturn("gridfs-xyz");
         when(vaultDocumentRepository.save(any())).thenAnswer(inv -> {
             VaultDocument d = inv.getArgument(0);
