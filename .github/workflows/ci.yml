@@ -83,6 +83,10 @@ jobs:
         working-directory: frontend
         run: npm run lint
 
+      - name: Test
+        working-directory: frontend
+        run: npm test
+
       - name: No raw palette classes
         working-directory: frontend
         run: |
@@ -111,3 +115,23 @@ jobs:
         env:
           JWT_SECRET: ci-docker-build-test-secret-not-real
         run: docker compose build --no-cache
+
+  deploy:
+    name: Deploy — Railway (gated on green main)
+    runs-on: ubuntu-latest
+    needs: [backend, frontend, docker]
+    if: github.ref == 'refs/heads/main' && success()
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy to Railway
+        env:
+          # RAILWAY_TOKEN must be added as a repository secret:
+          # Project → Settings → Tokens → create project-scoped token → copy once
+          # GitHub: Settings → Secrets and variables → Actions → New repository secret
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: railway up --detach

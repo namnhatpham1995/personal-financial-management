@@ -18,7 +18,7 @@ Fintrack is a three-tier web application:
                          │ JDBC (Flyway migrations)
 ┌────────────────────────▼─────────────────────────────────┐
 │                  PostgreSQL 16                            │
-│   DECIMAL(19,4) monetary fields · per-user row security  │
+│   DECIMAL(19,4) monetary fields · service-layer isolation│
 └──────────────────────────────────────────────────────────┘
 ```
 
@@ -79,11 +79,26 @@ Daily at 01:00 UTC (`@Scheduled(cron="0 0 1 * * *")`):
 
 **Design note**: Per-occurrence processing isolated in a separate injectable bean so the Spring AOP proxy applies the `@Transactional` boundary correctly (cross-bean delegation, not self-invocation).
 
+## Audit Log
+
+Every successful authenticated mutation (POST/PUT/DELETE returning 2xx) writes one row to the `audit_log` table in PostgreSQL. The write happens in a dedicated `REQUIRES_NEW` transaction immediately after the business response is committed, ensuring the business operation is never affected by an audit failure.
+
+`audit_log` schema: `id`, `user_id`, `action` (e.g. `accounts.created`), `ts`, `correlation_id`, `meta` (JSONB, action-specific fields). Indexed on `(user_id, ts DESC)` for paginated history queries.
+
+The activity-history endpoint (`GET /api/v1/activity`) reads directly from this table, scoped to the requesting user.
+
+## Data Stores
+
+**PostgreSQL** is the sole system of record for all financial data and audit history. User isolation is enforced at the service layer: every query filters by `user_id` extracted from the JWT. PostgreSQL row-level security (RLS) is **not** used.
+
+**MongoDB** dependency is present in the codebase but currently idle — it is reserved for the planned Receipt & Statement Vault feature (document-shaped, heterogeneous per-source financial documents) where the document model is a better fit than relational tables.
+
 ## Database Schema
 
 Key design decisions:
 - `DECIMAL(19,4)` for all `amount`/`balance` columns — no floating point
-- `user_id` FK on every domain table — enforced at service layer (not row-level security)
+- `user_id` FK on every domain table — enforced at service layer (not PostgreSQL row-level security)
+- Compound index on `audit_log(user_id, ts DESC)` for history queries
 - Soft index on `transactions(user_id, transaction_date)` for range queries
 - Unique `(user_id, name)` on accounts and categories
 - Unique `(recurring_id, occurrence_date)` on transactions for idempotency

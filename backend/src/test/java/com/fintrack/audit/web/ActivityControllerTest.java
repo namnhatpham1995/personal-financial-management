@@ -1,8 +1,8 @@
 package com.fintrack.audit.web;
 
-import com.fintrack.audit.domain.ActivityEvent;
-import com.fintrack.audit.domain.ActivityEventRepository;
-import com.fintrack.audit.service.ActivityRecorder;
+import com.fintrack.audit.domain.AuditLog;
+import com.fintrack.audit.domain.AuditLogRepository;
+import com.fintrack.audit.service.AuditLogWriter;
 import com.fintrack.common.ratelimit.AuthRateLimitFilter;
 import com.fintrack.common.security.JwtAuthenticationFilter;
 import com.fintrack.common.security.UserPrincipal;
@@ -49,7 +49,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(ActivityControllerTest.TestMvcConfig.class)
 class ActivityControllerTest {
 
-    /** Registers AuthenticationPrincipalArgumentResolver without requiring full security autoconfiguration. */
     @TestConfiguration
     static class TestMvcConfig implements WebMvcConfigurer {
         @Override
@@ -59,15 +58,14 @@ class ActivityControllerTest {
     }
 
     @Autowired MockMvc mockMvc;
-    @MockBean ActivityEventRepository repository;
-    @MockBean ActivityRecorder recorder; // satisfies WebMvcConfig -> ActivityAuditInterceptor conditional
+    @MockBean AuditLogRepository auditLogRepository;
+    @MockBean AuditLogWriter auditLogWriter; // satisfies ActivityAuditInterceptor dependency in WebMvcConfig
 
     @AfterEach
     void clearSecurityContext() {
         SecurityContextHolder.clearContext();
     }
 
-    /** Sets a mocked UserPrincipal as the active authentication for the current test thread. */
     private UserPrincipal loginAs(long userId) {
         UserPrincipal principal = mock(UserPrincipal.class);
         when(principal.getUserId()).thenReturn(userId);
@@ -80,8 +78,8 @@ class ActivityControllerTest {
     void list_returnsPagedEventsForCurrentUser() throws Exception {
         loginAs(5L);
 
-        ActivityEvent event = ActivityEvent.builder()
-                .id("abc123")
+        AuditLog entry = AuditLog.builder()
+                .id(1L)
                 .userId(5L)
                 .action("accounts.created")
                 .ts(Instant.parse("2026-06-01T10:00:00Z"))
@@ -89,12 +87,12 @@ class ActivityControllerTest {
                 .meta(Map.of("uri", "/api/v1/accounts"))
                 .build();
 
-        when(repository.findByUserIdOrderByTsDesc(eq(5L), any(PageRequest.class)))
-                .thenReturn(new PageImpl<>(List.of(event)));
+        when(auditLogRepository.findByUserIdOrderByTsDesc(eq(5L), any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(List.of(entry)));
 
         mockMvc.perform(get("/api/v1/activity"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].id").value("abc123"))
+                .andExpect(jsonPath("$.content[0].id").value(1))
                 .andExpect(jsonPath("$.content[0].action").value("accounts.created"))
                 .andExpect(jsonPath("$.content[0].correlationId").value("corr-1"));
     }
@@ -102,9 +100,8 @@ class ActivityControllerTest {
     @Test
     void list_pageSizeCappedAt100() throws Exception {
         loginAs(1L);
-        when(repository.findByUserIdOrderByTsDesc(any(), any())).thenReturn(new PageImpl<>(List.of()));
+        when(auditLogRepository.findByUserIdOrderByTsDesc(any(), any())).thenReturn(new PageImpl<>(List.of()));
 
-        // size=500 in request — controller caps to 100; must return 200 not 400/500
         mockMvc.perform(get("/api/v1/activity?size=500"))
                 .andExpect(status().isOk());
     }

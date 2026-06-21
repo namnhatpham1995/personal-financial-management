@@ -1,6 +1,6 @@
 package com.fintrack.audit.interceptor;
 
-import com.fintrack.audit.service.ActivityRecorder;
+import com.fintrack.audit.service.AuditLogWriter;
 import com.fintrack.common.security.UserPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -19,7 +19,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class ActivityAuditInterceptorTest {
 
-    @Mock ActivityRecorder recorder;
+    @Mock AuditLogWriter auditLogWriter;
     @Mock HttpServletRequest request;
     @Mock HttpServletResponse response;
     @Mock UserPrincipal principal;
@@ -38,7 +38,7 @@ class ActivityAuditInterceptorTest {
     }
 
     @Test
-    void afterCompletion_postWith201_recordsEvent() throws Exception {
+    void afterCompletion_postWith201_writesAuditEntry() throws Exception {
         authenticateAs(7L);
         when(request.getMethod()).thenReturn("POST");
         when(request.getRequestURI()).thenReturn("/api/v1/accounts");
@@ -46,11 +46,11 @@ class ActivityAuditInterceptorTest {
 
         interceptor.afterCompletion(request, response, null, null);
 
-        verify(recorder).record(eq(7L), eq("accounts.created"), any(), any());
+        verify(auditLogWriter).write(eq(7L), eq("accounts.created"), any(), any());
     }
 
     @Test
-    void afterCompletion_deleteWith204_recordsEvent() throws Exception {
+    void afterCompletion_deleteWith204_writesAuditEntry() throws Exception {
         authenticateAs(3L);
         when(request.getMethod()).thenReturn("DELETE");
         when(request.getRequestURI()).thenReturn("/api/v1/accounts/5");
@@ -58,38 +58,35 @@ class ActivityAuditInterceptorTest {
 
         interceptor.afterCompletion(request, response, null, null);
 
-        verify(recorder).record(eq(3L), eq("accounts.deleted"), any(), any());
+        verify(auditLogWriter).write(eq(3L), eq("accounts.deleted"), any(), any());
     }
 
     @Test
-    void afterCompletion_getRequest_doesNotRecord() throws Exception {
-        // Interceptor returns before reading auth — no auth setup needed
+    void afterCompletion_getRequest_doesNotWrite() throws Exception {
         when(request.getMethod()).thenReturn("GET");
 
         interceptor.afterCompletion(request, response, null, null);
 
-        verifyNoInteractions(recorder);
+        verifyNoInteractions(auditLogWriter);
     }
 
     @Test
-    void afterCompletion_postWith400_doesNotRecord() throws Exception {
-        // Interceptor returns on non-2xx before reading auth — no auth setup needed
+    void afterCompletion_postWith400_doesNotWrite() throws Exception {
         when(request.getMethod()).thenReturn("POST");
         when(response.getStatus()).thenReturn(400);
 
         interceptor.afterCompletion(request, response, null, null);
 
-        verifyNoInteractions(recorder);
+        verifyNoInteractions(auditLogWriter);
     }
 
     @Test
-    void afterCompletion_noAuthentication_doesNotRecord() throws Exception {
+    void afterCompletion_noAuthentication_doesNotWrite() throws Exception {
         when(request.getMethod()).thenReturn("POST");
         when(response.getStatus()).thenReturn(201);
-        // SecurityContext is empty — unauthenticated request
 
         interceptor.afterCompletion(request, response, null, null);
 
-        verifyNoInteractions(recorder);
+        verifyNoInteractions(auditLogWriter);
     }
 }

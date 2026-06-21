@@ -1,7 +1,7 @@
 package com.fintrack.audit.service;
 
-import com.fintrack.audit.domain.ActivityEvent;
-import com.fintrack.audit.domain.ActivityEventRepository;
+import com.fintrack.audit.domain.AuditLog;
+import com.fintrack.audit.domain.AuditLogRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -17,19 +17,19 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class ActivityRecorderTest {
+class AuditLogWriterTest {
 
-    @Mock ActivityEventRepository repository;
-    @InjectMocks ActivityRecorder recorder;
+    @Mock AuditLogRepository auditLogRepository;
+    @InjectMocks AuditLogWriter writer;
 
     @Test
-    void record_savesEventWithCorrectFields() {
-        recorder.record(42L, "account.created", "corr-123", Map.of("uri", "/api/v1/accounts"));
+    void write_savesAuditLogWithCorrectFields() {
+        writer.write(42L, "account.created", "corr-123", Map.of("uri", "/api/v1/accounts"));
 
-        ArgumentCaptor<ActivityEvent> captor = ArgumentCaptor.forClass(ActivityEvent.class);
-        verify(repository).save(captor.capture());
+        ArgumentCaptor<AuditLog> captor = ArgumentCaptor.forClass(AuditLog.class);
+        verify(auditLogRepository).save(captor.capture());
 
-        ActivityEvent saved = captor.getValue();
+        AuditLog saved = captor.getValue();
         assertThat(saved.getUserId()).isEqualTo(42L);
         assertThat(saved.getAction()).isEqualTo("account.created");
         assertThat(saved.getCorrelationId()).isEqualTo("corr-123");
@@ -38,11 +38,10 @@ class ActivityRecorderTest {
     }
 
     @Test
-    void record_mongoFailure_doesNotPropagateToCallerAndLogsWarn() {
-        doThrow(new RuntimeException("Mongo down")).when(repository).save(any());
+    void write_repositoryFailure_doesNotPropagate() {
+        doThrow(new RuntimeException("DB unavailable")).when(auditLogRepository).save(any());
 
-        // Must not throw — best-effort contract
-        assertThatCode(() -> recorder.record(1L, "account.created", "corr-x", Map.of()))
+        assertThatCode(() -> writer.write(1L, "account.created", "corr-x", Map.of()))
                 .doesNotThrowAnyException();
     }
 }

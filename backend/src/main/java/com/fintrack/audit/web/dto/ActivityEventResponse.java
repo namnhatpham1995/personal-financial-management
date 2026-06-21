@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.Map;
 
 public record ActivityEventResponse(
-        String id,
+        Long id,
         String action,
         Instant ts,
         String correlationId,
