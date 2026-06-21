@@ -24,7 +24,7 @@ const createSchema = z.object({
 type CreateValues = z.infer<typeof createSchema>;
 
 const inputCls =
-  "rounded-lg border border-slate-800/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-colors";
+  "rounded-lg border border-border bg-card px-3 py-2 text-base text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-colors";
 
 export default function CategoriesPage() {
   const qc = useQueryClient();
@@ -93,10 +93,10 @@ export default function CategoriesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-100">Categories</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Categories</h1>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+          className="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors"
         >
           <Plus className="h-4 w-4" /> New Category
         </button>
@@ -111,7 +111,7 @@ export default function CategoriesPage() {
       )}
 
       {catsLoading ? (
-        <p className="text-slate-500">Loading...</p>
+        <p className="text-muted-foreground">Loading...</p>
       ) : (
         <div className="space-y-6">
           {userCategories.length > 0 && (
@@ -127,7 +127,7 @@ export default function CategoriesPage() {
           )}
 
           {categories.length === 0 && (
-            <p className="text-sm text-slate-500">No categories yet. Create one above.</p>
+            <p className="text-sm text-muted-foreground">No categories yet. Create one above.</p>
           )}
         </div>
       )}
@@ -165,10 +165,10 @@ function Section({ title, subtitle, children }: { title: string; subtitle?: stri
   return (
     <div>
       <div className="mb-3">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">{title}</h2>
-        {subtitle && <p className="text-xs text-slate-600">{subtitle}</p>}
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</h2>
+        {subtitle && <p className="text-xs text-muted-foreground/60">{subtitle}</p>}
       </div>
-      <div className="divide-y divide-slate-800/40 rounded-xl border border-slate-800/60 bg-slate-900/40 backdrop-blur-sm">
+      <div className="divide-y divide-border rounded-xl border border-border bg-card">
         {children}
       </div>
     </div>
@@ -179,16 +179,16 @@ function CreateForm({ onSubmit, onCancel, isPending }: { onSubmit: (v: CreateVal
   const { register, handleSubmit, formState: { errors } } = useForm<CreateValues>({ resolver: zodResolver(createSchema) });
 
   return (
-    <div className="rounded-xl border border-slate-800/60 bg-slate-900/40 backdrop-blur-sm p-5">
-      <h2 className="mb-4 font-semibold tracking-tight text-slate-100">New Category</h2>
+    <div className="rounded-xl border border-border bg-card p-5">
+      <h2 className="mb-4 font-semibold tracking-tight text-foreground">New Category</h2>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-wrap items-end gap-4">
         <div className="min-w-40 flex-1">
-          <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">Name</label>
+          <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">Name</label>
           <input {...register("name")} placeholder="e.g. Gym & Fitness" className={`w-full ${inputCls}`} />
-          {errors.name && <p className="mt-1 text-xs text-rose-400">{errors.name.message}</p>}
+          {errors.name && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors.name.message}</p>}
         </div>
         <div>
-          <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">Type</label>
+          <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">Type</label>
           <select {...register("transactionType")} className={inputCls}>
             <option value="EXPENSE">Expense</option>
             <option value="INCOME">Income</option>
@@ -196,11 +196,11 @@ function CreateForm({ onSubmit, onCancel, isPending }: { onSubmit: (v: CreateVal
         </div>
         <div className="flex gap-2">
           <button type="submit" disabled={isPending}
-            className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors">
+            className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors">
             {isPending ? "Saving..." : "Save"}
           </button>
           <button type="button" onClick={onCancel}
-            className="rounded-lg border border-slate-800/60 px-4 py-2 text-sm text-slate-400 hover:bg-slate-800/60 transition-colors">
+            className="rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-secondary transition-colors">
             Cancel
           </button>
         </div>

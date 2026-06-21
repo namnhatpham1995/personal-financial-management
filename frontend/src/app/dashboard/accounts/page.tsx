@@ -33,6 +33,13 @@ const editSchema = z.object({
 type CreateFormValues = z.infer<typeof createSchema>;
 type EditFormValues = z.infer<typeof editSchema>;
 
+const inputCls =
+  "w-full rounded-lg border border-border bg-card px-3 py-2 text-base text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-colors";
+const primaryBtn =
+  "rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors";
+const secondaryBtn =
+  "rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-secondary transition-colors";
+
 export default function AccountsPage() {
   const qc = useQueryClient();
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -83,10 +90,10 @@ export default function AccountsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-100">Accounts</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Accounts</h1>
         <button
           onClick={() => { setShowCreateForm(!showCreateForm); setEditingAccount(null); }}
-          className="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+          className={primaryBtn + " flex items-center gap-2"}
         >
           <Plus className="h-4 w-4" /> New Account
         </button>
@@ -101,34 +108,34 @@ export default function AccountsPage() {
       )}
 
       {isLoading ? (
-        <p className="text-slate-500">Loading…</p>
+        <p className="text-muted-foreground">Loading…</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {accounts.map((acc) => (
             <Card key={acc.id} className="p-5">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{acc.accountType}</p>
-                  <p className="mt-0.5 font-semibold text-slate-100">{acc.name}</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{acc.accountType}</p>
+                  <p className="mt-0.5 font-semibold text-foreground">{acc.name}</p>
                 </div>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => { setEditingAccount(acc); setShowCreateForm(false); }}
-                    className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-800/60 hover:text-slate-200 transition-colors"
+                    className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
                     title="Edit account"
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => setDeleteTarget(acc)}
-                    className="rounded-lg p-1.5 text-slate-500 hover:bg-rose-500/10 hover:text-rose-400 transition-colors"
+                    className="rounded-lg p-1.5 text-muted-foreground hover:bg-rose-500/10 hover:text-rose-500 dark:hover:text-rose-400 transition-colors"
                     title="Delete account"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               </div>
-              <p className="mt-3 font-mono tabular-nums text-2xl font-bold text-slate-100">
+              <p className="mt-3 font-mono tabular-nums text-2xl font-bold text-foreground">
                 {formatCurrency(acc.currentBalance, acc.currency)}
               </p>
             </Card>
@@ -162,8 +169,8 @@ function CreateAccountForm({ onSubmit, onCancel, isPending }: { onSubmit: (v: Cr
   const { register, handleSubmit, formState: { errors } } = useForm<CreateFormValues>({ resolver: zodResolver(createSchema) });
 
   return (
-    <div className="rounded-xl border border-slate-800/60 bg-slate-900/40 backdrop-blur-sm p-5">
-      <h2 className="mb-4 font-semibold tracking-tight text-slate-100">Add Account</h2>
+    <Card className="p-5">
+      <h2 className="mb-4 font-semibold tracking-tight text-foreground">Add Account</h2>
       <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field label="Name" error={errors.name?.message}><input {...register("name")} className={inputCls} /></Field>
         <Field label="Type" error={errors.accountType?.message}>
@@ -182,7 +189,7 @@ function CreateAccountForm({ onSubmit, onCancel, isPending }: { onSubmit: (v: Cr
           <button type="button" onClick={onCancel} className={secondaryBtn}>Cancel</button>
         </div>
       </form>
-    </div>
+    </Card>
   );
 }
 
@@ -194,8 +201,8 @@ function EditAccountDialog({ account, onSubmit, onCancel, isPending }: { account
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="w-full max-w-md rounded-xl border border-slate-800/60 bg-slate-900/95 p-6 shadow-2xl">
-        <h2 className="mb-4 text-lg font-semibold tracking-tight text-slate-100">Edit Account</h2>
+      <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-card">
+        <h2 className="mb-4 text-lg font-semibold tracking-tight text-foreground">Edit Account</h2>
         <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Name" error={errors.name?.message}><input {...register("name")} className={inputCls} /></Field>
           <Field label="Type" error={errors.accountType?.message}>
@@ -209,7 +216,7 @@ function EditAccountDialog({ account, onSubmit, onCancel, isPending }: { account
           <Field label="Initial Balance" error={errors.initialBalance?.message}>
             <input {...register("initialBalance")} type="number" step="0.01" className={inputCls} />
           </Field>
-          <p className="sm:col-span-2 text-xs text-slate-500">
+          <p className="sm:col-span-2 text-xs text-muted-foreground">
             Changing initial balance will recompute the current balance. Changing currency relabels existing amounts without converting them.
           </p>
           <div className="sm:col-span-2 flex gap-2">
@@ -225,17 +232,17 @@ function EditAccountDialog({ account, onSubmit, onCancel, isPending }: { account
 function DeleteConfirmDialog({ account, transactionCount, onConfirm, onCancel, isPending }: { account: Account; transactionCount: number | null; onConfirm: () => void; onCancel: () => void; isPending: boolean }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="w-full max-w-sm rounded-xl border border-slate-800/60 bg-slate-900/95 p-6 shadow-2xl">
-        <h2 className="mb-2 text-lg font-semibold tracking-tight text-rose-400">Delete Account</h2>
-        <p className="text-sm text-slate-400">
-          Are you sure you want to delete <strong className="text-slate-100">{account.name}</strong>?
+      <div className="w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-card">
+        <h2 className="mb-2 text-lg font-semibold tracking-tight text-rose-600 dark:text-rose-400">Delete Account</h2>
+        <p className="text-sm text-muted-foreground">
+          Are you sure you want to delete <strong className="text-foreground">{account.name}</strong>?
         </p>
         {transactionCount === null ? (
-          <p className="mt-2 text-sm text-slate-500">Checking connected transactions…</p>
+          <p className="mt-2 text-sm text-muted-foreground">Checking connected transactions…</p>
         ) : transactionCount === 0 ? (
-          <p className="mt-2 text-sm text-slate-500">This account has no transactions.</p>
+          <p className="mt-2 text-sm text-muted-foreground">This account has no transactions.</p>
         ) : (
-          <p className="mt-2 rounded-lg border border-rose-500/20 bg-rose-500/10 p-3 text-sm text-rose-400">
+          <p className="mt-2 rounded-lg border border-rose-500/20 bg-rose-500/10 p-3 text-sm text-rose-600 dark:text-rose-400">
             <strong>{transactionCount} transaction{transactionCount !== 1 ? "s" : ""}</strong> connected to this account will also be permanently deleted.
           </p>
         )}
@@ -243,7 +250,7 @@ function DeleteConfirmDialog({ account, transactionCount, onConfirm, onCancel, i
           <button
             onClick={onConfirm}
             disabled={isPending || transactionCount === null}
-            className="rounded-lg bg-rose-500/10 border border-rose-500/20 px-4 py-2 text-sm font-medium text-rose-400 hover:bg-rose-500/20 disabled:opacity-50 transition-colors"
+            className="rounded-lg bg-rose-500/10 border border-rose-500/20 px-4 py-2 text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 disabled:opacity-50 transition-colors"
           >
             {isPending ? "Deleting…" : "Yes, delete"}
           </button>
@@ -256,19 +263,12 @@ function DeleteConfirmDialog({ account, transactionCount, onConfirm, onCancel, i
 
 const ACCOUNT_TYPES = ["CASH", "BANK", "CREDIT_CARD", "SAVINGS", "OTHER"];
 
-const inputCls =
-  "w-full rounded-lg border border-slate-800/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-colors";
-const primaryBtn =
-  "rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors";
-const secondaryBtn =
-  "rounded-lg border border-slate-800/60 px-4 py-2 text-sm text-slate-400 hover:bg-slate-800/60 transition-colors";
-
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">{label}</label>
+      <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</label>
       {children}
-      {error && <p className="mt-1 text-xs text-rose-400">{error}</p>}
+      {error && <p className="mt-1 text-xs text-rose-500 dark:text-rose-400">{error}</p>}
     </div>
   );
 }

@@ -3,52 +3,53 @@
 @tailwind utilities;
 
 @layer base {
-  /* Light theme — :root default for next-themes */
+  /* Light theme — modern minimalist, clean surfaces */
   :root {
-    --background: 0 0% 100%;
+    --background: 240 20% 98%;
     --surface-raised: 0 0% 100%;
-    --surface-overlay: 210 40% 96%;
-    --foreground: 222 84% 5%;
+    --surface-overlay: 210 20% 95%;
+    --hover-surface: 210 20% 93%;
+    --foreground: 222 47% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 222 84% 5%;
+    --card-foreground: 222 47% 11%;
     --primary: 160 84% 32%;
     --primary-foreground: 160 100% 95%;
-    --secondary: 210 40% 96%;
+    --secondary: 210 20% 94%;
     --secondary-foreground: 222 47% 11%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 210 40% 96%;
+    --muted: 210 20% 94%;
+    --muted-foreground: 215 25% 40%;
+    --accent: 210 20% 94%;
     --accent-foreground: 222 47% 11%;
     --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 214 32% 87%;
+    --input: 214 32% 87%;
     --ring: 160 84% 32%;
     --radius: 0.75rem;
 
-    /* Semantic financial state tokens */
     --success: 160 84% 32%;
     --success-foreground: 160 100% 95%;
     --danger: 0 84% 60%;
     --danger-foreground: 0 0% 98%;
-    --neutral: 215 16% 47%;
+    --neutral: 215 25% 40%;
   }
 
-  /* Dark theme — activated by next-themes via class="dark" on <html> */
+  /* Dark theme — deep, layered, sophisticated */
   .dark {
     --background: 222 47% 6%;
-    --surface-raised: 220 40% 9%;
-    --surface-overlay: 220 35% 12%;
+    --surface-raised: 220 40% 10%;
+    --surface-overlay: 220 35% 13%;
+    --hover-surface: 220 38% 12%;
     --foreground: 210 40% 96%;
     --card: 220 40% 9%;
     --card-foreground: 210 40% 96%;
     --primary: 160 84% 39%;
     --primary-foreground: 160 100% 95%;
-    --secondary: 220 35% 14%;
+    --secondary: 220 35% 13%;
     --secondary-foreground: 210 40% 96%;
-    --muted: 220 35% 14%;
+    --muted: 220 35% 13%;
     --muted-foreground: 215 20% 55%;
-    --accent: 220 35% 14%;
+    --accent: 220 35% 13%;
     --accent-foreground: 210 40% 96%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
@@ -56,7 +57,6 @@
     --input: 220 32% 17%;
     --ring: 160 84% 39%;
 
-    /* Semantic financial state tokens */
     --success: 160 84% 39%;
     --success-foreground: 160 100% 95%;
     --danger: 0 72% 51%;
@@ -71,5 +71,23 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display, var(--font-sans));
+  }
+
+  /* Clean minimal scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-border;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/30;
   }
 }

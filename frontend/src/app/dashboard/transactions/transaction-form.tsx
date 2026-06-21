@@ -33,6 +33,9 @@ interface Props {
   onSubmit: (values: TransactionFormValues) => void;
 }
 
+const inputCls =
+  "w-full rounded-lg border border-border bg-card px-3 py-2 text-base text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-colors";
+
 export function TransactionForm({ editingTx, accounts, categories, isPending, onCancel, onSubmit }: Props) {
   const isEditing = editingTx !== null;
 
@@ -71,8 +74,8 @@ export function TransactionForm({ editingTx, accounts, categories, isPending, on
     : categories;
 
   return (
-    <div className="rounded-xl border border-slate-800/60 bg-slate-900/40 backdrop-blur-sm p-5">
-      <h2 className="mb-4 font-semibold tracking-tight text-slate-100">
+    <div className="rounded-xl border border-border bg-card p-5">
+      <h2 className="mb-4 font-semibold tracking-tight text-foreground">
         {isEditing ? "Edit Transaction" : "New Transaction"}
       </h2>
       <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -112,14 +115,14 @@ export function TransactionForm({ editingTx, accounts, categories, isPending, on
           <button
             type="submit"
             disabled={isPending}
-            className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors"
+            className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors"
           >
             {isEditing ? "Save Changes" : "Save"}
           </button>
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-lg border border-slate-800/60 px-4 py-2 text-sm text-slate-400 hover:bg-slate-800/60 hover:text-slate-100 transition-colors"
+            className="rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
           >
             Cancel
           </button>
@@ -129,15 +132,12 @@ export function TransactionForm({ editingTx, accounts, categories, isPending, on
   );
 }
 
-const inputCls =
-  "w-full rounded-lg border border-slate-800/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-colors";
-
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">{label}</label>
+      <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</label>
       {children}
-      {error && <p className="mt-1 text-xs text-rose-400">{error}</p>}
+      {error && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{error}</p>}
     </div>
   );
 }

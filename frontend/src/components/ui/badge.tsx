@@ -9,11 +9,11 @@ interface BadgeProps {
 }
 
 const variantStyles: Record<BadgeVariant, string> = {
-  income: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",
-  expense: "bg-rose-500/10 text-rose-400 border border-rose-500/20",
-  transfer: "bg-blue-500/10 text-blue-400 border border-blue-500/20",
-  neutral: "bg-slate-800 text-slate-400 border border-slate-700/50",
-  default: "bg-slate-800 text-slate-400 border border-slate-700/50",
+  income: "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 dark:text-emerald-400",
+  expense: "bg-rose-500/10 text-rose-500 border border-rose-500/20 dark:text-rose-400",
+  transfer: "bg-blue-500/10 text-blue-500 border border-blue-500/20 dark:text-blue-400",
+  neutral: "bg-secondary text-muted-foreground border border-border",
+  default: "bg-secondary text-muted-foreground border border-border",
 };
 
 export function Badge({ variant = "default", className, children }: BadgeProps) {

@@ -31,7 +31,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="flex h-screen overflow-hidden bg-background">
         <Sidebar open={drawerOpen} onClose={closeDrawer} />
 
-        {/* Mobile backdrop */}
         {drawerOpen && (
           <div
             className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
@@ -41,16 +40,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         )}
 
         <div className="flex flex-1 flex-col overflow-hidden">
-          {/* Mobile top bar */}
-          <header className="flex items-center gap-3 border-b border-slate-800/60 bg-slate-900/80 backdrop-blur-sm px-4 py-3 md:hidden">
+          <header className="flex items-center gap-3 border-b border-border bg-card backdrop-blur-sm px-4 py-3 md:hidden">
             <button
               onClick={() => setDrawerOpen(true)}
               aria-label="Open navigation"
-              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-slate-100 transition-colors"
+              className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
             >
               <Menu className="h-5 w-5" />
             </button>
-            <span className="text-lg font-bold tracking-tight text-emerald-400">Fintrack</span>
+            <span className="text-lg font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
+              Fintrack
+            </span>
           </header>
 
           <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
