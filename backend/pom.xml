@@ -118,6 +118,13 @@
             <version>8.0</version>
         </dependency>
 
+        <!-- CSV parsing for statement import -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
+            <version>1.11.0</version>
+        </dependency>
+
         <!-- Rate limiting -->
         <dependency>
             <groupId>com.bucket4j</groupId>

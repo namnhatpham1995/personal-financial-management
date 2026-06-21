@@ -20,6 +20,8 @@ public record TransactionResponse(
         String categoryName,
         String note,
         Long recurringId,
+        /** Set when this transaction was imported from a statement file. */
+        String sourceDocumentId,
         Instant createdAt,
         Instant updatedAt
 ) {}
