@@ -8,7 +8,7 @@ A full-stack personal finance management application.
 |---|---|
 | Backend | Java 21, Spring Boot 3.3.4, Spring Security, Flyway |
 | Database (SQL) | PostgreSQL 16, DECIMAL(19,4) for all monetary values — system of record |
-| Database (NoSQL) | MongoDB — reserved for Receipt & Statement Vault (currently idle) |
+| Database (NoSQL) | MongoDB — Receipt & Statement Vault (active): vault documents, GridFS binaries |
 | Auth | JWT (JJWT 0.12.6), rotating refresh tokens, SHA-256 hashed storage |
 | Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS, Recharts |
 | API Client | Axios with auto-refresh interceptor, TanStack Query |
@@ -30,7 +30,7 @@ PostgreSQL is the sole system of record for all financial data and audit history
 
 The audit log (`audit_log` table) captures every authenticated mutation durably in a dedicated `REQUIRES_NEW` transaction — committed to PostgreSQL immediately after the business write, never lost if downstream infrastructure is unavailable.
 
-MongoDB is present as a dependency but currently idle. It is reserved for the planned Receipt & Statement Vault feature, where heterogeneous, document-shaped financial documents (bank statements, receipts, invoices) are a better fit than relational tables.
+MongoDB backs the Receipt & Statement Vault. Vault documents (`vault_documents` collection) hold structured payloads of arbitrary shape — line items from receipts, parsed statement rows, merchant metadata — without requiring relational schema migrations for each new source format. Raw binaries (receipt images, CSV/OFX files) are stored in GridFS. Only the audit trail, account balances, and confirmed transactions live in PostgreSQL.
 
 ## Getting Started
 
@@ -50,7 +50,7 @@ Set these environment variables on the **backend service**:
 | `CORS_ALLOWED_ORIGINS` | Your frontend URL |
 | `SPRING_DATA_MONGODB_URI` | *(optional)* MongoDB URI — only required when Receipt & Statement Vault is enabled |
 
-> **MongoDB note:** The MongoDB dependency is present but idle. `SPRING_DATA_MONGODB_URI` is not required for the application to start or for audit logging to work. When adding Receipt & Statement Vault, set this to `mongodb://<USER>:<PASS>@<HOST>:27017/fintrack_vault?authSource=admin` — Railway's `MONGO_URL` omits the database name, so you must append it manually.
+> **MongoDB note:** `SPRING_DATA_MONGODB_URI` is required for the Receipt & Statement Vault. Set it to `mongodb://<USER>:<PASS>@<HOST>:27017/fintrack_vault?authSource=admin` — Railway's `MONGO_URL` omits the database name, so you must append `/fintrack_vault` manually.
 
 ### Quick Start (Docker)
 
@@ -104,6 +104,8 @@ npm run type-check && npm run lint && npm test
 | Budgets | CRUD with real-time progress (spent/remaining/%) |
 | Recurring | CRUD + POST /{id}/pause, /{id}/resume |
 | Analytics | GET spending-by-category, income-vs-expense, budget-progress, net-worth |
+| Vault | POST /vault/upload, GET /vault, GET /vault/{id}, GET /vault/{id}/download, PATCH /vault/{id}/link, POST /vault/search, DELETE /vault/{id} |
+| Statement Import | POST /vault/import/upload, GET /vault/import/{id}/rows, POST /vault/import/{id}/confirm |
 
 Full interactive docs available at `/swagger-ui.html` when the backend is running.
 
@@ -121,6 +123,7 @@ fintrack/
 │   │   ├── budget/           # Budget tracking
 │   │   ├── recurring/        # Recurring transaction scheduler
 │   │   ├── analytics/        # Dashboard aggregations
+│   │   ├── vault/            # Receipt & Statement Vault (MongoDB + GridFS)
 │   │   └── common/           # Security, config, exception handling
 │   └── src/main/resources/
 │       ├── db/migration/     # Flyway SQL migrations

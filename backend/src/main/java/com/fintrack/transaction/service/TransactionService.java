@@ -52,6 +52,7 @@ public class TransactionService {
                 .amount(req.amount())
                 .transactionDate(req.transactionDate())
                 .note(req.note())
+                .importDedupKey(req.importDedupKey())
                 .build();
 
         if (req.categoryId() != null) {

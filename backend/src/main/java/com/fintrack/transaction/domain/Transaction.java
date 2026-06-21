@@ -56,6 +56,14 @@ public class Transaction {
     @Column(columnDefinition = "TEXT")
     private String note;
 
+    /** GridFS / vault document id of the statement/receipt that produced this row. */
+    @Column(name = "source_document_id")
+    private String sourceDocumentId;
+
+    /** SHA-256 dedup key for import idempotency — unique where not null. */
+    @Column(name = "import_dedup_key", unique = true, length = 255)
+    private String importDedupKey;
+
     /** Back-reference to the recurring definition that generated this transaction, if any. */
     @Column(name = "recurring_id")
     private Long recurringId;
