@@ -8,7 +8,7 @@ A full-stack personal finance management application.
 |---|---|
 | Backend | Java 21, Spring Boot 3.3.4, Spring Security, Flyway |
 | Database (SQL) | PostgreSQL 16, DECIMAL(19,4) for all monetary values — system of record |
-| Database (NoSQL) | MongoDB — append-only audit/activity log only |
+| Database (NoSQL) | MongoDB — reserved for Receipt & Statement Vault (currently idle) |
 | Auth | JWT (JJWT 0.12.6), rotating refresh tokens, SHA-256 hashed storage |
 | Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS, Recharts |
 | API Client | Axios with auto-refresh interceptor, TanStack Query |
@@ -26,11 +26,11 @@ A full-stack personal finance management application.
 
 ## Why Two Databases
 
-PostgreSQL is the right home for financial data: accounts, transactions, balances, and budgets all benefit from ACID guarantees and exact `DECIMAL(19,4)` arithmetic.
+PostgreSQL is the sole system of record for all financial data and audit history. Accounts, transactions, balances, budgets, and the audit log all benefit from ACID guarantees and exact `DECIMAL(19,4)` arithmetic. Per-user data isolation is enforced at the service layer (every query filters by `user_id`); PostgreSQL row-level security is not used.
 
-The activity/audit log is a different shape of data entirely — append-only, queried only by `(user, time)`, and **schema-varies-per-event** (a login event carries an IP address; a budget edit carries before/after values). MongoDB fits naturally here: documents, a compound index on `(userId, ts)`, and no migrations needed when a new event type adds extra fields.
+The audit log (`audit_log` table) captures every authenticated mutation durably in a dedicated `REQUIRES_NEW` transaction — committed to PostgreSQL immediately after the business write, never lost if downstream infrastructure is unavailable.
 
-Capture is best-effort via a request interceptor that fires after the business write succeeds, so a MongoDB hiccup never touches the main operation.
+MongoDB is present as a dependency but currently idle. It is reserved for the planned Receipt & Statement Vault feature, where heterogeneous, document-shaped financial documents (bank statements, receipts, invoices) are a better fit than relational tables.
 
 ## Getting Started
 
@@ -45,12 +45,12 @@ Set these environment variables on the **backend service**:
 
 | Variable | Value |
 |---|---|
-| `SPRING_DATA_MONGODB_URI` | `mongodb://<MONGOUSER>:<MONGOPASSWORD>@<MONGOHOST>:27017/fintrack_audit?authSource=admin` |
 | `DB_URL` | Railway PostgreSQL `DATABASE_URL` (jdbc format) |
 | `JWT_SECRET` | 32+ char random secret |
 | `CORS_ALLOWED_ORIGINS` | Your frontend URL |
+| `SPRING_DATA_MONGODB_URI` | *(optional)* MongoDB URI — only required when Receipt & Statement Vault is enabled |
 
-> **MongoDB note:** Railway's `MONGO_URL` variable does not include the database name. You must append `/fintrack_audit?authSource=admin` — without it the app fails to start with "Database name must not be empty".
+> **MongoDB note:** The MongoDB dependency is present but idle. `SPRING_DATA_MONGODB_URI` is not required for the application to start or for audit logging to work. When adding Receipt & Statement Vault, set this to `mongodb://<USER>:<PASS>@<HOST>:27017/fintrack_vault?authSource=admin` — Railway's `MONGO_URL` omits the database name, so you must append it manually.
 
 ### Quick Start (Docker)
 
@@ -90,7 +90,7 @@ mvn clean verify
 **Frontend:**
 ```bash
 cd frontend
-npm run type-check && npm run lint
+npm run type-check && npm run lint && npm test
 ```
 
 ## API Overview

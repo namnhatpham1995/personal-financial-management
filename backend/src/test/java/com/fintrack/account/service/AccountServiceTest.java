@@ -134,13 +134,12 @@ class AccountServiceTest {
 
         when(accountRepository.findByIdAndUserId(ACCOUNT_ID, USER_ID)).thenReturn(Optional.of(account));
         when(transactionRepository.findConnectedToAccount(ACCOUNT_ID)).thenReturn(List.of(transfer));
-        when(accountRepository.findById(20L)).thenReturn(Optional.of(dest));
-        when(accountRepository.save(any())).thenReturn(dest);
+        when(accountRepository.existsById(20L)).thenReturn(true);
 
         accountService.delete(USER_ID, ACCOUNT_ID);
 
-        // dest should have had 100 reversed (gained → reversed)
-        assertThat(dest.getCurrentBalance()).isEqualByComparingTo(new BigDecimal("400.00"));
+        // dest had 100 applied; reversal should atomically subtract 100
+        verify(accountRepository).atomicAdjustBalance(20L, new BigDecimal("100.00").negate());
         verify(transactionRepository).deleteAll(List.of(transfer));
         verify(accountRepository).delete(account);
     }
@@ -160,13 +159,12 @@ class AccountServiceTest {
 
         when(accountRepository.findByIdAndUserId(ACCOUNT_ID, USER_ID)).thenReturn(Optional.of(account));
         when(transactionRepository.findConnectedToAccount(ACCOUNT_ID)).thenReturn(List.of(transfer));
-        when(accountRepository.findById(30L)).thenReturn(Optional.of(source));
-        when(accountRepository.save(any())).thenReturn(source);
+        when(accountRepository.existsById(30L)).thenReturn(true);
 
         accountService.delete(USER_ID, ACCOUNT_ID);
 
-        // source had 75 deducted; restore it → 300 + 75 = 375
-        assertThat(source.getCurrentBalance()).isEqualByComparingTo(new BigDecimal("375.00"));
+        // source had 75 deducted; restore it atomically
+        verify(accountRepository).atomicAdjustBalance(30L, new BigDecimal("75.00"));
         verify(transactionRepository).deleteAll(List.of(transfer));
         verify(accountRepository).delete(account);
     }

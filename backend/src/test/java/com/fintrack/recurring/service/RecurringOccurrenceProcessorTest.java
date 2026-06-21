@@ -15,7 +15,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.dao.DataIntegrityViolationException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -80,11 +79,12 @@ class RecurringOccurrenceProcessorTest {
 
     @Test
     void process_duplicateOccurrence_skipsBalanceAdjustmentStillAdvancesNextRun() {
-        when(transactionRepository.save(any())).thenThrow(new DataIntegrityViolationException("duplicate"));
+        when(transactionRepository.existsByRecurringIdAndOccurrenceDate(rt.getId(), TODAY)).thenReturn(true);
 
         processor.process(rt, TODAY);
 
-        // No balance adjustment — duplicate was skipped
+        // No save or balance adjustment — duplicate detected by pre-existence check
+        verify(transactionRepository, never()).save(any());
         verify(accountService, never()).adjustBalance(anyLong(), any());
         // next_run_date still advances, count still increments
         assertThat(rt.getNextRunDate()).isEqualTo(LocalDate.of(2024, 7, 1));

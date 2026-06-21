@@ -1,12 +1,11 @@
 package com.fintrack.audit.interceptor;
 
-import com.fintrack.audit.service.ActivityRecorder;
+import com.fintrack.audit.service.AuditLogWriter;
 import com.fintrack.common.security.UserPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.MDC;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -16,17 +15,17 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Fires a best-effort audit event after every successful authenticated mutation
- * (POST/PUT/DELETE that returned 2xx). Existing services are never touched.
+ * Records one audit entry per authenticated mutation (POST/PUT/DELETE returning 2xx).
+ * Capture happens in afterCompletion so we only write events for requests that actually
+ * succeeded; the write goes to PostgreSQL via AuditLogWriter in its own transaction.
  */
 @Component
 @RequiredArgsConstructor
-@ConditionalOnBean(ActivityRecorder.class)
 public class ActivityAuditInterceptor implements HandlerInterceptor {
 
     private static final Set<String> MUTATION_METHODS = Set.of("POST", "PUT", "DELETE");
 
-    private final ActivityRecorder recorder;
+    private final AuditLogWriter auditLogWriter;
 
     @Override
     public void afterCompletion(HttpServletRequest request,
@@ -43,15 +42,14 @@ public class ActivityAuditInterceptor implements HandlerInterceptor {
         String action = resolveAction(request.getMethod(), request.getRequestURI());
         String correlationId = MDC.get("correlationId");
 
-        recorder.record(principal.getUserId(), action, correlationId,
+        // status omitted from meta: capture fires after HTTP response is already sent,
+        // and the action name already conveys what happened.
+        auditLogWriter.write(principal.getUserId(), action, correlationId,
                 Map.of("method", request.getMethod(),
-                       "uri",    request.getRequestURI(),
-                       "status", response.getStatus()));
+                       "uri",    request.getRequestURI()));
     }
 
-    /** Derives a human-readable action string from method + URI path segments. */
     private String resolveAction(String method, String uri) {
-        // e.g. /api/v1/accounts/42 -> "account"
         String[] parts = uri.replaceAll("/api/v\\d+/", "").split("/");
         String resource = parts.length > 0 ? parts[0] : "resource";
 

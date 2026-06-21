@@ -92,10 +92,10 @@ public class AccountService {
      */
     @Transactional
     public void adjustBalance(Long accountId, BigDecimal delta) {
-        Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> ResourceNotFoundException.of("Account", accountId));
-        account.setCurrentBalance(account.getCurrentBalance().add(delta));
-        accountRepository.save(account);
+        if (!accountRepository.existsById(accountId)) {
+            throw ResourceNotFoundException.of("Account", accountId);
+        }
+        accountRepository.atomicAdjustBalance(accountId, delta);
     }
 
     /**

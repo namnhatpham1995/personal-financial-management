@@ -74,7 +74,7 @@ public class AuthService {
         return issueTokens(user);
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = BadCredentialsException.class)
     public TokenResponse refresh(String rawRefreshToken) {
         String hash = hashToken(rawRefreshToken);
         RefreshToken stored = refreshTokenRepository.findByTokenHash(hash)
