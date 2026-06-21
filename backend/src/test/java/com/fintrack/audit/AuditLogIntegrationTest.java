@@ -3,8 +3,10 @@ package com.fintrack.audit;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fintrack.audit.domain.AuditLogRepository;
 import com.fintrack.auth.web.dto.TokenResponse;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
@@ -58,6 +60,11 @@ class AuditLogIntegrationTest {
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
     @Autowired AuditLogRepository auditLogRepository;
+
+    @BeforeEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
 
     private String registerAndLogin(String email) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/auth/register")

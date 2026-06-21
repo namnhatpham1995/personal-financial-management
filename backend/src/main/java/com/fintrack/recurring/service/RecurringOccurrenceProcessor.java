@@ -7,7 +7,6 @@ import com.fintrack.transaction.domain.Transaction;
 import com.fintrack.transaction.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,7 +29,10 @@ public class RecurringOccurrenceProcessor {
     public void process(RecurringTransaction rt, LocalDate today) {
         LocalDate occurrenceDate = rt.getNextRunDate();
 
-        try {
+        if (transactionRepository.existsByRecurringIdAndOccurrenceDate(rt.getId(), occurrenceDate)) {
+            // Unique constraint (recurring_id, occurrence_date): already generated — skip without double-applying balance
+            log.debug("Skipping already-generated occurrence for recurring {} on {}", rt.getId(), occurrenceDate);
+        } else {
             Transaction tx = Transaction.builder()
                     .user(rt.getUser())
                     .account(rt.getAccount())
@@ -46,9 +48,6 @@ public class RecurringOccurrenceProcessor {
             transactionRepository.save(tx);
             applyBalanceDelta(rt, tx);
             log.debug("Generated transaction for recurring {} on {}", rt.getId(), occurrenceDate);
-        } catch (DataIntegrityViolationException e) {
-            // Unique constraint (recurring_id, occurrence_date): already generated — skip without double-applying balance
-            log.debug("Skipping already-generated occurrence for recurring {} on {}", rt.getId(), occurrenceDate);
         }
 
         rt.setOccurrencesCount(rt.getOccurrencesCount() + 1);
