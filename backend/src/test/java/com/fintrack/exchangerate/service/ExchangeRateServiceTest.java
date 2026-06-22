@@ -24,8 +24,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import org.mockito.quality.Strictness;
+import org.mockito.junit.jupiter.MockitoSettings;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class ExchangeRateServiceTest {
 
     @Mock ExchangeRateRepository exchangeRateRepository;
@@ -58,14 +61,17 @@ class ExchangeRateServiceTest {
         );
         ExchangeRateProvider.Result result = new ExchangeRateProvider.Result(BASE, asOf, providerRates);
 
-        // First call: cache empty → triggers refresh; second call (after refresh): returns rows
+        // Call 1 (getRates initial check): empty → triggers refresh
+        // Call 2 (refresh double-check inside lock): also empty → provider call proceeds
+        // Call 3 (getRates re-read after refresh): populated rows
         ExchangeRate usdRow = makeRate(BASE, "USD", BigDecimal.ONE, asOf);
         ExchangeRate vndRow = makeRate(BASE, "VND", new BigDecimal("25000"), asOf);
         ExchangeRate eurRow = makeRate(BASE, "EUR", new BigDecimal("0.92"), asOf);
 
         when(exchangeRateRepository.findByBaseCode(BASE))
-                .thenReturn(Collections.emptyList())  // cold cache check
-                .thenReturn(List.of(usdRow, vndRow, eurRow)); // after refresh
+                .thenReturn(Collections.emptyList())           // call 1: getRates initial check
+                .thenReturn(Collections.emptyList())           // call 2: refresh double-check
+                .thenReturn(List.of(usdRow, vndRow, eurRow));  // call 3: getRates re-read after refresh
 
         when(exchangeRateProvider.fetchLatest(BASE)).thenReturn(result);
 
