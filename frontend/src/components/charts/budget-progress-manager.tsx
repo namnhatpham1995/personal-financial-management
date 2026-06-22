@@ -13,6 +13,8 @@ import { budgetService, type Budget, type CreateBudgetPayload } from "@/services
 import { categoryService } from "@/services/category-service";
 import { BudgetProgressList } from "./budget-progress-list";
 
+const CURRENCY_FALLBACK = ["USD", "VND", "EUR"];
+
 const inputCls =
   "w-full rounded-lg border border-border bg-card px-3 py-2 text-base text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-colors";
 
@@ -21,6 +23,7 @@ export function BudgetProgressManager() {
   const [editingBudgetId, setEditingBudgetId] = useState<number | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | "">("");
+  const [selectedCurrency, setSelectedCurrency] = useState<string>("");
 
   const { data: progress = [], isLoading: progressLoading } = useQuery({
     queryKey: ["budgetProgress"],
@@ -35,22 +38,42 @@ export function BudgetProgressManager() {
     queryFn: categoryService.list,
   });
 
+  /** Distinct currencies from existing budgets + the account set. */
+  const availableCurrencies = useMemo(() => {
+    const fromBudgets = budgets.map((b) => b.currency);
+    const unique = Array.from(new Set([...fromBudgets, ...CURRENCY_FALLBACK]));
+    return unique;
+  }, [budgets]);
+
+  /** Default to the first available currency on first load. */
+  const activeCurrency = selectedCurrency || availableCurrencies[0] || "USD";
+
   const budgetById = useMemo(() => {
     return new Map(budgets.map((budget) => [budget.id, budget]));
   }, [budgets]);
 
-  const budgetCategoryIds = useMemo(() => {
-    return new Set(budgets.map((budget) => budget.categoryId));
-  }, [budgets]);
+  /**
+   * Composite key set: tracks (categoryId, currency) pairs that already have a budget.
+   * A category is only excluded from the picker when a budget of the SELECTED currency
+   * already exists for it — not any currency.
+   */
+  const budgetedPairsForActiveCurrency = useMemo(() => {
+    return new Set(
+      budgets
+        .filter((b) => b.currency === activeCurrency)
+        .map((b) => b.categoryId)
+    );
+  }, [budgets, activeCurrency]);
 
-  const availableCategories = useMemo(() => {
+  const availableCategoriesToAdd = useMemo(() => {
     return categories.filter(
       (category) =>
-        category.transactionType === "EXPENSE" && !budgetCategoryIds.has(category.id)
+        category.transactionType === "EXPENSE" &&
+        !budgetedPairsForActiveCurrency.has(category.id)
     );
-  }, [budgetCategoryIds, categories]);
+  }, [budgetedPairsForActiveCurrency, categories]);
 
-  const selectedCategory = availableCategories.find(
+  const selectedCategory = availableCategoriesToAdd.find(
     (category) => category.id === selectedCategoryId
   );
   const isLoading = progressLoading || budgetsLoading || categoriesLoading;
@@ -135,6 +158,8 @@ export function BudgetProgressManager() {
       <BudgetLimitForm
         initialAmount={budget.amountLimit}
         initialPeriod={budget.period}
+        initialCurrency={budget.currency}
+        availableCurrencies={availableCurrencies}
         onSubmit={(data) => updateMutation.mutate({ id: budget.id, data })}
         onCancel={() => setEditingBudgetId(null)}
         isPending={pending}
@@ -143,27 +168,50 @@ export function BudgetProgressManager() {
     );
   };
 
+  /** Render the currency badge next to the budget name in each progress row. */
+  const renderCurrencyBadge = (item: BudgetProgress) => (
+    <span className="inline-flex items-center rounded border border-border bg-secondary px-1.5 py-0.5 text-xs font-mono text-muted-foreground">
+      {item.currency}
+    </span>
+  );
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
           {isLoading ? "Loading budget progress..." : `${progress.length} active limits`}
         </p>
-        <button
-          type="button"
-          onClick={() => setShowAddForm((current) => !current)}
-          disabled={isLoading}
-          className="flex items-center gap-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors"
-        >
-          <Plus className="h-3.5 w-3.5" /> Add limit
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Currency filter for the Add form and the available-categories picker */}
+          <select
+            value={activeCurrency}
+            onChange={(e) => {
+              setSelectedCurrency(e.target.value);
+              setSelectedCategoryId("");
+            }}
+            className="rounded-lg border border-border bg-card px-2 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-colors"
+            aria-label="Select currency"
+          >
+            {availableCurrencies.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={() => setShowAddForm((current) => !current)}
+            disabled={isLoading}
+            className="flex items-center gap-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors"
+          >
+            <Plus className="h-3.5 w-3.5" /> Add limit
+          </button>
+        </div>
       </div>
 
       {showAddForm && (
         <div className="rounded-xl border border-border bg-card p-4">
-          {availableCategories.length === 0 ? (
+          {availableCategoriesToAdd.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              All expense categories already have limits.
+              All expense categories already have {activeCurrency} limits.
             </p>
           ) : (
             <div className="space-y-3">
@@ -181,7 +229,7 @@ export function BudgetProgressManager() {
                   className={inputCls}
                 >
                   <option value="">Choose a category</option>
-                  {availableCategories.map((category) => (
+                  {availableCategoriesToAdd.map((category) => (
                     <option key={category.id} value={category.id}>
                       {category.name}
                     </option>
@@ -191,6 +239,8 @@ export function BudgetProgressManager() {
 
               {selectedCategory ? (
                 <BudgetLimitForm
+                  initialCurrency={activeCurrency}
+                  availableCurrencies={availableCurrencies}
                   onSubmit={handleCreate}
                   onCancel={() => {
                     setShowAddForm(false);
@@ -201,7 +251,7 @@ export function BudgetProgressManager() {
                 />
               ) : (
                 <p className="text-xs text-muted-foreground/60">
-                  Select an expense category to set its limit.
+                  Select an expense category to set its {activeCurrency} limit.
                 </p>
               )}
             </div>
@@ -213,6 +263,7 @@ export function BudgetProgressManager() {
         budgets={progress}
         renderActions={renderActions}
         renderDetails={renderDetails}
+        renderCurrencyBadge={renderCurrencyBadge}
       />
     </div>
   );

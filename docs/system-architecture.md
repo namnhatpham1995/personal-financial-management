@@ -32,12 +32,13 @@ com.fintrack
 ├── account/        domain, repository, service, mapper, web
 ├── category/       domain, repository, service, mapper, web
 ├── transaction/    domain, repository, service, mapper, web
-├── budget/         domain, repository, service, mapper, web
+├── budget/         domain, repository, service, mapper, web (currency-scoped since V6)
 ├── recurring/      domain, repository, service (scheduler), mapper, web
-├── analytics/      repository (aggregations), service, web
+├── analytics/      repository (aggregations), service, web (per-currency + converted overview)
 ├── vault/          domain, repository, service (GridFS, import, search), parser, web
+├── exchangerate/   domain, repository, provider, service, scheduler (open.er-api.com cache)
 └── common/
-    ├── config/     SecurityConfig, AppProperties, OpenApiConfig
+    ├── config/     SecurityConfig, AppProperties, OpenApiConfig, RestClientConfig, SchedulerConfig
     ├── domain/     TransactionType (shared enum)
     ├── dto/        ApiError, PageResponse
     ├── exception/  GlobalExceptionHandler + typed exceptions
@@ -128,3 +129,33 @@ Key design decisions:
 - Unique `(recurring_id, occurrence_date)` on transactions for idempotency
 - Partial unique index on `transactions.import_dedup_key WHERE NOT NULL` — prevents duplicate rows on statement re-import
 - `vault_documents` MongoDB collection indexed on `(userId, capturedAt DESC)` and `(userId, transactionId)` for common access patterns
+- `exchange_rates(base_code, quote_code)` UNIQUE + `CHECK(rate > 0)` — `DECIMAL(19,10)` for sub-cent precision (VND); refreshed at most daily via ShedLock scheduler
+- `budgets.currency VARCHAR(10) NOT NULL` — unique constraint is `(user_id, category_id, period, currency)` since V6; per-currency budget isolation
+
+## Exchange Rate Service
+
+Rates are fetched from `open.er-api.com/v6/latest/{base}` (free, no key) and cached in PostgreSQL.
+
+```
+ExchangeRateProvider (interface)
+  └── OpenErApiExchangeRateProvider  →  GET open.er-api.com/v6/latest/USD
+ExchangeRateService
+  ├── convert(amount, from, to)  →  cache-backed cross-rate via USD base
+  ├── refresh(base)              →  ON CONFLICT upsert + single-flight ReentrantLock
+  └── supportedCurrencies()      →  cached quote codes + seed fallback
+ExchangeRateRefreshScheduler  @Scheduled(01:30 UTC) + @SchedulerLock("exchangeRateRefresh")
+```
+
+- **No per-request external calls** — all conversions served from the `exchange_rates` cache.
+- **ShedLock** (`shedlock` table, V8) ensures exactly one Railway replica runs the daily refresh.
+- `stale` flag when `fetched_at` > 48 h; `ratesUnavailable` flag when a currency has no cached rate.
+- `ExchangeRateUnavailableException` → HTTP 503 for the raw rates endpoint; caught internally by `AnalyticsService.getOverview` so the converted overview always returns HTTP 200.
+
+## Multi-Currency Analytics
+
+`GET /api/v1/analytics/overview?targetCurrency=USD&from=…&to=…` converts all per-currency stats into a single target currency:
+
+- **Sum-then-convert** per source currency (not convert-then-sum) to prevent VND row truncation at scale 4.
+- Missing-rate currencies reported in `excludedCurrencies` with native amounts — never silently dropped.
+- `asOf` timestamp from the provider's `time_last_update_unix`; `stale=true` if cache is days old.
+- Per-currency endpoints (`/analytics/net-worth`, `/analytics/spending`, `/analytics/trend`) are unchanged and remain the default.

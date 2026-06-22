@@ -2,6 +2,7 @@ package com.fintrack.analytics.web;
 
 import com.fintrack.analytics.service.AnalyticsService;
 import com.fintrack.analytics.web.dto.BudgetProgressDto;
+import com.fintrack.analytics.web.dto.ConvertedOverviewDto;
 import com.fintrack.analytics.web.dto.CurrencyNetWorthDto;
 import com.fintrack.analytics.web.dto.IncomeExpenseTrendDto;
 import com.fintrack.analytics.web.dto.SpendingByCategoryDto;
@@ -9,9 +10,13 @@ import com.fintrack.common.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -22,6 +27,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "Analytics")
 @SecurityRequirement(name = "bearerAuth")
+@Validated
 public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
@@ -56,5 +62,16 @@ public class AnalyticsController {
     public List<CurrencyNetWorthDto> netWorth(
             @AuthenticationPrincipal UserPrincipal principal) {
         return analyticsService.getNetWorth(principal.getUserId());
+    }
+
+    @GetMapping("/overview")
+    @Operation(summary = "All analytics converted into a single target currency")
+    public ResponseEntity<ConvertedOverviewDto> getOverview(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @RequestParam @NotBlank @Pattern(regexp = "^[A-Z]{3}$") String targetCurrency,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ResponseEntity.ok(
+                analyticsService.getOverview(principal.getUserId(), targetCurrency, from, to));
     }
 }

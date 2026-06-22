@@ -1,6 +1,7 @@
 package com.fintrack.common.exception;
 
 import com.fintrack.common.dto.ApiError;
+import com.fintrack.exchangerate.exception.ExchangeRateUnavailableException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -11,6 +12,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
 import java.util.List;
 
@@ -23,6 +25,22 @@ public class GlobalExceptionHandler {
             MethodArgumentNotValidException ex, HttpServletRequest req) {
         List<ApiError.FieldError> fieldErrors = ex.getBindingResult().getFieldErrors().stream()
                 .map(fe -> new ApiError.FieldError(fe.getField(), fe.getDefaultMessage()))
+                .toList();
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiError.of(400, "Bad Request", "Validation failed", req.getRequestURI(), fieldErrors));
+    }
+
+    // Spring Boot 3.x (Spring 6.1+) throws HandlerMethodValidationException for @RequestParam
+    // constraint violations, unlike @RequestBody which throws MethodArgumentNotValidException.
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ApiError> handleMethodValidation(
+            HandlerMethodValidationException ex, HttpServletRequest req) {
+        List<ApiError.FieldError> fieldErrors = ex.getAllValidationResults().stream()
+                .flatMap(r -> r.getResolvableErrors().stream()
+                        .map(e -> new ApiError.FieldError(
+                                r.getMethodParameter().getParameterName(),
+                                e.getDefaultMessage())))
                 .toList();
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
@@ -83,6 +101,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(ApiError.of(400, "Bad Request", ex.getMessage(), req.getRequestURI()));
+    }
+
+    @ExceptionHandler(ExchangeRateUnavailableException.class)
+    public ResponseEntity<ApiError> handleExchangeRateUnavailable(
+            ExchangeRateUnavailableException ex, HttpServletRequest req) {
+        log.warn("Exchange rate unavailable: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ApiError.of(503, "Service Unavailable", ex.getMessage(), req.getRequestURI()));
     }
 
     @ExceptionHandler(Exception.class)

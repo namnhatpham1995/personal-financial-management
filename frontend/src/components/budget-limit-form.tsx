@@ -8,9 +8,12 @@ import { cn } from "@/lib/utils";
 
 export type BudgetPeriod = "MONTHLY" | "YEARLY";
 
+const CURRENCY_FALLBACK = ["USD", "VND", "EUR"];
+
 const limitSchema = z.object({
   amount: z.string().min(1, "Enter an amount"),
   period: z.enum(["MONTHLY", "YEARLY"]),
+  currency: z.string().regex(/^[A-Z]{3}$/, "Select a currency"),
 });
 
 type LimitValues = z.infer<typeof limitSchema>;
@@ -19,11 +22,16 @@ export interface BudgetLimitPayload {
   amountLimit: string;
   period: BudgetPeriod;
   startDate: string;
+  currency: string;
 }
 
 interface BudgetLimitFormProps {
   initialAmount?: string;
   initialPeriod?: BudgetPeriod;
+  /** Pre-selected currency (e.g. the currently selected currency in the manager). */
+  initialCurrency?: string;
+  /** Available currency options sourced from the user's accounts. Falls back to USD/VND/EUR. */
+  availableCurrencies?: string[];
   onSubmit: (data: BudgetLimitPayload) => void;
   onCancel: () => void;
   isPending: boolean;
@@ -45,26 +53,31 @@ const inputCls =
 export function BudgetLimitForm({
   initialAmount = "",
   initialPeriod = "MONTHLY",
+  initialCurrency = "USD",
+  availableCurrencies,
   onSubmit,
   onCancel,
   isPending,
   submitLabel = "Save",
   className,
 }: BudgetLimitFormProps) {
+  const currencies = availableCurrencies?.length ? availableCurrencies : CURRENCY_FALLBACK;
+
   const form = useForm<LimitValues>({
     resolver: zodResolver(limitSchema),
-    defaultValues: { amount: initialAmount, period: initialPeriod },
+    defaultValues: { amount: initialAmount, period: initialPeriod, currency: initialCurrency },
   });
 
   useEffect(() => {
-    form.reset({ amount: initialAmount, period: initialPeriod });
-  }, [form, initialAmount, initialPeriod]);
+    form.reset({ amount: initialAmount, period: initialPeriod, currency: initialCurrency });
+  }, [form, initialAmount, initialPeriod, initialCurrency]);
 
   const handleSubmit = (values: LimitValues) => {
     onSubmit({
       amountLimit: values.amount,
       period: values.period,
       startDate: getPeriodStart(values.period),
+      currency: values.currency,
     });
   };
 
@@ -83,6 +96,17 @@ export function BudgetLimitForm({
           <option value="MONTHLY">Monthly</option>
           <option value="YEARLY">Yearly</option>
         </select>
+      </div>
+      <div>
+        <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-muted-foreground">Currency</label>
+        <select {...form.register("currency")} className={inputCls}>
+          {currencies.map((c) => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
+        {form.formState.errors.currency && (
+          <p className="mt-0.5 text-xs text-rose-600 dark:text-rose-400">{form.formState.errors.currency.message}</p>
+        )}
       </div>
       <div className="flex gap-1">
         <button

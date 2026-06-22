@@ -39,6 +39,9 @@ public class Budget {
     @Column(nullable = false, length = 20)
     private BudgetPeriod period;
 
+    @Column(nullable = false, length = 10)
+    private String currency;
+
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
 

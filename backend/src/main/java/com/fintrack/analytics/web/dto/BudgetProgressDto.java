@@ -6,6 +6,7 @@ public record BudgetProgressDto(
         Long budgetId,
         String budgetName,
         String categoryName,
+        String currency,
         BigDecimal limitAmount,
         BigDecimal spent,
         BigDecimal remaining,

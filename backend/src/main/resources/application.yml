@@ -63,3 +63,8 @@ app:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,https://*.vercel.app}
   rate-limit:
     auth-requests-per-minute: ${RATE_LIMIT_AUTH:10}
+  exchange-rate:
+    base: ${EXCHANGE_RATE_BASE:USD}
+    ttl-hours: ${EXCHANGE_RATE_TTL_HOURS:24}
+    stale-hours: ${EXCHANGE_RATE_STALE_HOURS:48}
+    provider-url: ${EXCHANGE_RATE_PROVIDER_URL:https://open.er-api.com/v6/latest}
