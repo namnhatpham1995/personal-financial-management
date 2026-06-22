@@ -134,4 +134,4 @@ jobs:
           # Project → Settings → Tokens → create project-scoped token → copy once
           # GitHub: Settings → Secrets and variables → Actions → New repository secret
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up --detach
+        run: railway up --detach --service personal-financial-management
