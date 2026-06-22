@@ -18,7 +18,13 @@ public interface BudgetRepository extends JpaRepository<Budget, Long> {
 
     boolean existsByUserIdAndCategoryIdAndPeriod(Long userId, Long categoryId, BudgetPeriod period);
 
-    /** Sum of EXPENSE transactions in a category between two dates (for progress calculation). */
+    boolean existsByUserIdAndCategoryIdAndPeriodAndCurrency(
+            Long userId, Long categoryId, BudgetPeriod period, String currency);
+
+    /**
+     * Sum of EXPENSE transactions in a category between two dates for a specific account currency.
+     * Only counts transactions whose source account has the given currency.
+     */
     @Query("""
             SELECT COALESCE(SUM(t.amount), 0)
             FROM Transaction t
@@ -27,6 +33,7 @@ public interface BudgetRepository extends JpaRepository<Budget, Long> {
               AND t.transactionType = 'EXPENSE'
               AND t.transactionDate >= :periodStart
               AND t.transactionDate <= :periodEnd
+              AND t.account.currency = :currency
             """)
-    BigDecimal sumSpentInPeriod(Long userId, Long categoryId, LocalDate periodStart, LocalDate periodEnd);
+    BigDecimal sumSpentInPeriod(Long userId, Long categoryId, LocalDate periodStart, LocalDate periodEnd, String currency);
 }

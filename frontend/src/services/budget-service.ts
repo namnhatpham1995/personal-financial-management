@@ -7,6 +7,7 @@ export interface Budget {
   amountLimit: string;
   period: "MONTHLY" | "YEARLY";
   startDate: string;
+  currency: string;
   spent: string;
   remaining: string;
   percentUsed: string;
@@ -18,6 +19,7 @@ export interface CreateBudgetPayload {
   period: string;
   amountLimit: string;
   startDate: string;
+  currency: string;
 }
 
 export const budgetService = {

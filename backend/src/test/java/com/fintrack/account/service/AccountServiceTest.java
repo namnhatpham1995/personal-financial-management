@@ -5,9 +5,12 @@ import com.fintrack.account.domain.AccountType;
 import com.fintrack.account.mapper.AccountMapper;
 import com.fintrack.account.repository.AccountRepository;
 import com.fintrack.account.web.dto.AccountResponse;
+import com.fintrack.account.web.dto.CreateAccountRequest;
 import com.fintrack.account.web.dto.UpdateAccountRequest;
+import com.fintrack.auth.domain.User;
 import com.fintrack.auth.repository.UserRepository;
 import com.fintrack.common.domain.TransactionType;
+import com.fintrack.exchangerate.service.ExchangeRateService;
 import com.fintrack.transaction.domain.Transaction;
 import com.fintrack.transaction.repository.TransactionRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,8 +24,10 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -33,6 +38,7 @@ class AccountServiceTest {
     @Mock TransactionRepository transactionRepository;
     @Mock UserRepository userRepository;
     @Mock AccountMapper accountMapper;
+    @Mock ExchangeRateService exchangeRateService;
 
     @InjectMocks AccountService accountService;
 
@@ -53,6 +59,80 @@ class AccountServiceTest {
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
+    }
+
+    // ── Currency validation on create ────────────────────────────────────────────
+
+    @Test
+    void create_withSupportedCurrency_succeeds() {
+        CreateAccountRequest req = new CreateAccountRequest("Checking", AccountType.BANK, "USD", BigDecimal.ZERO);
+        User user = new User();
+
+        when(exchangeRateService.supportedCurrencies()).thenReturn(Set.of("USD", "EUR", "VND"));
+        when(userRepository.getReferenceById(USER_ID)).thenReturn(user);
+        when(accountMapper.toEntity(req)).thenReturn(account);
+        when(accountRepository.save(any())).thenReturn(account);
+        when(accountMapper.toResponse(any())).thenReturn(stubResponse());
+
+        var result = accountService.create(USER_ID, req);
+
+        assertThat(result).isNotNull();
+        verify(exchangeRateService).supportedCurrencies();
+    }
+
+    @Test
+    void create_withUnsupportedCurrency_throws400() {
+        CreateAccountRequest req = new CreateAccountRequest("Checking", AccountType.BANK, "XXX", BigDecimal.ZERO);
+
+        when(exchangeRateService.supportedCurrencies()).thenReturn(Set.of("USD", "EUR", "VND"));
+
+        assertThatThrownBy(() -> accountService.create(USER_ID, req))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Unsupported currency: XXX");
+    }
+
+    @Test
+    void create_withEmptyCacheSupported_allowsThrough() {
+        // Empty cache returns seed fallback; "USD" is in seed so it passes
+        CreateAccountRequest req = new CreateAccountRequest("Checking", AccountType.BANK, "USD", BigDecimal.ZERO);
+        User user = new User();
+
+        // Seed fallback set from ExchangeRateService — simulate empty cache returning seed
+        when(exchangeRateService.supportedCurrencies()).thenReturn(Set.of("USD", "EUR", "VND", "GBP"));
+        when(userRepository.getReferenceById(USER_ID)).thenReturn(user);
+        when(accountMapper.toEntity(req)).thenReturn(account);
+        when(accountRepository.save(any())).thenReturn(account);
+        when(accountMapper.toResponse(any())).thenReturn(stubResponse());
+
+        var result = accountService.create(USER_ID, req);
+        assertThat(result).isNotNull();
+    }
+
+    // ── Currency validation on update ────────────────────────────────────────────
+
+    @Test
+    void update_withSupportedCurrencyChange_succeeds() {
+        UpdateAccountRequest req = new UpdateAccountRequest(null, null, "EUR", null);
+
+        when(exchangeRateService.supportedCurrencies()).thenReturn(Set.of("USD", "EUR", "VND"));
+        when(accountRepository.findByIdAndUserId(ACCOUNT_ID, USER_ID)).thenReturn(Optional.of(account));
+        when(accountRepository.save(any())).thenReturn(account);
+        when(accountMapper.toResponse(any())).thenReturn(stubResponse());
+        doNothing().when(accountMapper).updateEntity(any(), any());
+
+        var result = accountService.update(USER_ID, ACCOUNT_ID, req);
+        assertThat(result).isNotNull();
+    }
+
+    @Test
+    void update_withUnsupportedCurrencyChange_throws400() {
+        UpdateAccountRequest req = new UpdateAccountRequest(null, null, "XXX", null);
+
+        when(exchangeRateService.supportedCurrencies()).thenReturn(Set.of("USD", "EUR", "VND"));
+
+        assertThatThrownBy(() -> accountService.update(USER_ID, ACCOUNT_ID, req))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Unsupported currency: XXX");
     }
 
     // ── Task 1.4: update with initialBalance recomputes current balance ─────────
@@ -96,6 +176,7 @@ class AccountServiceTest {
     void update_currencyChange_doesNotRecompute() {
         UpdateAccountRequest req = new UpdateAccountRequest(null, null, "EUR", null);
 
+        when(exchangeRateService.supportedCurrencies()).thenReturn(Set.of("USD", "EUR", "VND"));
         when(accountRepository.findByIdAndUserId(ACCOUNT_ID, USER_ID)).thenReturn(Optional.of(account));
         when(accountRepository.save(any())).thenReturn(account);
         when(accountMapper.toResponse(any())).thenReturn(stubResponse());

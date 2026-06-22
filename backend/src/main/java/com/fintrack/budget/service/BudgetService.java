@@ -33,8 +33,9 @@ public class BudgetService {
     public BudgetResponse create(Long userId, CreateBudgetRequest req) {
         Category category = categoryService.findVisibleOrThrow(userId, req.categoryId());
 
-        if (budgetRepository.existsByUserIdAndCategoryIdAndPeriod(userId, req.categoryId(), req.period())) {
-            throw new ConflictException("Budget for this category and period already exists");
+        if (budgetRepository.existsByUserIdAndCategoryIdAndPeriodAndCurrency(
+                userId, req.categoryId(), req.period(), req.currency())) {
+            throw new ConflictException("Budget for this category, period, and currency already exists");
         }
 
         User user = userRepository.getReferenceById(userId);
@@ -44,6 +45,7 @@ public class BudgetService {
                 .amountLimit(req.amountLimit())
                 .period(req.period())
                 .startDate(req.startDate())
+                .currency(req.currency())
                 .build();
 
         return toResponse(budgetRepository.save(budget), userId);
@@ -80,7 +82,7 @@ public class BudgetService {
     private BudgetResponse toResponse(Budget budget, Long userId) {
         LocalDate[] bounds = periodBounds(budget.getPeriod());
         BigDecimal spent = budgetRepository.sumSpentInPeriod(
-                userId, budget.getCategory().getId(), bounds[0], bounds[1]);
+                userId, budget.getCategory().getId(), bounds[0], bounds[1], budget.getCurrency());
         BigDecimal limit = budget.getAmountLimit();
         BigDecimal remaining = limit.subtract(spent);
         BigDecimal percent = limit.compareTo(BigDecimal.ZERO) == 0
@@ -94,6 +96,7 @@ public class BudgetService {
                 budget.getPeriod(),
                 limit,
                 budget.getStartDate(),
+                budget.getCurrency(),
                 spent,
                 remaining,
                 percent,

@@ -13,6 +13,7 @@ public record BudgetResponse(
         BudgetPeriod period,
         BigDecimal amountLimit,
         LocalDate startDate,
+        String currency,
         // Progress fields — populated by service
         BigDecimal spent,
         BigDecimal remaining,

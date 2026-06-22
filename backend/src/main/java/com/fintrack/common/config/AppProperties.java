@@ -14,6 +14,7 @@ public class AppProperties {
     private Jwt jwt = new Jwt();
     private Cors cors = new Cors();
     private RateLimit rateLimit = new RateLimit();
+    private ExchangeRate exchangeRate = new ExchangeRate();
 
     @Getter
     @Setter
@@ -33,5 +34,18 @@ public class AppProperties {
     @Setter
     public static class RateLimit {
         private int authRequestsPerMinute = 10;
+    }
+
+    @Getter
+    @Setter
+    public static class ExchangeRate {
+        /** ISO 4217 base currency all pairs are stored relative to (default: USD). */
+        private String base = "USD";
+        /** Hours before a cached rate set is refreshed on next access. */
+        private int ttlHours = 24;
+        /** Hours after which a cached rate set is considered stale and flagged in health checks. */
+        private int staleHours = 48;
+        /** Base URL of the exchange rate provider (path segment per currency appended at call time). */
+        private String providerUrl = "https://open.er-api.com/v6/latest";
     }
 }

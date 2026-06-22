@@ -15,9 +15,11 @@ interface Props {
   budgets: BudgetProgress[];
   renderActions?: (budget: BudgetProgress) => ReactNode;
   renderDetails?: (budget: BudgetProgress) => ReactNode;
+  /** Optional badge rendered next to the budget name (e.g. currency tag). */
+  renderCurrencyBadge?: (budget: BudgetProgress) => ReactNode;
 }
 
-export function BudgetProgressList({ budgets, renderActions, renderDetails }: Props) {
+export function BudgetProgressList({ budgets, renderActions, renderDetails, renderCurrencyBadge }: Props) {
   if (budgets.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">No budgets configured. Use Add limit to create one.</p>
@@ -37,6 +39,7 @@ export function BudgetProgressList({ budgets, renderActions, renderDetails }: Pr
                   <AlertCircle className="h-3.5 w-3.5 text-rose-500 dark:text-rose-400" />
                 )}
                 {b.budgetName}
+                {renderCurrencyBadge?.(b)}
               </span>
               <div className="flex shrink-0 items-center gap-2">
                 <span className="font-mono tabular-nums text-xs text-muted-foreground">

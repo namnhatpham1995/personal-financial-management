@@ -4,6 +4,7 @@ import com.fintrack.account.domain.AccountType;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
@@ -15,7 +16,7 @@ public record CreateAccountRequest(
         @NotNull
         AccountType accountType,
 
-        @NotBlank @Size(max = 10)
+        @NotBlank @Pattern(regexp = "^[A-Z]{3}$", message = "Currency must be a 3-letter ISO 4217 code (e.g. USD, VND)")
         String currency,
 
         @DecimalMin(value = "0.0", inclusive = true, message = "Initial balance must be zero or positive")

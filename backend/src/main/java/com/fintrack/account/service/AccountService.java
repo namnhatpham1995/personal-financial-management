@@ -11,6 +11,7 @@ import com.fintrack.auth.domain.User;
 import com.fintrack.auth.repository.UserRepository;
 import com.fintrack.common.domain.TransactionType;
 import com.fintrack.common.exception.ResourceNotFoundException;
+import com.fintrack.exchangerate.service.ExchangeRateService;
 import com.fintrack.transaction.domain.Transaction;
 import com.fintrack.transaction.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -28,9 +30,11 @@ public class AccountService {
     private final TransactionRepository transactionRepository;
     private final UserRepository userRepository;
     private final AccountMapper accountMapper;
+    private final ExchangeRateService exchangeRateService;
 
     @Transactional
     public AccountResponse create(Long userId, CreateAccountRequest request) {
+        validateCurrency(request.currency());
         User user = userRepository.getReferenceById(userId);
         Account account = accountMapper.toEntity(request);
         account.setUser(user);
@@ -49,6 +53,9 @@ public class AccountService {
 
     @Transactional
     public AccountResponse update(Long userId, Long accountId, UpdateAccountRequest request) {
+        if (request.currency() != null) {
+            validateCurrency(request.currency());
+        }
         Account account = findOwned(userId, accountId);
         accountMapper.updateEntity(request, account);
         if (request.initialBalance() != null) {
@@ -115,5 +122,20 @@ public class AccountService {
     public Account findOwned(Long userId, Long accountId) {
         return accountRepository.findByIdAndUserId(accountId, userId)
                 .orElseThrow(() -> ResourceNotFoundException.of("Account", accountId));
+    }
+
+    /**
+     * Validates the requested currency against the supported set from the exchange rate cache.
+     * When the cache is empty (cold start), the seed fallback inside {@code supportedCurrencies()}
+     * is used, so account creation is never blocked on a cold cache.
+     * Throws {@link IllegalArgumentException} (mapped to HTTP 400 by {@code GlobalExceptionHandler})
+     * if the currency is present in a non-empty cache but not supported.
+     */
+    private void validateCurrency(String currency) {
+        Set<String> supported = exchangeRateService.supportedCurrencies();
+        if (!supported.contains(currency)) {
+            throw new IllegalArgumentException(
+                    "Unsupported currency: " + currency + ". Must be one of the supported ISO 4217 codes.");
+        }
     }
 }
