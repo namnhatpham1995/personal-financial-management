@@ -12,7 +12,7 @@ A full-stack personal finance management application.
 | Auth | JWT (JJWT 0.12.6), rotating refresh tokens, SHA-256 hashed storage |
 | Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS, Recharts |
 | API Client | Axios with auto-refresh interceptor, TanStack Query |
-| Testing | JUnit 5, Mockito (unit tests), Testcontainers (integration), JaCoCo coverage gate |
+| Testing | JUnit 5, Mockito (unit), Testcontainers (integration), JaCoCo coverage gate; Vitest (frontend) |
 | Infrastructure | Docker, Docker Compose, GitHub Actions CI/CD |
 
 ## Architecture Highlights
@@ -23,6 +23,7 @@ A full-stack personal finance management application.
 - **Idempotent recurring generation** — unique constraint `(recurring_id, occurrence_date)` prevents duplicate transactions on scheduler retry
 - **Rate limiting** — Bucket4j per-IP limit on all `/auth/**` endpoints
 - **Structured logging** — Logstash JSON encoder in prod/test; correlation ID on every request
+- **Durable audit log** — every authenticated mutation written to `audit_log` (PostgreSQL) in a dedicated `REQUIRES_NEW` transaction; committed immediately after the business write, never rolled back with it
 
 ## Why Two Databases
 
@@ -90,8 +91,22 @@ mvn clean verify
 **Frontend:**
 ```bash
 cd frontend
-npm run type-check && npm run lint && npm test
+npm run type-check && npm run lint && npm test   # one-shot (same as CI)
+npm run test:watch                               # watch mode during development
 ```
+
+## CI/CD Pipeline
+
+GitHub Actions runs four sequential jobs on every push to `main` (PRs run backend + frontend only):
+
+| Job | What it does |
+|---|---|
+| **Backend** | `mvn clean verify` with a live PostgreSQL 16 service; uploads Surefire + JaCoCo reports |
+| **Frontend** | Type-check → lint → Vitest → design-token gate (no raw palette classes) → `next build` |
+| **Docker** | `docker compose build --no-cache` — verifies the full image stack compiles |
+| **Deploy** | `railway up` to Railway — gated on all three prior jobs passing on `main` |
+
+The design-token gate fails the build if any `.tsx`/`.ts` file uses raw Tailwind palette classes (`text-slate-*`, `bg-gray-*`, etc.) instead of token-backed utilities.
 
 ## API Overview
 
