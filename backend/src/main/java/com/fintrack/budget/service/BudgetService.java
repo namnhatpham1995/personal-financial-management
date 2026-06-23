@@ -10,6 +10,7 @@ import com.fintrack.budget.web.dto.CreateBudgetRequest;
 import com.fintrack.budget.web.dto.UpdateBudgetRequest;
 import com.fintrack.category.domain.Category;
 import com.fintrack.category.service.CategoryService;
+import com.fintrack.common.cache.CacheVersionService;
 import com.fintrack.common.exception.ConflictException;
 import com.fintrack.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class BudgetService {
     private final BudgetRepository budgetRepository;
     private final UserRepository userRepository;
     private final CategoryService categoryService;
+    private final CacheVersionService cacheVersionService;
 
     @Transactional
     public BudgetResponse create(Long userId, CreateBudgetRequest req) {
@@ -48,7 +50,9 @@ public class BudgetService {
                 .currency(req.currency())
                 .build();
 
-        return toResponse(budgetRepository.save(budget), userId);
+        BudgetResponse response = toResponse(budgetRepository.save(budget), userId);
+        cacheVersionService.bump(userId);
+        return response;
     }
 
     @Transactional(readOnly = true)
@@ -68,13 +72,16 @@ public class BudgetService {
         Budget budget = findOwned(userId, budgetId);
         if (req.amountLimit() != null) budget.setAmountLimit(req.amountLimit());
         if (req.period() != null) budget.setPeriod(req.period());
-        return toResponse(budgetRepository.save(budget), userId);
+        BudgetResponse response = toResponse(budgetRepository.save(budget), userId);
+        cacheVersionService.bump(userId);
+        return response;
     }
 
     @Transactional
     public void delete(Long userId, Long budgetId) {
         Budget budget = findOwned(userId, budgetId);
         budgetRepository.delete(budget);
+        cacheVersionService.bump(userId);
     }
 
     // ─── Progress calculation ─────────────────────────────────────────────────

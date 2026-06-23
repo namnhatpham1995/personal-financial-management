@@ -14,11 +14,14 @@ import com.fintrack.analytics.web.dto.RateUsedDto;
 import com.fintrack.analytics.web.dto.SpendingByCategoryDto;
 import com.fintrack.budget.domain.Budget;
 import com.fintrack.budget.repository.BudgetRepository;
+import com.fintrack.common.cache.CacheVersionService;
 import com.fintrack.common.config.AppProperties;
+import com.fintrack.common.config.CacheConfig;
 import com.fintrack.exchangerate.exception.ExchangeRateUnavailableException;
 import com.fintrack.exchangerate.service.ExchangeRateService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,6 +47,7 @@ public class AnalyticsService {
     private final BudgetRepository budgetRepository;
     private final ExchangeRateService exchangeRateService;
     private final AppProperties appProperties;
+    private final CacheVersionService cacheVersionService;
 
     /**
      * Returns all per-currency analytics (net worth, spending, trend) converted into
@@ -55,6 +59,10 @@ public class AnalyticsService {
      * final totals are rounded to scale 4 HALF_UP to prevent VND rows from truncating
      * to 0.0000 before summing.
      */
+    @Cacheable(
+            value = CacheConfig.ANALYTICS,
+            key = "#userId + ':v' + @cacheVersionService.current(#userId) + ':overview:' + #targetCurrency + ':' + #from + ':' + #to"
+    )
     @Transactional(readOnly = true)
     public ConvertedOverviewDto getOverview(Long userId, String targetCurrency, LocalDate from, LocalDate to) {
         String base = appProperties.getExchangeRate().getBase();

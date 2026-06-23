@@ -4,6 +4,7 @@ import com.fintrack.auth.service.UserDetailsServiceImpl;
 import com.fintrack.common.ratelimit.AuthRateLimitFilter;
 import com.fintrack.common.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import jakarta.servlet.http.HttpServletResponse;
@@ -83,6 +84,21 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    /**
+     * Prevents Spring Boot from registering JwtAuthenticationFilter as a standalone
+     * servlet filter in addition to its role inside the Spring Security filter chain.
+     * Without this, OncePerRequestFilter's "already filtered" attribute is removed after
+     * the security chain run, allowing a second execution outside SecurityContextHolderFilter's
+     * scope — which can leave stale authentication in the SecurityContextHolder.
+     */
+    @Bean
+    public FilterRegistrationBean<JwtAuthenticationFilter> jwtFilterRegistration(
+            JwtAuthenticationFilter filter) {
+        FilterRegistrationBean<JwtAuthenticationFilter> reg = new FilterRegistrationBean<>(filter);
+        reg.setEnabled(false);
+        return reg;
     }
 
     @Bean

@@ -125,6 +125,12 @@
             <version>1.11.0</version>
         </dependency>
 
+        <!-- Redis (Lettuce client; cache backend in prod/docker) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
         <!-- Rate limiting -->
         <dependency>
             <groupId>com.bucket4j</groupId>
@@ -180,6 +186,7 @@
             <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>

@@ -7,6 +7,7 @@ import com.fintrack.category.mapper.CategoryMapper;
 import com.fintrack.category.repository.CategoryRepository;
 import com.fintrack.category.web.dto.CreateCategoryRequest;
 import com.fintrack.category.web.dto.UpdateCategoryRequest;
+import com.fintrack.common.cache.CacheVersionService;
 import com.fintrack.common.domain.TransactionType;
 import com.fintrack.common.exception.ConflictException;
 import com.fintrack.common.exception.ForbiddenException;
@@ -38,6 +39,8 @@ class CategoryServiceTest {
     UserRepository userRepository;
     @Mock
     CategoryMapper categoryMapper;
+    @Mock
+    CacheVersionService cacheVersionService;
 
     @InjectMocks
     CategoryService categoryService;

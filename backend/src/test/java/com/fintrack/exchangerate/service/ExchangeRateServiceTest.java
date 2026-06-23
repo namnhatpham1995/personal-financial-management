@@ -8,6 +8,7 @@ import com.fintrack.exchangerate.repository.ExchangeRateRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -47,6 +48,8 @@ class ExchangeRateServiceTest {
         erConfig.setTtlHours(24);
         erConfig.setStaleHours(48);
         when(appProperties.getExchangeRate()).thenReturn(erConfig);
+        // Wire self-reference so convert/supportedCurrencies can call self.getRates() without proxy
+        ReflectionTestUtils.setField(exchangeRateService, "self", exchangeRateService);
     }
 
     // ── Cold cache: triggers one provider call and upserts ───────────────────────
@@ -75,9 +78,9 @@ class ExchangeRateServiceTest {
 
         when(exchangeRateProvider.fetchLatest(BASE)).thenReturn(result);
 
-        List<ExchangeRate> rates = exchangeRateService.getRates(BASE);
+        RateSnapshot snapshot = exchangeRateService.getRates(BASE);
 
-        assertThat(rates).hasSize(3);
+        assertThat(snapshot.rates()).hasSize(3);
         verify(exchangeRateProvider, times(1)).fetchLatest(BASE);
         // Upsert called for identity pair + 3 provider pairs (USD already in provider map, so 3 total + 1 identity = 4 calls)
         verify(exchangeRateRepository, atLeastOnce()).upsertRate(eq(BASE), eq(BASE), eq(BigDecimal.ONE), any(), any());
@@ -100,9 +103,9 @@ class ExchangeRateServiceTest {
 
         when(exchangeRateRepository.findByBaseCode(BASE)).thenReturn(List.of(freshRow));
 
-        List<ExchangeRate> rates = exchangeRateService.getRates(BASE);
+        RateSnapshot snapshot = exchangeRateService.getRates(BASE);
 
-        assertThat(rates).hasSize(1);
+        assertThat(snapshot.rates()).hasSize(1);
         verifyNoInteractions(exchangeRateProvider);
     }
 
@@ -207,13 +210,14 @@ class ExchangeRateServiceTest {
 
     @Test
     void supportedCurrencies_emptyCacheReturnsSeedFallback() {
+        // getRates → refresh → provider throws → supportedCurrencies catches and falls back to seed
         when(exchangeRateRepository.findByBaseCode(BASE)).thenReturn(Collections.emptyList());
+        when(exchangeRateProvider.fetchLatest(BASE))
+                .thenThrow(new ExchangeRateUnavailableException("Provider down"));
 
         Set<String> supported = exchangeRateService.supportedCurrencies();
 
-        // Seed includes at minimum these currencies
         assertThat(supported).contains("USD", "EUR", "VND", "GBP");
-        verifyNoInteractions(exchangeRateProvider);
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────────

@@ -9,6 +9,7 @@ import com.fintrack.category.domain.Category;
 import com.fintrack.category.service.CategoryService;
 import com.fintrack.auth.domain.User;
 import com.fintrack.auth.repository.UserRepository;
+import com.fintrack.common.cache.CacheVersionService;
 import com.fintrack.common.exception.ConflictException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +31,7 @@ class BudgetServiceTest {
     @Mock BudgetRepository budgetRepository;
     @Mock UserRepository userRepository;
     @Mock CategoryService categoryService;
+    @Mock CacheVersionService cacheVersionService;
 
     @InjectMocks BudgetService budgetService;
 
