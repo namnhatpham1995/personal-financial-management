@@ -3,6 +3,7 @@ package com.fintrack.audit;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fintrack.audit.domain.AuditLogRepository;
 import com.fintrack.auth.web.dto.TokenResponse;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +56,8 @@ class AuditLogIntegrationTest {
                 () -> "org.hibernate.dialect.PostgreSQLDialect");
         // No real MongoDB — proves audit works without it (task 2.2)
         registry.add("spring.data.mongodb.uri", () -> "mongodb://localhost:27017/unused");
+        // Disable Redis repositories — no Redis in CI; cache.type=simple handles caching
+        registry.add("spring.data.redis.repositories.enabled", () -> "false");
     }
 
     @Autowired MockMvc mockMvc;
@@ -63,6 +66,11 @@ class AuditLogIntegrationTest {
 
     @BeforeEach
     void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
+
+    @AfterEach
+    void tearDown() {
         SecurityContextHolder.clearContext();
     }
 
