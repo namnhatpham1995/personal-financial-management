@@ -50,6 +50,7 @@ Set these environment variables on the **backend service**:
 | `JWT_SECRET` | 32+ char random secret |
 | `CORS_ALLOWED_ORIGINS` | Your frontend URL |
 | `SPRING_DATA_MONGODB_URI` | *(optional)* MongoDB URI — only required when Receipt & Statement Vault is enabled |
+| `SPRING_DATA_REDIS_URL` | Redis URL from Railway Redis plugin: `${{Redis.REDIS_URL}}` |
 
 > **MongoDB note:** `SPRING_DATA_MONGODB_URI` is required for the Receipt & Statement Vault. Set it to `mongodb://<USER>:<PASS>@<HOST>:27017/fintrack_vault?authSource=admin` — Railway's `MONGO_URL` omits the database name, so you must append `/fintrack_vault` manually.
 

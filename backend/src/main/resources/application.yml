@@ -20,9 +20,16 @@ spring:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: false
+  cache:
+    type: ${SPRING_CACHE_TYPE:simple}   # Override per profile: redis (prod/docker), simple (local/test)
   data:
     mongodb:
       uri: ${SPRING_DATA_MONGODB_URI:mongodb://localhost:27017/fintrack_vault}
+    redis:
+      url: ${SPRING_DATA_REDIS_URL:redis://localhost:6379}
+      timeout: 2000ms
+      lettuce:
+        shutdown-timeout: 100ms
 
 server:
   port: ${SERVER_PORT:8080}

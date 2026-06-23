@@ -6,6 +6,7 @@ import com.fintrack.auth.domain.User;
 import com.fintrack.auth.repository.UserRepository;
 import com.fintrack.category.domain.Category;
 import com.fintrack.category.service.CategoryService;
+import com.fintrack.common.cache.CacheVersionService;
 import com.fintrack.common.domain.TransactionType;
 import com.fintrack.common.dto.PageResponse;
 import com.fintrack.common.exception.ResourceNotFoundException;
@@ -39,6 +40,7 @@ public class TransactionService {
     private final AccountService accountService;
     private final CategoryService categoryService;
     private final TransactionMapper transactionMapper;
+    private final CacheVersionService cacheVersionService;
 
     @Transactional
     public TransactionResponse create(Long userId, CreateTransactionRequest req) {
@@ -70,6 +72,7 @@ public class TransactionService {
 
         Transaction saved = transactionRepository.save(tx);
         applyBalanceDelta(saved, saved.getAmount());
+        cacheVersionService.bump(userId);
         return transactionMapper.toResponse(saved);
     }
 
@@ -119,7 +122,9 @@ public class TransactionService {
             tx.setCategory(categoryService.findVisibleOrThrow(userId, req.categoryId()));
         }
 
-        return transactionMapper.toResponse(transactionRepository.save(tx));
+        TransactionResponse result = transactionMapper.toResponse(transactionRepository.save(tx));
+        cacheVersionService.bump(userId);
+        return result;
     }
 
     @Transactional
@@ -127,6 +132,7 @@ public class TransactionService {
         Transaction tx = findOwned(userId, txId);
         reverseBalanceDelta(tx, tx.getAmount());
         transactionRepository.delete(tx);
+        cacheVersionService.bump(userId);
     }
 
     // ─── Internal balance helpers ──────────────────────────────────────────────

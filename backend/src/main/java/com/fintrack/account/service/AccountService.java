@@ -9,6 +9,7 @@ import com.fintrack.account.web.dto.CreateAccountRequest;
 import com.fintrack.account.web.dto.UpdateAccountRequest;
 import com.fintrack.auth.domain.User;
 import com.fintrack.auth.repository.UserRepository;
+import com.fintrack.common.cache.CacheVersionService;
 import com.fintrack.common.domain.TransactionType;
 import com.fintrack.common.exception.ResourceNotFoundException;
 import com.fintrack.exchangerate.service.ExchangeRateService;
@@ -31,6 +32,7 @@ public class AccountService {
     private final UserRepository userRepository;
     private final AccountMapper accountMapper;
     private final ExchangeRateService exchangeRateService;
+    private final CacheVersionService cacheVersionService;
 
     @Transactional
     public AccountResponse create(Long userId, CreateAccountRequest request) {
@@ -38,7 +40,9 @@ public class AccountService {
         User user = userRepository.getReferenceById(userId);
         Account account = accountMapper.toEntity(request);
         account.setUser(user);
-        return accountMapper.toResponse(accountRepository.save(account));
+        AccountResponse response = accountMapper.toResponse(accountRepository.save(account));
+        cacheVersionService.bump(userId);
+        return response;
     }
 
     @Transactional(readOnly = true)
@@ -63,7 +67,9 @@ public class AccountService {
             BigDecimal txNet = accountRepository.computeBalanceFromTransactions(accountId);
             account.setCurrentBalance(account.getInitialBalance().add(txNet));
         }
-        return accountMapper.toResponse(accountRepository.save(account));
+        AccountResponse response = accountMapper.toResponse(accountRepository.save(account));
+        cacheVersionService.bump(userId);
+        return response;
     }
 
     @Transactional(readOnly = true)
@@ -91,6 +97,7 @@ public class AccountService {
         }
         transactionRepository.deleteAll(connected);
         accountRepository.delete(account);
+        cacheVersionService.bump(userId);
     }
 
     /**
@@ -115,6 +122,7 @@ public class AccountService {
         BigDecimal computed = accountRepository.computeBalanceFromTransactions(accountId);
         account.setCurrentBalance(account.getInitialBalance().add(computed));
         accountRepository.save(account);
+        cacheVersionService.bump(userId);
     }
 
     // ─── Internal ─────────────────────────────────────────────────────────────

@@ -125,6 +125,12 @@
             <version>1.11.0</version>
         </dependency>
 
+        <!-- Redis (Lettuce client; cache backend in prod/docker) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
         <!-- Rate limiting -->
         <dependency>
             <groupId>com.bucket4j</groupId>
@@ -177,6 +183,12 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>mongodb</artifactId>
+            <version>${testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>redis</artifactId>
             <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
