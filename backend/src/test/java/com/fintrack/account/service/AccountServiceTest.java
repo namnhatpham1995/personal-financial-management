@@ -9,6 +9,7 @@ import com.fintrack.account.web.dto.CreateAccountRequest;
 import com.fintrack.account.web.dto.UpdateAccountRequest;
 import com.fintrack.auth.domain.User;
 import com.fintrack.auth.repository.UserRepository;
+import com.fintrack.common.cache.CacheVersionService;
 import com.fintrack.common.domain.TransactionType;
 import com.fintrack.exchangerate.service.ExchangeRateService;
 import com.fintrack.transaction.domain.Transaction;
@@ -39,6 +40,7 @@ class AccountServiceTest {
     @Mock UserRepository userRepository;
     @Mock AccountMapper accountMapper;
     @Mock ExchangeRateService exchangeRateService;
+    @Mock CacheVersionService cacheVersionService;
 
     @InjectMocks AccountService accountService;
 

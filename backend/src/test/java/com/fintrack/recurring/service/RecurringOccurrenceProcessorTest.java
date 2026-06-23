@@ -3,6 +3,7 @@ package com.fintrack.recurring.service;
 import com.fintrack.account.domain.Account;
 import com.fintrack.account.service.AccountService;
 import com.fintrack.auth.domain.User;
+import com.fintrack.common.cache.CacheVersionService;
 import com.fintrack.common.domain.TransactionType;
 import com.fintrack.recurring.domain.Frequency;
 import com.fintrack.recurring.domain.RecurringTransaction;
@@ -29,6 +30,7 @@ class RecurringOccurrenceProcessorTest {
     @Mock RecurringTransactionRepository recurringRepository;
     @Mock TransactionRepository transactionRepository;
     @Mock AccountService accountService;
+    @Mock CacheVersionService cacheVersionService;
 
     @InjectMocks RecurringOccurrenceProcessor processor;
 
