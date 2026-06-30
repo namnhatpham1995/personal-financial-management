@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
+import { AuthThemeToggle } from "@/components/auth-theme-toggle";
 
 const schema = z
   .object({
@@ -53,8 +54,11 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md rounded-xl border border-border bg-card p-8 shadow-card">
+        <div className="mb-6 flex justify-end">
+          <AuthThemeToggle />
+        </div>
         <div className="mb-8">
           <span className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
             Fintrack
