@@ -35,6 +35,8 @@ public class ActivityAuditInterceptor implements HandlerInterceptor {
 
         if (!MUTATION_METHODS.contains(request.getMethod())) return;
         if (response.getStatus() < 200 || response.getStatus() >= 300) return;
+        // Auth endpoints create/validate credentials; the principal isn't the acting user
+        if (request.getRequestURI().startsWith("/api/v1/auth/")) return;
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !(auth.getPrincipal() instanceof UserPrincipal principal)) return;

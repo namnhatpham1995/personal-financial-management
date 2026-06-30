@@ -8,6 +8,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.util.Map;
 
@@ -20,6 +21,7 @@ import static org.mockito.Mockito.*;
 class AuditLogWriterTest {
 
     @Mock AuditLogRepository auditLogRepository;
+    @Mock PlatformTransactionManager txManager;
     @InjectMocks AuditLogWriter writer;
 
     @Test
