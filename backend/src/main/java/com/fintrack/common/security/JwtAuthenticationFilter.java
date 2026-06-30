@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -34,7 +36,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         final String token = extractToken(request);
 
-        if (token == null || SecurityContextHolder.getContext().getAuthentication() != null) {
+        if (token == null) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
+        if (currentAuth != null
+                && currentAuth.isAuthenticated()
+                && !(currentAuth instanceof AnonymousAuthenticationToken)) {
             filterChain.doFilter(request, response);
             return;
         }
