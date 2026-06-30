@@ -1,4 +1,6 @@
 spring:
+  cache:
+    type: simple   # No Redis needed locally
   datasource:
     url: jdbc:postgresql://localhost:5432/fintrack
     username: fintrack

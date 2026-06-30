@@ -8,11 +8,14 @@ import com.fintrack.category.repository.CategoryRepository;
 import com.fintrack.category.web.dto.CategoryResponse;
 import com.fintrack.category.web.dto.CreateCategoryRequest;
 import com.fintrack.category.web.dto.UpdateCategoryRequest;
+import com.fintrack.common.cache.CacheVersionService;
+import com.fintrack.common.config.CacheConfig;
 import com.fintrack.common.domain.TransactionType;
 import com.fintrack.common.exception.ConflictException;
 import com.fintrack.common.exception.ForbiddenException;
 import com.fintrack.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +30,12 @@ public class CategoryService {
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
     private final CategoryMapper categoryMapper;
+    private final CacheVersionService cacheVersionService;
 
+    @Cacheable(
+            value = CacheConfig.CATEGORIES,
+            key = "#userId + ':v' + @cacheVersionService.current(#userId) + ':categories:' + #type"
+    )
     @Transactional(readOnly = true)
     public List<CategoryResponse> list(Long userId, TransactionType type) {
         return categoryMapper.toResponseList(categoryRepository.findVisibleToUser(userId, type));
@@ -43,7 +51,9 @@ public class CategoryService {
         User user = userRepository.getReferenceById(userId);
         Category category = categoryMapper.toEntity(request);
         category.setUser(user);
-        return categoryMapper.toResponse(categoryRepository.save(category));
+        CategoryResponse response = categoryMapper.toResponse(categoryRepository.save(category));
+        cacheVersionService.bump(userId);
+        return response;
     }
 
     @Transactional
@@ -71,7 +81,9 @@ public class CategoryService {
         if (typeChanged) {
             category.setTransactionType(targetType);
         }
-        return categoryMapper.toResponse(categoryRepository.save(category));
+        CategoryResponse response = categoryMapper.toResponse(categoryRepository.save(category));
+        cacheVersionService.bump(userId);
+        return response;
     }
 
     @Transactional
@@ -90,6 +102,7 @@ public class CategoryService {
         categoryRepository.reassignRecurringCategory(categoryId, toId);
 
         categoryRepository.delete(category);
+        cacheVersionService.bump(userId);
     }
 
     /** Called by TransactionService to validate category visibility; returns the category. */

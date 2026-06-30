@@ -35,18 +35,22 @@ public class ActivityAuditInterceptor implements HandlerInterceptor {
 
         if (!MUTATION_METHODS.contains(request.getMethod())) return;
         if (response.getStatus() < 200 || response.getStatus() >= 300) return;
+        // Auth endpoints create/validate credentials; the principal isn't the acting user
+        String uri = request.getRequestURI();
+        if (uri == null) return;
+        if (uri.startsWith("/api/v1/auth/")) return;
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !(auth.getPrincipal() instanceof UserPrincipal principal)) return;
 
-        String action = resolveAction(request.getMethod(), request.getRequestURI());
+        String action = resolveAction(request.getMethod(), uri);
         String correlationId = MDC.get("correlationId");
 
         // status omitted from meta: capture fires after HTTP response is already sent,
         // and the action name already conveys what happened.
         auditLogWriter.write(principal.getUserId(), action, correlationId,
                 Map.of("method", request.getMethod(),
-                       "uri",    request.getRequestURI()));
+                       "uri",    uri));
     }
 
     private String resolveAction(String method, String uri) {

@@ -5,6 +5,7 @@ import com.fintrack.account.service.AccountService;
 import com.fintrack.auth.domain.User;
 import com.fintrack.auth.repository.UserRepository;
 import com.fintrack.category.service.CategoryService;
+import com.fintrack.common.cache.CacheVersionService;
 import com.fintrack.common.domain.TransactionType;
 import com.fintrack.transaction.domain.Transaction;
 import com.fintrack.transaction.mapper.TransactionMapper;
@@ -35,6 +36,7 @@ class TransactionServiceTest {
     @Mock AccountService accountService;
     @Mock CategoryService categoryService;
     @Mock TransactionMapper transactionMapper;
+    @Mock CacheVersionService cacheVersionService;
 
     @InjectMocks TransactionService transactionService;
 

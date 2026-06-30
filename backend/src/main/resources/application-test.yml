@@ -8,6 +8,10 @@ spring:
     show-sql: false
   flyway:
     enabled: true
+  data:
+    redis:
+      repositories:
+        enabled: false
 
 logging:
   level:

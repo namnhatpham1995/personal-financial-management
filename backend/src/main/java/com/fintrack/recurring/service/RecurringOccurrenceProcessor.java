@@ -1,6 +1,7 @@
 package com.fintrack.recurring.service;
 
 import com.fintrack.account.service.AccountService;
+import com.fintrack.common.cache.CacheVersionService;
 import com.fintrack.recurring.domain.RecurringTransaction;
 import com.fintrack.recurring.repository.RecurringTransactionRepository;
 import com.fintrack.transaction.domain.Transaction;
@@ -24,6 +25,7 @@ public class RecurringOccurrenceProcessor {
     private final RecurringTransactionRepository recurringRepository;
     private final TransactionRepository transactionRepository;
     private final AccountService accountService;
+    private final CacheVersionService cacheVersionService;
 
     @Transactional
     public void process(RecurringTransaction rt, LocalDate today) {
@@ -47,6 +49,7 @@ public class RecurringOccurrenceProcessor {
 
             transactionRepository.save(tx);
             applyBalanceDelta(rt, tx);
+            cacheVersionService.bump(rt.getUser().getId());
             log.debug("Generated transaction for recurring {} on {}", rt.getId(), occurrenceDate);
         }
 

@@ -1,5 +1,6 @@
 package com.fintrack.common.config;
 
+import com.fintrack.auth.service.JwtService;
 import com.fintrack.auth.service.UserDetailsServiceImpl;
 import com.fintrack.common.ratelimit.AuthRateLimitFilter;
 import com.fintrack.common.security.JwtAuthenticationFilter;
@@ -34,7 +35,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtService jwtService;
     private final UserDetailsServiceImpl userDetailsService;
     private final AppProperties appProperties;
 
@@ -55,7 +56,8 @@ public class SecurityConfig {
                     res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))
             )
             .authenticationProvider(authenticationProvider())
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(new JwtAuthenticationFilter(jwtService, userDetailsService),
+                    UsernamePasswordAuthenticationFilter.class)
             .headers(headers -> headers
                 .frameOptions(frame -> frame.sameOrigin())
                 .contentTypeOptions(c -> {})
