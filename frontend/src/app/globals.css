@@ -5,25 +5,25 @@
 @layer base {
   /* Light theme — modern minimalist, clean surfaces */
   :root {
-    --background: 240 20% 98%;
+    --background: 220 20% 96%;
     --surface-raised: 0 0% 100%;
-    --surface-overlay: 210 20% 95%;
-    --hover-surface: 210 20% 93%;
+    --surface-overlay: 214 22% 93%;
+    --hover-surface: 214 24% 91%;
     --foreground: 222 47% 11%;
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
     --primary: 160 84% 32%;
     --primary-foreground: 160 100% 95%;
-    --secondary: 210 20% 94%;
+    --secondary: 214 22% 93%;
     --secondary-foreground: 222 47% 11%;
-    --muted: 210 20% 94%;
+    --muted: 214 22% 93%;
     --muted-foreground: 215 25% 40%;
-    --accent: 210 20% 94%;
+    --accent: 214 22% 93%;
     --accent-foreground: 222 47% 11%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 214 32% 87%;
-    --input: 214 32% 87%;
+    --border: 214 28% 78%;
+    --input: 214 28% 78%;
     --ring: 160 84% 32%;
     --radius: 0.75rem;
 

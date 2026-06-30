@@ -9,6 +9,8 @@ const mocks = vi.hoisted(() => ({
   register: vi.fn(),
   push: vi.fn(),
   toastError: vi.fn(),
+  setTheme: vi.fn(),
+  resolvedTheme: "light",
 }));
 
 vi.mock("@/lib/auth-context", () => ({
@@ -33,14 +35,23 @@ vi.mock("sonner", () => ({
   },
 }));
 
+vi.mock("next-themes", () => ({
+  useTheme: () => ({
+    resolvedTheme: mocks.resolvedTheme,
+    setTheme: mocks.setTheme,
+  }),
+}));
+
 describe("auth password entry", () => {
   beforeEach(() => {
     mocks.login.mockResolvedValue(undefined);
     mocks.register.mockResolvedValue(undefined);
+    mocks.resolvedTheme = "light";
   });
 
   afterEach(() => {
     cleanup();
+    document.documentElement.classList.remove("dark", "light");
     vi.clearAllMocks();
   });
 
@@ -56,6 +67,15 @@ describe("auth password entry", () => {
 
     await user.click(screen.getByRole("button", { name: "Hide password" }));
     expect(password).toHaveAttribute("type", "password");
+  });
+
+  it("switches theme from the login page", async () => {
+    const user = userEvent.setup();
+    render(<LoginPage />);
+
+    await user.click(await screen.findByRole("button", { name: "Switch to dark theme" }));
+
+    expect(mocks.setTheme).toHaveBeenCalledWith("dark");
   });
 
   it("toggles registration password fields independently", async () => {
@@ -75,6 +95,17 @@ describe("auth password entry", () => {
     await user.click(screen.getByRole("button", { name: "Show confirm password" }));
     expect(password).toHaveAttribute("type", "text");
     expect(confirmPassword).toHaveAttribute("type", "text");
+  });
+
+  it("switches theme from the registration page", async () => {
+    const user = userEvent.setup();
+    mocks.resolvedTheme = "dark";
+    document.documentElement.classList.add("dark");
+    render(<RegisterPage />);
+
+    await user.click(await screen.findByRole("button", { name: "Switch to light theme" }));
+
+    expect(mocks.setTheme).toHaveBeenCalledWith("light");
   });
 
   it("blocks registration when password confirmation does not match", async () => {
