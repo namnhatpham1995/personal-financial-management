@@ -73,6 +73,14 @@ external/
 .agents/
 skills-lock.json
 
+# Impeccable design skill — per-developer local state only.
+# .impeccable/config.json, design.json, live/config.json, and critique/ are
+# team-shared and stay tracked; .github/skills/impeccable/ is already
+# covered by the .github/Skills/ rule above (case-insensitive match).
+.impeccable/hook.cache.json
+.impeccable/hook.pending.json
+.impeccable/config.local.json
+
 # Git worktrees (local development only)
 worktrees/
 
