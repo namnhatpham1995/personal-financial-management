@@ -73,7 +73,7 @@ function VaultContent() {
             className={cn(
               "px-4 py-2 text-sm font-medium capitalize transition-colors",
               activeTab === tab
-                ? "border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400"
+                ? "border-b-2 border-primary text-primary"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >

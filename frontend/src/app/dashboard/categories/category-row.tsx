@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Check, Lock, Pencil, Trash2, X } from "lucide-react";
 import { Category } from "@/services/category-service";
+import { Button } from "@/components/ui/button";
 
 const renameSchema = z.object({ name: z.string().min(1, "Name is required").max(100) });
 type RenameValues = z.infer<typeof renameSchema>;
@@ -59,23 +60,22 @@ export function CategoryRow({
               {renameForm.formState.errors.name.message}
             </span>
           )}
-          <button
-            type="submit"
-            disabled={isRenamePending}
-            className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors"
-          >
+          <Button type="submit" size="sm" className="px-2.5" disabled={isRenamePending} aria-label="Save name">
             <Check className="h-3.5 w-3.5" />
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
+            className="px-2.5"
+            aria-label="Cancel rename"
             onClick={() => {
               renameForm.reset();
               onEditCancel();
             }}
-            className="rounded-lg border border-border px-2.5 py-1.5 text-muted-foreground hover:bg-secondary transition-colors"
           >
             <X className="h-3.5 w-3.5" />
-          </button>
+          </Button>
         </form>
       </div>
     );
@@ -91,19 +91,12 @@ export function CategoryRow({
             <span className="font-medium text-foreground">Uncategorized</span>.
           </p>
           <div className="flex shrink-0 gap-2">
-            <button
-              onClick={onDeleteConfirm}
-              disabled={isDeletePending}
-              className="rounded-lg bg-rose-500/10 border border-rose-500/20 px-3 py-1.5 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 disabled:opacity-50 transition-colors"
-            >
+            <Button variant="destructive" size="sm" onClick={onDeleteConfirm} disabled={isDeletePending}>
               {isDeletePending ? "Deleting..." : "Delete"}
-            </button>
-            <button
-              onClick={onDeleteCancel}
-              className="rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground hover:bg-secondary transition-colors"
-            >
+            </Button>
+            <Button variant="secondary" size="sm" onClick={onDeleteCancel}>
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       </div>

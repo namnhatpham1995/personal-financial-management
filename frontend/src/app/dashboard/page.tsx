@@ -90,9 +90,9 @@ export default function DashboardPage() {
               <button
                 key={label}
                 onClick={() => setMonths(m)}
-                className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+                className={`rounded-md px-3 py-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
                   months === m
-                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                    ? "bg-primary/10 text-primary border border-primary/20"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -159,8 +159,8 @@ export default function DashboardPage() {
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 {acc.accountType}
               </p>
-              <p className="mt-1 font-semibold text-foreground">{acc.name}</p>
-              <p className="mt-2 font-mono tabular-nums text-xl font-bold text-foreground">
+              <p className="mt-1 truncate font-semibold text-foreground" title={acc.name}>{acc.name}</p>
+              <p className="mt-2 truncate font-mono tabular-nums text-xl font-bold text-foreground">
                 {formatCurrency(acc.currentBalance, acc.currency)}
               </p>
             </Card>

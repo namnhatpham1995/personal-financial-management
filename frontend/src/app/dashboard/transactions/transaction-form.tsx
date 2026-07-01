@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import type { Transaction } from "@/services/transaction-service";
 import type { Account } from "@/services/account-service";
 import type { Category } from "@/services/category-service";
@@ -112,20 +113,12 @@ export function TransactionForm({ editingTx, accounts, categories, isPending, on
           <input {...register("note")} className={inputCls} />
         </Field>
         <div className="sm:col-span-2 flex gap-2">
-          <button
-            type="submit"
-            disabled={isPending}
-            className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors"
-          >
+          <Button type="submit" disabled={isPending}>
             {isEditing ? "Save Changes" : "Save"}
-          </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
-          >
+          </Button>
+          <Button type="button" variant="secondary" onClick={onCancel}>
             Cancel
-          </button>
+          </Button>
         </div>
       </form>
     </div>

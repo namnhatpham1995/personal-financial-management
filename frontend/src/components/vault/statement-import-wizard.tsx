@@ -6,6 +6,7 @@ import { vaultService, StagedRow } from "@/services/vault-service";
 import { toast } from "sonner";
 import { Upload, CheckSquare, Square, Loader2 } from "lucide-react";
 import { cn, formatDate } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   accountId: number;
@@ -65,8 +66,8 @@ export function StatementImportWizard({ accountId, onComplete }: Props) {
   if (step === "done") {
     return (
       <div className="flex flex-col items-center gap-3 py-8 text-center">
-        <div className="rounded-full bg-emerald-500/10 p-3">
-          <CheckSquare className="h-6 w-6 text-emerald-500" />
+        <div className="rounded-full bg-primary/10 p-3">
+          <CheckSquare className="h-6 w-6 text-primary" />
         </div>
         <p className="text-sm font-medium text-foreground">
           {createdCount} transaction{createdCount !== 1 ? "s" : ""} imported
@@ -109,11 +110,11 @@ export function StatementImportWizard({ accountId, onComplete }: Props) {
               className={cn(
                 "flex w-full items-center gap-3 px-3 py-2 text-left transition-colors",
                 "hover:bg-muted/50",
-                selected.has(row.dedupKey) ? "bg-emerald-500/5" : ""
+                selected.has(row.dedupKey) ? "bg-primary/5" : ""
               )}
             >
               {selected.has(row.dedupKey) ? (
-                <CheckSquare className="h-4 w-4 shrink-0 text-emerald-500" />
+                <CheckSquare className="h-4 w-4 shrink-0 text-primary" />
               ) : (
                 <Square className="h-4 w-4 shrink-0 text-muted-foreground" />
               )}
@@ -142,17 +143,13 @@ export function StatementImportWizard({ accountId, onComplete }: Props) {
           <p className="text-xs text-muted-foreground">
             {selected.size} of {rows.length} selected
           </p>
-          <button
+          <Button
             disabled={selected.size === 0 || confirmMut.isPending}
             onClick={() => confirmMut.mutate()}
-            className={cn(
-              "flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors",
-              "hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            )}
           >
             {confirmMut.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
             Import {selected.size} rows
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -162,7 +159,7 @@ export function StatementImportWizard({ accountId, onComplete }: Props) {
     <div
       className={cn(
         "flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-border p-8",
-        "cursor-pointer hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-colors",
+        "cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors",
         uploadMut.isPending && "pointer-events-none opacity-60"
       )}
       onClick={() => fileRef.current?.click()}

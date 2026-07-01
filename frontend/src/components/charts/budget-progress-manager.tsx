@@ -12,6 +12,7 @@ import { analyticsService, type BudgetProgress } from "@/services/analytics-serv
 import { budgetService, type Budget, type CreateBudgetPayload } from "@/services/budget-service";
 import { categoryService } from "@/services/category-service";
 import { BudgetProgressList } from "./budget-progress-list";
+import { Button } from "@/components/ui/button";
 
 const CURRENCY_FALLBACK = ["USD", "VND", "EUR"];
 
@@ -196,14 +197,14 @@ export function BudgetProgressManager() {
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
-          <button
+          <Button
             type="button"
+            size="sm"
             onClick={() => setShowAddForm((current) => !current)}
             disabled={isLoading}
-            className="flex items-center gap-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors"
           >
             <Plus className="h-3.5 w-3.5" /> Add limit
-          </button>
+          </Button>
         </div>
       </div>
 
