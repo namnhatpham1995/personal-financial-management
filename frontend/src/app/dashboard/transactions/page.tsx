@@ -7,15 +7,14 @@ import { transactionService, TransactionFilters, Transaction } from "@/services/
 import type { UpdateTransactionPayload } from "@/services/transaction-service";
 import { accountService } from "@/services/account-service";
 import { categoryService } from "@/services/category-service";
-import { formatCurrency, formatDate } from "@/lib/utils";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TransactionForm } from "./transaction-form";
 import type { TransactionFormValues } from "./transaction-form";
 import { RecurringTab } from "./recurring-tab";
-import { Badge } from "@/components/ui/badge";
+import { TransactionTable } from "@/components/transactions/transaction-table";
 import { Button } from "@/components/ui/button";
 
 const inputCls =
@@ -181,95 +180,18 @@ function HistoryTab() {
       ) : isError ? (
         <p className="text-rose-600 dark:text-rose-400">Failed to load transactions. Check your connection or try refreshing.</p>
       ) : (
-        <>
-          <div className="overflow-x-auto rounded-xl border border-border bg-card">
-            <table className="w-full text-sm">
-              <thead className="border-b border-border">
-                <tr>
-                  {["Date", "Account", "Type", "Category", "Amount", "Note", ""].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {transactions.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
-                      No transactions found
-                    </td>
-                  </tr>
-                ) : (
-                  transactions.map((tx) => (
-                    <tr key={tx.id} className="transition-colors hover:bg-hover-surface">
-                      <td className="px-4 py-3 font-mono tabular-nums text-xs text-muted-foreground">{formatDate(tx.transactionDate)}</td>
-                      <td className="px-4 py-3 text-foreground">
-                        <span className="block max-w-[12rem] truncate" title={tx.accountName}>{tx.accountName}</span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge variant={tx.transactionType === "INCOME" ? "income" : tx.transactionType === "EXPENSE" ? "expense" : "transfer"}>
-                          {tx.transactionType}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground">{tx.categoryName ?? "—"}</td>
-                      <td className={cn(
-                        "px-4 py-3 font-mono tabular-nums font-medium",
-                        tx.transactionType === "INCOME" ? "text-emerald-600 dark:text-emerald-400" :
-                        tx.transactionType === "EXPENSE" ? "text-rose-600 dark:text-rose-400" : "text-muted-foreground"
-                      )}>
-                        {tx.transactionType === "INCOME" ? "+" : tx.transactionType === "EXPENSE" ? "−" : ""}
-                        {formatCurrency(tx.amount, tx.currency)}
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        <span className="block max-w-[16rem] truncate" title={tx.note ?? undefined}>{tx.note ?? "—"}</span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => startEdit(tx)}
-                            title="Edit transaction"
-                            className="rounded text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => deleteMutation.mutate(tx.id)}
-                            disabled={deleteMutation.isPending && deleteMutation.variables === tx.id}
-                            title="Delete transaction"
-                            className="rounded text-muted-foreground hover:text-rose-500 dark:hover:text-rose-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-40 transition-colors"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <p className="font-mono tabular-nums text-xs text-muted-foreground">
-              Page {currentPage + 1} of {totalPages}
-            </p>
-            <div className="flex gap-2">
-              <button
-                disabled={currentPage === 0}
-                onClick={() => setFilters((f) => ({ ...f, page: currentPage - 1 }))}
-                className="rounded-lg border border-border p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-40 transition-colors"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <button
-                disabled={currentPage >= totalPages - 1}
-                onClick={() => setFilters((f) => ({ ...f, page: currentPage + 1 }))}
-                className="rounded-lg border border-border p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-40 transition-colors"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        </>
+        <TransactionTable
+          transactions={transactions}
+          onEdit={startEdit}
+          onDelete={(tx) => deleteMutation.mutate(tx.id)}
+          deletingId={deleteMutation.isPending ? deleteMutation.variables ?? null : null}
+          pagination={{
+            currentPage,
+            totalPages,
+            onPrev: () => setFilters((f) => ({ ...f, page: currentPage - 1 })),
+            onNext: () => setFilters((f) => ({ ...f, page: currentPage + 1 })),
+          }}
+        />
       )}
     </div>
   );

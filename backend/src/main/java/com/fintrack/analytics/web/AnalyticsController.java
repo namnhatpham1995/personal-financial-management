@@ -5,6 +5,7 @@ import com.fintrack.analytics.web.dto.BudgetProgressDto;
 import com.fintrack.analytics.web.dto.ConvertedOverviewDto;
 import com.fintrack.analytics.web.dto.CurrencyNetWorthDto;
 import com.fintrack.analytics.web.dto.IncomeExpenseTrendDto;
+import com.fintrack.analytics.web.dto.IncomingTransferTotalDto;
 import com.fintrack.analytics.web.dto.SpendingByCategoryDto;
 import com.fintrack.common.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,12 +34,25 @@ public class AnalyticsController {
     private final AnalyticsService analyticsService;
 
     @GetMapping("/spending-by-category")
-    @Operation(summary = "Spending breakdown by category for a date range")
+    @Operation(summary = "Spending breakdown by category for a date range, optionally scoped to one account")
     public List<SpendingByCategoryDto> spendingByCategory(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(required = false) Long accountId) {
+        return analyticsService.getSpendingByCategory(principal.getUserId(), from, to, accountId);
+    }
+
+    @GetMapping("/incoming-transfer-total")
+    @Operation(summary = "Total incoming transfers into an account for a date range")
+    public IncomingTransferTotalDto incomingTransferTotal(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @RequestParam Long accountId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-        return analyticsService.getSpendingByCategory(principal.getUserId(), from, to);
+        return new IncomingTransferTotalDto(
+                accountId,
+                analyticsService.getIncomingTransferTotal(principal.getUserId(), accountId, from, to));
     }
 
     @GetMapping("/income-vs-expense")

@@ -19,6 +19,15 @@ public class TransactionSpecification {
         return (root, query, cb) -> cb.equal(root.get("account").get("id"), accountId);
     }
 
+    /**
+     * Matches transfers whose destination (counterparty) is the given account.
+     * Used by the account detail view's separate incoming-transfers list.
+     */
+    public static Specification<Transaction> byTransferAccountId(Long transferAccountId) {
+        if (transferAccountId == null) return null;
+        return (root, query, cb) -> cb.equal(root.get("transferAccount").get("id"), transferAccountId);
+    }
+
     public static Specification<Transaction> byStartDate(LocalDate startDate) {
         if (startDate == null) return null;
         return (root, query, cb) -> cb.greaterThanOrEqualTo(root.get("transactionDate"), startDate);

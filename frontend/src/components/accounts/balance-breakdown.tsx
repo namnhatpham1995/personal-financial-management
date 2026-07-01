@@ -23,6 +23,7 @@ export function BalanceBreakdown({
   onCancelCreate,
   onEdit,
   onDelete,
+  onOpenDetail,
 }: {
   accounts: Account[];
   netWorthByCurrency: CurrencyNetWorth[];
@@ -34,6 +35,7 @@ export function BalanceBreakdown({
   onCancelCreate: () => void;
   onEdit: (account: Account) => void;
   onDelete: (account: Account) => void;
+  onOpenDetail: (account: Account) => void;
 }) {
   const currencies = Array.from(new Set(accounts.map((account) => account.currency))).sort();
   const multiCurrency = currencies.length > 1;
@@ -89,6 +91,7 @@ export function BalanceBreakdown({
               showHeading={multiCurrency}
               onEdit={onEdit}
               onDelete={onDelete}
+              onOpenDetail={onOpenDetail}
             />
           ))}
         </div>
@@ -104,6 +107,7 @@ function CurrencyBalanceGroup({
   showHeading,
   onEdit,
   onDelete,
+  onOpenDetail,
 }: {
   currency: string;
   accounts: Account[];
@@ -111,10 +115,11 @@ function CurrencyBalanceGroup({
   showHeading: boolean;
   onEdit: (account: Account) => void;
   onDelete: (account: Account) => void;
+  onOpenDetail: (account: Account) => void;
 }) {
   return (
-    <Card className="overflow-hidden p-0">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-secondary/50 px-4 py-3">
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="font-semibold tracking-tight text-foreground">
             {showHeading ? currency : "Accounts"}
@@ -131,69 +136,90 @@ function CurrencyBalanceGroup({
           {currency}
         </span>
       </div>
-      <div className="hidden grid-cols-[minmax(0,1.35fr)_0.8fr_0.7fr_minmax(8rem,0.8fr)_4.5rem] gap-3 border-b border-border px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground md:grid">
-        <span>Account</span>
-        <span>Type</span>
-        <span>Role</span>
-        <span className="text-right">Balance</span>
-        <span className="text-right">Actions</span>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {accounts.map((account) => (
+          <AccountBox
+            key={account.id}
+            account={account}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onOpenDetail={onOpenDetail}
+          />
+        ))}
       </div>
-      <div className="divide-y divide-border">
-        {accounts.map((account) => {
-          const role = getAccountRole(account.accountType);
-          return (
-            <div
-              key={account.id}
-              className="grid gap-3 px-4 py-3 transition-colors hover:bg-secondary/50 md:grid-cols-[minmax(0,1.35fr)_0.8fr_0.7fr_minmax(8rem,0.8fr)_4.5rem] md:items-center"
-            >
-              <div className="min-w-0">
-                <p className="truncate font-semibold text-foreground" title={account.name}>
-                  {account.name}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground md:hidden">
-                  {formatAccountType(account.accountType)} - {role}
-                </p>
-              </div>
-              <p className="hidden text-sm text-muted-foreground md:block">
-                {formatAccountType(account.accountType)}
-              </p>
-              <span
-                className={`w-fit rounded-full border px-2 py-0.5 text-xs font-medium ${
-                  role === "Asset"
-                    ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
-                    : "border-rose-500/20 bg-rose-500/10 text-rose-600 dark:text-rose-400"
-                }`}
-              >
-                {role}
-              </span>
-              <p
-                className="font-mono text-base font-bold tabular-nums text-foreground md:text-right"
-                title={formatCurrency(account.currentBalance, account.currency)}
-              >
-                {formatCurrency(account.currentBalance, account.currency)}
-              </p>
-              <div className="flex items-center gap-1 md:justify-end">
-                <button
-                  onClick={() => onEdit(account)}
-                  className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                  title="Edit account"
-                  aria-label={`Edit ${account.name}`}
-                >
-                  <Pencil className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => onDelete(account)}
-                  className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-rose-500/10 hover:text-rose-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 dark:hover:text-rose-400"
-                  title="Delete account"
-                  aria-label={`Delete ${account.name}`}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          );
-        })}
+    </div>
+  );
+}
+
+/** Clickable summary box for one account. Opens the account detail view on activation;
+ *  inner edit/delete buttons stop propagation so they don't also open the detail. */
+function AccountBox({
+  account,
+  onEdit,
+  onDelete,
+  onOpenDetail,
+}: {
+  account: Account;
+  onEdit: (account: Account) => void;
+  onDelete: (account: Account) => void;
+  onOpenDetail: (account: Account) => void;
+}) {
+  const role = getAccountRole(account.accountType);
+  return (
+    <Card
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpenDetail(account)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpenDetail(account);
+        }
+      }}
+      className="cursor-pointer p-5 transition-colors hover:bg-secondary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+      title={`View ${account.name} details`}
+      aria-label={`View ${account.name} details`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            {formatAccountType(account.accountType)} · <span>{role}</span>
+          </p>
+          <p className="mt-1 truncate font-semibold text-foreground" title={account.name}>
+            {account.name}
+          </p>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(account);
+            }}
+            className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            title="Edit account"
+            aria-label={`Edit ${account.name}`}
+          >
+            <Pencil className="h-4 w-4" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(account);
+            }}
+            className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-rose-500/10 hover:text-rose-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 dark:hover:text-rose-400"
+            title="Delete account"
+            aria-label={`Delete ${account.name}`}
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
       </div>
+      <p
+        className="mt-4 truncate font-mono text-2xl font-bold tabular-nums text-foreground"
+        title={formatCurrency(account.currentBalance, account.currency)}
+      >
+        {formatCurrency(account.currentBalance, account.currency)}
+      </p>
     </Card>
   );
 }

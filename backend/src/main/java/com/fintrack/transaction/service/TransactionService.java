@@ -79,7 +79,7 @@ public class TransactionService {
     @Transactional(readOnly = true)
     public PageResponse<TransactionResponse> list(
             Long userId, Long accountId, LocalDate startDate, LocalDate endDate,
-            Long categoryId, TransactionType type, String note,
+            Long categoryId, TransactionType type, String note, Long transferAccountId,
             int page, int size, String sortBy, String sortDir) {
 
         size = Math.min(size <= 0 ? DEFAULT_PAGE_SIZE : size, MAX_PAGE_SIZE);
@@ -89,6 +89,7 @@ public class TransactionService {
         Specification<Transaction> spec = Specification
                 .where(TransactionSpecification.byUserId(userId))
                 .and(TransactionSpecification.byAccountId(accountId))
+                .and(TransactionSpecification.byTransferAccountId(transferAccountId))
                 .and(TransactionSpecification.byStartDate(startDate))
                 .and(TransactionSpecification.byEndDate(endDate))
                 .and(TransactionSpecification.byCategoryId(categoryId))

@@ -69,7 +69,7 @@ public class AnalyticsService {
 
         // ── 1. Fetch per-currency raw data ────────────────────────────────────
         List<CurrencyNetWorthDto> netWorthBuckets = getNetWorth(userId);
-        List<SpendingByCategoryDto> spendingRows  = analyticsRepository.spendingByCategory(userId, from, to);
+        List<SpendingByCategoryDto> spendingRows  = analyticsRepository.spendingByCategory(userId, from, to, null);
         List<IncomeExpenseTrendDto> trendRows      = analyticsRepository.incomeExpenseTrend(userId, from, to);
 
         // ── 2. Accumulators ───────────────────────────────────────────────────
@@ -307,8 +307,27 @@ public class AnalyticsService {
     }
 
     @Transactional(readOnly = true)
-    public List<SpendingByCategoryDto> getSpendingByCategory(Long userId, LocalDate from, LocalDate to) {
-        return analyticsRepository.spendingByCategory(userId, from, to);
+    public List<SpendingByCategoryDto> getSpendingByCategory(
+            Long userId, LocalDate from, LocalDate to, Long accountId) {
+        // Scope to a single account only when the caller owns it; otherwise return
+        // an empty breakdown rather than leaking another user's data.
+        if (accountId != null && !accountRepository.existsByIdAndUserId(accountId, userId)) {
+            return List.of();
+        }
+        return analyticsRepository.spendingByCategory(userId, from, to, accountId);
+    }
+
+    /**
+     * Total incoming transfers (this account as counterparty) in the range.
+     * Returns zero when the account is not owned or has no incoming transfers.
+     */
+    @Transactional(readOnly = true)
+    public BigDecimal getIncomingTransferTotal(
+            Long userId, Long accountId, LocalDate from, LocalDate to) {
+        if (!accountRepository.existsByIdAndUserId(accountId, userId)) {
+            return BigDecimal.ZERO;
+        }
+        return analyticsRepository.incomingTransferTotal(userId, accountId, from, to);
     }
 
     @Transactional(readOnly = true)
