@@ -31,9 +31,14 @@ export function MoneyText({ amount, type, signed = false, className }: MoneyText
     : "text-foreground";
   const sign = type ? typeSign[type] : "";
 
+  if (!Number.isFinite(amount)) {
+    return <span className={cn("font-mono tabular-nums text-muted-foreground", className)}>—</span>;
+  }
+
   return (
     <span className={cn("font-mono tabular-nums", colorClass, className)}>
-      {sign}{Math.abs(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      {sign}
+      {Math.abs(amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
     </span>
   );
 }

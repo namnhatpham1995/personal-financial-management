@@ -85,7 +85,7 @@ export function ReceiptUploadViewer({ transactionId, documentId, onLinked }: Pro
         <div
           className={cn(
             "flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border p-6",
-            "cursor-pointer hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-colors",
+            "cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors",
             upload.isPending && "pointer-events-none opacity-60"
           )}
           onClick={() => inputRef.current?.click()}

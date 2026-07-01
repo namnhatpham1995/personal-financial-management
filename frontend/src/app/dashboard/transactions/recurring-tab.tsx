@@ -13,6 +13,7 @@ import { Plus, Trash2, Pause, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 const schema = z.object({
   accountId: z.coerce.number(),
@@ -70,12 +71,9 @@ export function RecurringTab() {
   return (
     <div className="space-y-6">
       <div className="flex justify-end">
-        <button
-          onClick={() => { setShowForm(!showForm); reset(); }}
-          className="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors"
-        >
+        <Button onClick={() => { setShowForm(!showForm); reset(); }}>
           <Plus className="h-4 w-4" /> New Rule
-        </button>
+        </Button>
       </div>
 
       {showForm && (
@@ -113,20 +111,12 @@ export function RecurringTab() {
               <input {...register("note")} className={inputCls} />
             </Field>
             <div className="flex gap-2 sm:col-span-2">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors"
-              >
+              <Button type="submit" disabled={isSubmitting}>
                 Save
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
-              >
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => setShowForm(false)}>
                 Cancel
-              </button>
+              </Button>
             </div>
           </form>
         </Card>

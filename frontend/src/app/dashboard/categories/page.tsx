@@ -15,6 +15,7 @@ import {
 } from "@/services/category-service";
 import { CategoryRow, type CategoryRowProps } from "./category-row";
 import { CategoryTypeGroup } from "./category-type-group";
+import { Button } from "@/components/ui/button";
 
 const createSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
@@ -94,12 +95,9 @@ export default function CategoriesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Categories</h1>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors"
-        >
+        <Button onClick={() => setShowForm(!showForm)}>
           <Plus className="h-4 w-4" /> New Category
-        </button>
+        </Button>
       </div>
 
       {showForm && (
@@ -195,14 +193,12 @@ function CreateForm({ onSubmit, onCancel, isPending }: { onSubmit: (v: CreateVal
           </select>
         </div>
         <div className="flex gap-2">
-          <button type="submit" disabled={isPending}
-            className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors">
+          <Button type="submit" disabled={isPending}>
             {isPending ? "Saving..." : "Save"}
-          </button>
-          <button type="button" onClick={onCancel}
-            className="rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-secondary transition-colors">
+          </Button>
+          <Button type="button" variant="secondary" onClick={onCancel}>
             Cancel
-          </button>
+          </Button>
         </div>
       </form>
     </div>

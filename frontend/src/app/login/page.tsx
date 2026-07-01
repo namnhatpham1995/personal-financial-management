@@ -10,6 +10,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
 import { AuthThemeToggle } from "@/components/auth-theme-toggle";
+import { Button } from "@/components/ui/button";
 
 const schema = z.object({
   email: z.string().email(),
@@ -47,7 +48,7 @@ export default function LoginPage() {
           <AuthThemeToggle />
         </div>
         <div className="mb-8">
-          <span className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
+          <span className="text-xl font-bold tracking-tight text-primary">
             Fintrack
           </span>
           <h1 className="mt-3 text-2xl font-bold tracking-tight text-foreground">Sign in</h1>
@@ -83,17 +84,13 @@ export default function LoginPage() {
             </div>
             {errors.password && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors.password.message}</p>}
           </div>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2.5 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors"
-          >
+          <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? "Signing in…" : "Sign in"}
-          </button>
+          </Button>
         </form>
         <p className="mt-6 text-center text-sm text-muted-foreground">
           No account?{" "}
-          <Link href="/register" className="font-medium text-emerald-600 dark:text-emerald-400 hover:underline transition-colors">
+          <Link href="/register" className="font-medium text-primary hover:underline transition-colors">
             Register
           </Link>
         </p>

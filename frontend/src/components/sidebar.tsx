@@ -74,7 +74,7 @@ function SidebarContent({
   return (
     <>
       <div className="mb-8">
-        <span className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
+        <span className="text-xl font-bold tracking-tight text-primary">
           Fintrack
         </span>
       </div>
@@ -88,7 +88,7 @@ function SidebarContent({
             className={cn(
               "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150",
               pathname === href
-                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                ? "bg-primary/10 text-primary border border-primary/20"
                 : "text-muted-foreground hover:bg-secondary hover:text-foreground"
             )}
           >

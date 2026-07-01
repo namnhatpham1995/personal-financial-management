@@ -15,6 +15,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { Plus, Trash2, Pencil } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 const createSchema = z.object({
   name: z.string().min(1),
@@ -35,10 +36,6 @@ type EditFormValues = z.infer<typeof editSchema>;
 
 const inputCls =
   "w-full rounded-lg border border-border bg-card px-3 py-2 text-base text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-colors";
-const primaryBtn =
-  "rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors";
-const secondaryBtn =
-  "rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-secondary transition-colors";
 
 export default function AccountsPage() {
   const qc = useQueryClient();
@@ -91,12 +88,9 @@ export default function AccountsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Accounts</h1>
-        <button
-          onClick={() => { setShowCreateForm(!showCreateForm); setEditingAccount(null); }}
-          className={primaryBtn + " flex items-center gap-2"}
-        >
+        <Button onClick={() => { setShowCreateForm(!showCreateForm); setEditingAccount(null); }}>
           <Plus className="h-4 w-4" /> New Account
-        </button>
+        </Button>
       </div>
 
       {showCreateForm && (
@@ -185,8 +179,8 @@ function CreateAccountForm({ onSubmit, onCancel, isPending }: { onSubmit: (v: Cr
           <input {...register("initialBalance")} defaultValue="0" type="number" step="0.01" className={inputCls} />
         </Field>
         <div className="sm:col-span-2 flex gap-2">
-          <button type="submit" disabled={isPending} className={primaryBtn}>Save</button>
-          <button type="button" onClick={onCancel} className={secondaryBtn}>Cancel</button>
+          <Button type="submit" disabled={isPending}>Save</Button>
+          <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
         </div>
       </form>
     </Card>
@@ -220,8 +214,8 @@ function EditAccountDialog({ account, onSubmit, onCancel, isPending }: { account
             Changing initial balance will recompute the current balance. Changing currency relabels existing amounts without converting them.
           </p>
           <div className="sm:col-span-2 flex gap-2">
-            <button type="submit" disabled={isPending} className={primaryBtn}>Save changes</button>
-            <button type="button" onClick={onCancel} className={secondaryBtn}>Cancel</button>
+            <Button type="submit" disabled={isPending}>Save changes</Button>
+            <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
           </div>
         </form>
       </div>
@@ -247,14 +241,14 @@ function DeleteConfirmDialog({ account, transactionCount, onConfirm, onCancel, i
           </p>
         )}
         <div className="mt-4 flex gap-2">
-          <button
+          <Button
+            variant="destructive"
             onClick={onConfirm}
             disabled={isPending || transactionCount === null}
-            className="rounded-lg bg-rose-500/10 border border-rose-500/20 px-4 py-2 text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 disabled:opacity-50 transition-colors"
           >
             {isPending ? "Deleting…" : "Yes, delete"}
-          </button>
-          <button onClick={onCancel} className={secondaryBtn}>Cancel</button>
+          </Button>
+          <Button variant="secondary" onClick={onCancel}>Cancel</Button>
         </div>
       </div>
     </div>

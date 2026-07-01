@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 export type BudgetPeriod = "MONTHLY" | "YEARLY";
 
@@ -109,20 +110,12 @@ export function BudgetLimitForm({
         )}
       </div>
       <div className="flex gap-1">
-        <button
-          type="submit"
-          disabled={isPending}
-          className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 text-xs text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors"
-        >
+        <Button type="submit" size="sm" className="py-1" disabled={isPending}>
           {isPending ? "Saving..." : submitLabel}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-lg border border-border px-3 py-1 text-xs text-muted-foreground hover:bg-secondary transition-colors"
-        >
+        </Button>
+        <Button type="button" variant="secondary" size="sm" className="py-1" onClick={onCancel}>
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   );

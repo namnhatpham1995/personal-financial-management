@@ -16,6 +16,7 @@ import { TransactionForm } from "./transaction-form";
 import type { TransactionFormValues } from "./transaction-form";
 import { RecurringTab } from "./recurring-tab";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 const inputCls =
   "w-full rounded-lg border border-border bg-card px-3 py-2 text-base text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-colors";
@@ -54,7 +55,7 @@ function TransactionsContent() {
             className={cn(
               "px-4 py-2 text-sm font-medium capitalize transition-colors",
               activeTab === tab
-                ? "border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400"
+                ? "border-b-2 border-primary text-primary"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
@@ -115,6 +116,7 @@ function HistoryTab() {
       qc.invalidateQueries({ queryKey: ["accounts"] });
       toast.success("Transaction deleted");
     },
+    onError: () => toast.error("Failed to delete transaction"),
   });
 
   const closeForm = () => { setShowForm(false); setEditingTx(null); };
@@ -157,12 +159,9 @@ function HistoryTab() {
           onChange={(e) => setFilters((f) => ({ ...f, endDate: e.target.value || undefined, page: 0 }))}
         />
         <div className="ml-auto">
-          <button
-            onClick={handleAddClick}
-            className="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors"
-          >
+          <Button onClick={handleAddClick}>
             <Plus className="h-4 w-4" /> Add
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -203,7 +202,9 @@ function HistoryTab() {
                   transactions.map((tx) => (
                     <tr key={tx.id} className="transition-colors hover:bg-hover-surface">
                       <td className="px-4 py-3 font-mono tabular-nums text-xs text-muted-foreground">{formatDate(tx.transactionDate)}</td>
-                      <td className="px-4 py-3 text-foreground">{tx.accountName}</td>
+                      <td className="px-4 py-3 text-foreground">
+                        <span className="block max-w-[12rem] truncate" title={tx.accountName}>{tx.accountName}</span>
+                      </td>
                       <td className="px-4 py-3">
                         <Badge variant={tx.transactionType === "INCOME" ? "income" : tx.transactionType === "EXPENSE" ? "expense" : "transfer"}>
                           {tx.transactionType}
@@ -218,20 +219,23 @@ function HistoryTab() {
                         {tx.transactionType === "INCOME" ? "+" : tx.transactionType === "EXPENSE" ? "−" : ""}
                         {formatCurrency(tx.amount, tx.currency)}
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">{tx.note ?? "—"}</td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        <span className="block max-w-[16rem] truncate" title={tx.note ?? undefined}>{tx.note ?? "—"}</span>
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => startEdit(tx)}
                             title="Edit transaction"
-                            className="text-muted-foreground hover:text-foreground transition-colors"
+                            className="rounded text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors"
                           >
                             <Pencil className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => deleteMutation.mutate(tx.id)}
+                            disabled={deleteMutation.isPending && deleteMutation.variables === tx.id}
                             title="Delete transaction"
-                            className="text-muted-foreground hover:text-rose-500 dark:hover:text-rose-400 transition-colors"
+                            className="rounded text-muted-foreground hover:text-rose-500 dark:hover:text-rose-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-40 transition-colors"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
