@@ -1,8 +1,9 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
+import { toast } from "sonner";
 import {
   analyticsService,
   CurrencyNetWorth,
@@ -12,15 +13,25 @@ import {
   ConvertedTrend,
   ConvertedSpending,
 } from "@/services/analytics-service";
-import { accountService } from "@/services/account-service";
+import {
+  accountService,
+  Account,
+  CreateAccountPayload,
+  UpdateAccountPayload,
+} from "@/services/account-service";
 import { formatCurrency } from "@/lib/utils";
-import { TrendingUp, TrendingDown, Wallet } from "lucide-react";
+import { TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { CashFlowChart } from "@/components/charts/cash-flow-chart";
 import { SpendingDonutChart } from "@/components/charts/spending-donut-chart";
 import { BudgetProgressManager } from "@/components/charts/budget-progress-manager";
 import { RatesUsedNote } from "@/components/charts/rates-used-note";
 import { StatTile } from "@/components/ui/stat-tile";
 import { Card } from "@/components/ui/card";
+import {
+  DeleteAccountDialog,
+  EditAccountDialog,
+} from "@/components/accounts/account-management-ui";
+import { BalanceBreakdown } from "@/components/accounts/balance-breakdown";
 
 const RANGE_OPTIONS = [
   { label: "1M", months: 1 },
@@ -30,8 +41,12 @@ const RANGE_OPTIONS = [
 ] as const;
 
 export default function DashboardPage() {
+  const qc = useQueryClient();
   const [months, setMonths] = useState(6);
   const [currencyMode, setCurrencyMode] = useState<"per" | string>("per");
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Account | null>(null);
 
   const from = format(startOfMonth(subMonths(new Date(), months - 1)), "yyyy-MM-dd");
   const to = format(endOfMonth(new Date()), "yyyy-MM-dd");
@@ -43,6 +58,11 @@ export default function DashboardPage() {
   const { data: accounts = [] } = useQuery({
     queryKey: ["accounts"],
     queryFn: accountService.list,
+  });
+  const { data: deletePreview } = useQuery({
+    queryKey: ["deletePreview", deleteTarget?.id],
+    queryFn: () => accountService.deletePreview(deleteTarget!.id),
+    enabled: deleteTarget !== null,
   });
   const { data: trend = [] } = useQuery({
     queryKey: ["trend", from, to],
@@ -76,6 +96,45 @@ export default function DashboardPage() {
     currencyMode !== "per" && !availableCurrencies.includes(currencyMode)
       ? "per"
       : currencyMode;
+
+  const invalidateAccountViews = () => {
+    qc.invalidateQueries({ queryKey: ["accounts"] });
+    qc.invalidateQueries({ queryKey: ["netWorth"] });
+    qc.invalidateQueries({ queryKey: ["transactions"] });
+    qc.invalidateQueries({ queryKey: ["spending"] });
+    qc.invalidateQueries({ queryKey: ["trend"] });
+  };
+
+  const createMutation = useMutation({
+    mutationFn: (data: CreateAccountPayload) => accountService.create(data),
+    onSuccess: () => {
+      invalidateAccountViews();
+      setShowCreateForm(false);
+      toast.success("Account created");
+    },
+    onError: () => toast.error("Failed to create account"),
+  });
+
+  const editMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: UpdateAccountPayload }) =>
+      accountService.update(id, data),
+    onSuccess: () => {
+      invalidateAccountViews();
+      setEditingAccount(null);
+      toast.success("Account updated");
+    },
+    onError: () => toast.error("Failed to update account"),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => accountService.delete(id),
+    onSuccess: () => {
+      invalidateAccountViews();
+      setDeleteTarget(null);
+      toast.success("Account deleted");
+    },
+    onError: () => toast.error("Failed to delete account"),
+  });
 
   return (
     <div className="space-y-6">
@@ -151,22 +210,43 @@ export default function DashboardPage() {
         <BudgetProgressManager />
       </Card>
 
-      <section>
-        <h2 className="mb-3 text-lg font-semibold tracking-tight text-foreground">Accounts</h2>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {accounts.map((acc) => (
-            <Card key={acc.id} className="p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                {acc.accountType}
-              </p>
-              <p className="mt-1 truncate font-semibold text-foreground" title={acc.name}>{acc.name}</p>
-              <p className="mt-2 truncate font-mono tabular-nums text-xl font-bold text-foreground">
-                {formatCurrency(acc.currentBalance, acc.currency)}
-              </p>
-            </Card>
-          ))}
-        </div>
-      </section>
+      <BalanceBreakdown
+        accounts={accounts}
+        netWorthByCurrency={netWorthByCurrency}
+        convertedCurrency={effectiveCurrencyMode === "per" ? null : effectiveCurrencyMode}
+        showCreateForm={showCreateForm}
+        isCreating={createMutation.isPending}
+        onAdd={() => {
+          setShowCreateForm(true);
+          setEditingAccount(null);
+        }}
+        onCreate={(values) => createMutation.mutate(values)}
+        onCancelCreate={() => setShowCreateForm(false)}
+        onEdit={(account) => {
+          setEditingAccount(account);
+          setShowCreateForm(false);
+        }}
+        onDelete={setDeleteTarget}
+      />
+
+      {editingAccount && (
+        <EditAccountDialog
+          account={editingAccount}
+          onSubmit={(values) => editMutation.mutate({ id: editingAccount.id, data: values })}
+          onCancel={() => setEditingAccount(null)}
+          isPending={editMutation.isPending}
+        />
+      )}
+
+      {deleteTarget && (
+        <DeleteAccountDialog
+          account={deleteTarget}
+          transactionCount={deletePreview?.transactionCount ?? null}
+          onConfirm={() => deleteMutation.mutate(deleteTarget.id)}
+          onCancel={() => setDeleteTarget(null)}
+          isPending={deleteMutation.isPending}
+        />
+      )}
     </div>
   );
 }
