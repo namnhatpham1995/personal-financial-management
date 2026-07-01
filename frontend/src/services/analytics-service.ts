@@ -85,10 +85,26 @@ export interface ConvertedOverview {
   excludedCurrencies: ExcludedCurrency[];
 }
 
+export interface IncomingTransferTotal {
+  accountId: number;
+  total: string;
+}
+
 export const analyticsService = {
-  spendingByCategory: (from: string, to: string) =>
+  /** Spending breakdown by category; pass accountId to scope to a single account. */
+  spendingByCategory: (from: string, to: string, accountId?: number) =>
     apiClient
-      .get<SpendingByCategory[]>("/analytics/spending-by-category", { params: { from, to } })
+      .get<SpendingByCategory[]>("/analytics/spending-by-category", {
+        params: { from, to, ...(accountId != null ? { accountId } : {}) },
+      })
+      .then((r) => r.data),
+
+  /** Total incoming transfers (account as counterparty) for the range. */
+  incomingTransferTotal: (accountId: number, from: string, to: string) =>
+    apiClient
+      .get<IncomingTransferTotal>("/analytics/incoming-transfer-total", {
+        params: { accountId, from, to },
+      })
       .then((r) => r.data),
 
   incomeVsExpense: (from: string, to: string) =>

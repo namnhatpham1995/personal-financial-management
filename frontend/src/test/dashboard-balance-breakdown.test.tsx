@@ -81,6 +81,7 @@ function renderBreakdown(overrides: Partial<ComponentProps<typeof BalanceBreakdo
     onCancelCreate: vi.fn(),
     onEdit: vi.fn(),
     onDelete: vi.fn(),
+    onOpenDetail: vi.fn(),
     ...overrides,
   };
 
@@ -139,6 +140,23 @@ describe("BalanceBreakdown", () => {
 
     await user.click(screen.getByRole("button", { name: "Delete Rewards Card" }));
     expect(onDelete).toHaveBeenCalledWith(accounts[1]);
+  });
+
+  it("opens the account detail view when an account box is activated", async () => {
+    const user = userEvent.setup();
+    const onOpenDetail = vi.fn();
+    const onEdit = vi.fn();
+    renderBreakdown({ onOpenDetail, onEdit });
+
+    // Activating the box opens the detail view.
+    await user.click(screen.getByRole("button", { name: /View Main Checking details/i }));
+    expect(onOpenDetail).toHaveBeenCalledWith(accounts[0]);
+
+    // Acting on the inner edit button must NOT also open the detail view.
+    onOpenDetail.mockClear();
+    await user.click(screen.getByRole("button", { name: "Edit Rewards Card" }));
+    expect(onEdit).toHaveBeenCalledWith(accounts[1]);
+    expect(onOpenDetail).not.toHaveBeenCalled();
   });
 
   it("submits a new account from the inline Overview form", async () => {

@@ -25,6 +25,8 @@ export interface PageResponse<T> {
 
 export interface TransactionFilters {
   accountId?: number;
+  /** Filter to transfers whose destination (counterparty) is this account. */
+  transferAccountId?: number;
   categoryId?: number;
   type?: string;
   startDate?: string;

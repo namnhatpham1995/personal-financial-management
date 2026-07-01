@@ -48,12 +48,13 @@ public class TransactionController {
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) TransactionType type,
             @RequestParam(required = false) String note,
+            @RequestParam(required = false) Long transferAccountId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir) {
         return transactionService.list(principal.getUserId(), accountId, startDate, endDate,
-                categoryId, type, note, page, size, sortBy, sortDir);
+                categoryId, type, note, transferAccountId, page, size, sortBy, sortDir);
     }
 
     @GetMapping("/{id}")

@@ -169,20 +169,6 @@ export function DeleteAccountDialog({
   );
 }
 
-export function AccountSkeletons() {
-  return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {Array.from({ length: 3 }).map((_, index) => (
-        <Card key={index} className="space-y-4 p-5">
-          <div className="h-3 w-20 rounded bg-secondary" />
-          <div className="h-4 w-32 rounded bg-secondary" />
-          <div className="h-7 w-36 rounded bg-secondary/70" />
-        </Card>
-      ))}
-    </div>
-  );
-}
-
 export function formatAccountType(type: string): string {
   return type.replaceAll("_", " ").toLowerCase();
 }

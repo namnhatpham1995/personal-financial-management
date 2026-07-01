@@ -32,6 +32,7 @@ import {
   EditAccountDialog,
 } from "@/components/accounts/account-management-ui";
 import { BalanceBreakdown } from "@/components/accounts/balance-breakdown";
+import { AccountDetailDialog } from "@/components/accounts/account-detail-dialog";
 
 const RANGE_OPTIONS = [
   { label: "1M", months: 1 },
@@ -47,6 +48,7 @@ export default function DashboardPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Account | null>(null);
+  const [detailAccount, setDetailAccount] = useState<Account | null>(null);
 
   const from = format(startOfMonth(subMonths(new Date(), months - 1)), "yyyy-MM-dd");
   const to = format(endOfMonth(new Date()), "yyyy-MM-dd");
@@ -227,7 +229,15 @@ export default function DashboardPage() {
           setShowCreateForm(false);
         }}
         onDelete={setDeleteTarget}
+        onOpenDetail={setDetailAccount}
       />
+
+      {detailAccount && (
+        <AccountDetailDialog
+          account={detailAccount}
+          onClose={() => setDetailAccount(null)}
+        />
+      )}
 
       {editingAccount && (
         <EditAccountDialog

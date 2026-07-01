@@ -110,9 +110,9 @@ class AnalyticsServiceCurrencyTest {
                 new SpendingByCategoryDto("USD", 1L, "Food", new BigDecimal("300.00"), 5),
                 new SpendingByCategoryDto("EUR", 2L, "Transport", new BigDecimal("150.00"), 3)
         );
-        when(analyticsRepository.spendingByCategory(USER_ID, from, to)).thenReturn(rows);
+        when(analyticsRepository.spendingByCategory(USER_ID, from, to, null)).thenReturn(rows);
 
-        List<SpendingByCategoryDto> result = analyticsService.getSpendingByCategory(USER_ID, from, to);
+        List<SpendingByCategoryDto> result = analyticsService.getSpendingByCategory(USER_ID, from, to, null);
 
         assertThat(result).hasSize(2);
         assertThat(result).extracting(SpendingByCategoryDto::currency)

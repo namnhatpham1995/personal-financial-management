@@ -9,6 +9,11 @@ const nextConfig = {
         permanent: true,
       },
       {
+        source: "/dashboard/accounts",
+        destination: "/dashboard",
+        permanent: true,
+      },
+      {
         source: "/dashboard/recurring",
         destination: "/dashboard/transactions?tab=recurring",
         permanent: true,

@@ -83,7 +83,7 @@ class AnalyticsServiceOverviewTest {
             new SpendingByCategoryDto("USD", 10L, "Food", new BigDecimal("200.00"), 3),
             new SpendingByCategoryDto("VND", 10L, "Food", new BigDecimal("5000000"), 2)
         );
-        when(analyticsRepository.spendingByCategory(USER_ID, FROM, TO)).thenReturn(spending);
+        when(analyticsRepository.spendingByCategory(USER_ID, FROM, TO, null)).thenReturn(spending);
         when(analyticsRepository.incomeExpenseTrend(USER_ID, FROM, TO)).thenReturn(List.of());
 
         // 5_000_000 VND → 200 USD
@@ -126,7 +126,7 @@ class AnalyticsServiceOverviewTest {
         List<SpendingByCategoryDto> spending = List.of(
             new SpendingByCategoryDto("USD", 5L, "Groceries", new BigDecimal("300.00"), 4)
         );
-        when(analyticsRepository.spendingByCategory(USER_ID, FROM, TO)).thenReturn(spending);
+        when(analyticsRepository.spendingByCategory(USER_ID, FROM, TO, null)).thenReturn(spending);
 
         List<IncomeExpenseTrendDto> trend = List.of(
             new IncomeExpenseTrendDto("USD", 2026, 1, new BigDecimal("3000"), new BigDecimal("1200"), new BigDecimal("1800"))
@@ -162,7 +162,7 @@ class AnalyticsServiceOverviewTest {
         // Provider is down for VND
         when(exchangeRateService.convert(any(BigDecimal.class), eq("VND"), eq("USD")))
             .thenThrow(new ExchangeRateUnavailableException("Provider unreachable"));
-        when(analyticsRepository.spendingByCategory(USER_ID, FROM, TO)).thenReturn(List.of());
+        when(analyticsRepository.spendingByCategory(USER_ID, FROM, TO, null)).thenReturn(List.of());
         when(analyticsRepository.incomeExpenseTrend(USER_ID, FROM, TO)).thenReturn(List.of());
 
         // Must NOT throw — overview always returns 200
@@ -195,7 +195,7 @@ class AnalyticsServiceOverviewTest {
             new SpendingByCategoryDto("VND", 99L, "Micro", new BigDecimal("1"), 1),
             new SpendingByCategoryDto("VND", 99L, "Micro", new BigDecimal("1"), 1)
         );
-        when(analyticsRepository.spendingByCategory(USER_ID, FROM, TO)).thenReturn(spending);
+        when(analyticsRepository.spendingByCategory(USER_ID, FROM, TO, null)).thenReturn(spending);
 
         // Service sums to 2 VND first, then calls convert(2, VND, USD)
         when(exchangeRateService.convert(new BigDecimal("2"), "VND", "USD"))
