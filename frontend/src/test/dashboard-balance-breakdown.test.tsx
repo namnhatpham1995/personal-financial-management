@@ -4,7 +4,7 @@ import type { ComponentProps } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { BalanceBreakdown } from "@/components/accounts/balance-breakdown";
 import type { Account } from "@/services/account-service";
-import type { CurrencyNetWorth } from "@/services/analytics-service";
+import type { CurrencyBalance } from "@/services/analytics-service";
 
 vi.mock("@/components/charts/cash-flow-chart", () => ({
   CashFlowChart: () => null,
@@ -52,19 +52,15 @@ const accounts: Account[] = [
   },
 ];
 
-const netWorthByCurrency: CurrencyNetWorth[] = [
+const balancesByCurrency: CurrencyBalance[] = [
   {
     currency: "USD",
-    totalAssets: "1250.50",
-    totalLiabilities: "240.25",
-    netWorth: "1010.25",
+    totalBalance: "1010.25",
     accounts: [],
   },
   {
     currency: "EUR",
-    totalAssets: "500",
-    totalLiabilities: "0",
-    netWorth: "500",
+    totalBalance: "500",
     accounts: [],
   },
 ];
@@ -72,7 +68,7 @@ const netWorthByCurrency: CurrencyNetWorth[] = [
 function renderBreakdown(overrides: Partial<ComponentProps<typeof BalanceBreakdown>> = {}) {
   const props: ComponentProps<typeof BalanceBreakdown> = {
     accounts,
-    netWorthByCurrency,
+    balancesByCurrency,
     convertedCurrency: null,
     showCreateForm: false,
     isCreating: false,
@@ -90,7 +86,7 @@ function renderBreakdown(overrides: Partial<ComponentProps<typeof BalanceBreakdo
 }
 
 describe("BalanceBreakdown", () => {
-  it("renders account rows as grouped asset and liability contributors", () => {
+  it("renders account rows grouped by currency", () => {
     renderBreakdown();
 
     expect(screen.getByText("Accounts")).toBeInTheDocument();
@@ -99,8 +95,6 @@ describe("BalanceBreakdown", () => {
     expect(screen.getByText("Euro Savings")).toBeInTheDocument();
     expect(screen.getAllByText("USD").length).toBeGreaterThan(0);
     expect(screen.getAllByText("EUR").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Asset").length).toBeGreaterThanOrEqual(2);
-    expect(screen.getByText("Liability")).toBeInTheDocument();
   });
 
   it("shows an empty state with an add-account action", async () => {
@@ -108,7 +102,7 @@ describe("BalanceBreakdown", () => {
     const onAdd = vi.fn();
     renderBreakdown({
       accounts: [],
-      netWorthByCurrency: [],
+      balancesByCurrency: [],
       onAdd,
     });
 

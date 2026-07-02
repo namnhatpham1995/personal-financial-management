@@ -36,12 +36,10 @@ export interface AccountBalanceSummary {
   balance: string;
 }
 
-/** Per-currency net worth bucket returned by GET /analytics/net-worth */
-export interface CurrencyNetWorth {
+/** Per-currency balance bucket returned by GET /analytics/balances */
+export interface CurrencyBalance {
   currency: string;
-  totalAssets: string;
-  totalLiabilities: string;
-  netWorth: string;
+  totalBalance: string;
   accounts: AccountBalanceSummary[];
 }
 
@@ -73,9 +71,6 @@ export interface ConvertedTrend {
 
 export interface ConvertedOverview {
   targetCurrency: string;
-  netWorth: number;
-  totalAssets: number;
-  totalLiabilities: number;
   spending: ConvertedSpending[];
   trend: ConvertedTrend[];
   rates: RateUsed[];
@@ -115,7 +110,7 @@ export const analyticsService = {
   budgetProgress: () =>
     apiClient.get<BudgetProgress[]>("/analytics/budget-progress").then((r) => r.data),
 
-  netWorth: () => apiClient.get<CurrencyNetWorth[]>("/analytics/net-worth").then((r) => r.data),
+  balances: () => apiClient.get<CurrencyBalance[]>("/analytics/balances").then((r) => r.data),
 
   getOverview: (targetCurrency: string, from: string, to: string): Promise<ConvertedOverview> =>
     apiClient

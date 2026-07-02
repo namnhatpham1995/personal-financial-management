@@ -2,19 +2,18 @@
 
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import type { Account, CreateAccountPayload } from "@/services/account-service";
-import type { CurrencyNetWorth } from "@/services/analytics-service";
+import type { CurrencyBalance } from "@/services/analytics-service";
 import { formatCurrency } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   CreateAccountForm,
   formatAccountType,
-  getAccountRole,
 } from "@/components/accounts/account-management-ui";
 
 export function BalanceBreakdown({
   accounts,
-  netWorthByCurrency,
+  balancesByCurrency,
   convertedCurrency,
   showCreateForm,
   isCreating,
@@ -26,7 +25,7 @@ export function BalanceBreakdown({
   onOpenDetail,
 }: {
   accounts: Account[];
-  netWorthByCurrency: CurrencyNetWorth[];
+  balancesByCurrency: CurrencyBalance[];
   convertedCurrency: string | null;
   showCreateForm: boolean;
   isCreating: boolean;
@@ -39,7 +38,7 @@ export function BalanceBreakdown({
 }) {
   const currencies = Array.from(new Set(accounts.map((account) => account.currency))).sort();
   const multiCurrency = currencies.length > 1;
-  const bucketsByCurrency = new Map(netWorthByCurrency.map((bucket) => [bucket.currency, bucket]));
+  const bucketsByCurrency = new Map(balancesByCurrency.map((bucket) => [bucket.currency, bucket]));
 
   return (
     <section className="space-y-3">
@@ -47,7 +46,7 @@ export function BalanceBreakdown({
         <div>
           <h2 className="text-lg font-semibold tracking-tight text-foreground">Accounts</h2>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            Account balances behind your assets, liabilities, and net worth.
+            Your account balances.
           </p>
           {convertedCurrency && (
             <p className="mt-1 text-xs text-muted-foreground">
@@ -111,7 +110,7 @@ function CurrencyBalanceGroup({
 }: {
   currency: string;
   accounts: Account[];
-  bucket?: CurrencyNetWorth;
+  bucket?: CurrencyBalance;
   showHeading: boolean;
   onEdit: (account: Account) => void;
   onDelete: (account: Account) => void;
@@ -126,9 +125,7 @@ function CurrencyBalanceGroup({
           </h3>
           {bucket && (
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Assets {formatCurrency(bucket.totalAssets, currency)} - Liabilities{" "}
-              {formatCurrency(bucket.totalLiabilities, currency)} - Net{" "}
-              {formatCurrency(bucket.netWorth, currency)}
+              Total {formatCurrency(bucket.totalBalance, currency)}
             </p>
           )}
         </div>
@@ -164,7 +161,6 @@ function AccountBox({
   onDelete: (account: Account) => void;
   onOpenDetail: (account: Account) => void;
 }) {
-  const role = getAccountRole(account.accountType);
   return (
     <Card
       role="button"
@@ -183,7 +179,7 @@ function AccountBox({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {formatAccountType(account.accountType)} · <span>{role}</span>
+            {formatAccountType(account.accountType)}
           </p>
           <p className="mt-1 truncate font-semibold text-foreground" title={account.name}>
             {account.name}

@@ -3,10 +3,9 @@ package com.fintrack.analytics.web.dto;
 import java.math.BigDecimal;
 import java.util.List;
 
-public record NetWorthDto(
-        BigDecimal totalAssets,
-        BigDecimal totalLiabilities,
-        BigDecimal netWorth,
+public record CurrencyBalanceDto(
+        String currency,
+        BigDecimal totalBalance,
         List<AccountBalanceDto> accounts
 ) {
     public record AccountBalanceDto(

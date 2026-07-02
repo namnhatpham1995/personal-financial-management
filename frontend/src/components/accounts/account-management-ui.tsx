@@ -176,10 +176,6 @@ export function formatAccountType(type: string): string {
   return type.replaceAll("_", " ").toLowerCase();
 }
 
-export function getAccountRole(type: string): "Asset" | "Liability" {
-  return type === "CREDIT_CARD" ? "Liability" : "Asset";
-}
-
 function AccountFields({
   register,
   errors,
