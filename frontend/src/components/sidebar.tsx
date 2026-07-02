@@ -8,7 +8,6 @@ import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
-  Wallet,
   ArrowLeftRight,
   Tag,
   Activity,
@@ -20,7 +19,6 @@ import {
 
 const navItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
-  { href: "/dashboard/accounts", label: "Accounts", icon: Wallet },
   { href: "/dashboard/transactions", label: "Transactions", icon: ArrowLeftRight },
   { href: "/dashboard/categories", label: "Categories", icon: Tag },
   { href: "/dashboard/vault", label: "Vault", icon: Archive },
@@ -42,13 +40,13 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
 
   return (
     <>
-      <aside className="hidden md:flex h-full w-56 flex-shrink-0 flex-col border-r border-border bg-card px-4 py-6">
+      <aside className="hidden h-full w-56 flex-shrink-0 flex-col border-r border-border bg-card/95 px-4 py-6 md:flex">
         <SidebarContent pathname={pathname} user={user} logout={logout} onClose={onClose} />
       </aside>
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border bg-card backdrop-blur-sm px-4 py-6 transition-transform duration-300 md:hidden",
+          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border bg-card px-4 py-6 transition-transform duration-300 md:hidden",
           open ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -73,8 +71,8 @@ function SidebarContent({
 
   return (
     <>
-      <div className="mb-8">
-        <span className="text-xl font-bold tracking-tight text-primary">
+      <div className="mb-8 px-1">
+        <span className="text-xl font-semibold tracking-tight text-foreground">
           Fintrack
         </span>
       </div>
@@ -86,9 +84,9 @@ function SidebarContent({
             href={href}
             onClick={() => onClose?.()}
             className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150",
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
               pathname === href
-                ? "bg-primary/10 text-primary border border-primary/20"
+                ? "border border-primary/20 bg-primary/10 text-primary"
                 : "text-muted-foreground hover:bg-secondary hover:text-foreground"
             )}
           >
@@ -103,7 +101,7 @@ function SidebarContent({
 
         <button
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           {theme === "dark" ? "Light mode" : "Dark mode"}
@@ -111,7 +109,7 @@ function SidebarContent({
 
         <button
           onClick={() => logout()}
-          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           <LogOut className="h-4 w-4" />
           Sign out
