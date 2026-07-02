@@ -28,7 +28,7 @@ const accounts: Account[] = [
     name: "Main Checking",
     accountType: "BANK",
     currency: "USD",
-    initialBalance: "1000",
+    initialBalance: 1000,
     currentBalance: "1250.50",
     createdAt: "2026-01-01T00:00:00Z",
   },
@@ -37,7 +37,7 @@ const accounts: Account[] = [
     name: "Rewards Card",
     accountType: "CREDIT_CARD",
     currency: "USD",
-    initialBalance: "0",
+    initialBalance: 0,
     currentBalance: "240.25",
     createdAt: "2026-01-01T00:00:00Z",
   },
@@ -46,7 +46,7 @@ const accounts: Account[] = [
     name: "Euro Savings",
     accountType: "SAVINGS",
     currency: "EUR",
-    initialBalance: "500",
+    initialBalance: 500,
     currentBalance: "500",
     createdAt: "2026-01-01T00:00:00Z",
   },
@@ -178,7 +178,7 @@ describe("BalanceBreakdown", () => {
         expect.objectContaining({
           name: "Brokerage",
           currency: "USD",
-          initialBalance: "42",
+          initialBalance: 42,
         })
       );
     });
