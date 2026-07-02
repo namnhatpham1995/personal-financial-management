@@ -40,20 +40,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         )}
 
         <div className="flex flex-1 flex-col overflow-hidden">
-          <header className="flex items-center gap-3 border-b border-border bg-card backdrop-blur-sm px-4 py-3 md:hidden">
+          <header className="flex items-center gap-3 border-b border-border bg-card/95 px-4 py-3 md:hidden">
             <button
               onClick={() => setDrawerOpen(true)}
               aria-label="Open navigation"
-              className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+              className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               <Menu className="h-5 w-5" />
             </button>
-            <span className="text-lg font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
+            <span className="text-lg font-semibold tracking-tight text-foreground">
               Fintrack
             </span>
           </header>
 
-          <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
+          <main className="flex-1 overflow-y-auto px-4 py-5 md:px-7 md:py-6">{children}</main>
         </div>
       </div>
     </AuthGuard>
