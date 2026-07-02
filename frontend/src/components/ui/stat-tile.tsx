@@ -13,6 +13,16 @@ interface StatTileProps {
 export function StatTile({ title, value, icon, valueClassName, className }: StatTileProps) {
   return (
     <Card className={cn("flex items-center gap-4 p-5", className)}>
+      <StatCell title={title} value={value} icon={icon} valueClassName={valueClassName} />
+    </Card>
+  );
+}
+
+// Bare tile content with no Card wrapper, for grouping several stats inside one
+// shared box (e.g. a combined Net Worth / Assets / Liabilities summary).
+export function StatCell({ title, value, icon, valueClassName, className }: StatTileProps) {
+  return (
+    <div className={cn("flex items-center gap-4 p-5", className)}>
       <IconBadge>{icon}</IconBadge>
       <div className="min-w-0">
         <p className="truncate text-xs font-medium text-muted-foreground tracking-wide uppercase">{title}</p>
@@ -23,6 +33,6 @@ export function StatTile({ title, value, icon, valueClassName, className }: Stat
           {value}
         </p>
       </div>
-    </Card>
+    </div>
   );
 }

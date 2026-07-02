@@ -25,7 +25,7 @@ import { CashFlowChart } from "@/components/charts/cash-flow-chart";
 import { SpendingDonutChart } from "@/components/charts/spending-donut-chart";
 import { BudgetProgressManager } from "@/components/charts/budget-progress-manager";
 import { RatesUsedNote } from "@/components/charts/rates-used-note";
-import { StatTile } from "@/components/ui/stat-tile";
+import { StatCell } from "@/components/ui/stat-tile";
 import { Card } from "@/components/ui/card";
 import {
   DeleteAccountDialog,
@@ -382,28 +382,28 @@ function ConvertedView({
 
   return (
     <>
-      {/* Converted net worth stat tiles */}
-      <section>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <StatTile
-            title={`Net Worth (${targetCurrency})`}
-            value={formatCurrency(overview.netWorth, targetCurrency)}
-            icon={<Wallet className="h-5 w-5" />}
-          />
-          <StatTile
-            title="Total Assets"
-            value={formatCurrency(overview.totalAssets, targetCurrency)}
-            icon={<TrendingUp className="h-5 w-5" />}
-            valueClassName="text-emerald-600 dark:text-emerald-400"
-          />
-          <StatTile
-            title="Total Liabilities"
-            value={formatCurrency(overview.totalLiabilities, targetCurrency)}
-            icon={<TrendingDown className="h-5 w-5" />}
-            valueClassName="text-rose-600 dark:text-rose-400"
-          />
-        </div>
-      </section>
+      {/* Converted net worth summary */}
+      <KpiSummaryBox
+        items={[
+          {
+            title: `Net Worth (${targetCurrency})`,
+            value: formatCurrency(overview.netWorth, targetCurrency),
+            icon: <Wallet className="h-5 w-5" />,
+          },
+          {
+            title: "Total Assets",
+            value: formatCurrency(overview.totalAssets, targetCurrency),
+            icon: <TrendingUp className="h-5 w-5" />,
+            valueClassName: "text-emerald-600 dark:text-emerald-400",
+          },
+          {
+            title: "Total Liabilities",
+            value: formatCurrency(overview.totalLiabilities, targetCurrency),
+            icon: <TrendingDown className="h-5 w-5" />,
+            valueClassName: "text-rose-600 dark:text-rose-400",
+          },
+        ]}
+      />
 
       {/* Cash flow + spending charts */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -445,26 +445,48 @@ function NetWorthCards({ bucket, showLabel }: { bucket: CurrencyNetWorth; showLa
           {bucket.currency}
         </h2>
       )}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatTile
-          title="Net Worth"
-          value={formatCurrency(bucket.netWorth, bucket.currency)}
-          icon={<Wallet className="h-5 w-5" />}
-        />
-        <StatTile
-          title="Total Assets"
-          value={formatCurrency(bucket.totalAssets, bucket.currency)}
-          icon={<TrendingUp className="h-5 w-5" />}
-          valueClassName="text-emerald-600 dark:text-emerald-400"
-        />
-        <StatTile
-          title="Total Liabilities"
-          value={formatCurrency(bucket.totalLiabilities, bucket.currency)}
-          icon={<TrendingDown className="h-5 w-5" />}
-          valueClassName="text-rose-600 dark:text-rose-400"
-        />
-      </div>
+      <KpiSummaryBox
+        items={[
+          {
+            title: "Net Worth",
+            value: formatCurrency(bucket.netWorth, bucket.currency),
+            icon: <Wallet className="h-5 w-5" />,
+          },
+          {
+            title: "Total Assets",
+            value: formatCurrency(bucket.totalAssets, bucket.currency),
+            icon: <TrendingUp className="h-5 w-5" />,
+            valueClassName: "text-emerald-600 dark:text-emerald-400",
+          },
+          {
+            title: "Total Liabilities",
+            value: formatCurrency(bucket.totalLiabilities, bucket.currency),
+            icon: <TrendingDown className="h-5 w-5" />,
+            valueClassName: "text-rose-600 dark:text-rose-400",
+          },
+        ]}
+      />
     </section>
+  );
+}
+
+// Combines Net Worth / Total Assets / Total Liabilities into one box so the
+// relationship (Net Worth = Assets − Liabilities) reads as connected, instead
+// of three independent cards.
+interface KpiSummaryItem {
+  title: string;
+  value: string;
+  icon: React.ReactNode;
+  valueClassName?: string;
+}
+
+function KpiSummaryBox({ items }: { items: KpiSummaryItem[] }) {
+  return (
+    <Card className="flex flex-col divide-y divide-border sm:flex-row sm:divide-x sm:divide-y-0">
+      {items.map((item) => (
+        <StatCell key={item.title} className="flex-1" {...item} />
+      ))}
+    </Card>
   );
 }
 
