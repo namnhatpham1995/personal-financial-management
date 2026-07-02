@@ -207,11 +207,6 @@ export default function DashboardPage() {
         />
       )}
 
-      <Card className="p-5">
-        <h2 className="mb-4 font-semibold tracking-tight text-foreground">Budget Progress</h2>
-        <BudgetProgressManager />
-      </Card>
-
       <BalanceBreakdown
         accounts={accounts}
         netWorthByCurrency={netWorthByCurrency}
@@ -231,6 +226,11 @@ export default function DashboardPage() {
         onDelete={setDeleteTarget}
         onOpenDetail={setDetailAccount}
       />
+
+      <Card className="p-5">
+        <h2 className="mb-4 font-semibold tracking-tight text-foreground">Budget Progress</h2>
+        <BudgetProgressManager />
+      </Card>
 
       {detailAccount && (
         <AccountDetailDialog

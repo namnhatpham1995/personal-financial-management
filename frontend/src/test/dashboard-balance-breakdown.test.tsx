@@ -93,7 +93,7 @@ describe("BalanceBreakdown", () => {
   it("renders account rows as grouped asset and liability contributors", () => {
     renderBreakdown();
 
-    expect(screen.getByText("Balance Breakdown")).toBeInTheDocument();
+    expect(screen.getByText("Accounts")).toBeInTheDocument();
     expect(screen.getByText("Main Checking")).toBeInTheDocument();
     expect(screen.getByText("Rewards Card")).toBeInTheDocument();
     expect(screen.getByText("Euro Savings")).toBeInTheDocument();
