@@ -15,12 +15,15 @@ const accountSchema = z.object({
   name: z.string().min(1),
   accountType: z.enum(["CASH", "BANK", "CREDIT_CARD", "SAVINGS", "OTHER"]),
   currency: z.string().min(3).max(3),
-  initialBalance: z.string(),
+  // Number field: schema, register(), and the DOM input type must all agree on
+  // type=number, or the error message flips between "expected string" and
+  // "expected number" across the first vs. a later submit attempt.
+  initialBalance: z.coerce.number().min(0),
 });
 
 const createSchema = accountSchema.extend({
   currency: z.string().min(3).max(3).default("USD"),
-  initialBalance: z.string().default("0"),
+  initialBalance: z.coerce.number().min(0).default(0),
 });
 
 const editSchema = accountSchema;
@@ -208,8 +211,8 @@ function AccountFields({
       </Field>
       <Field label="Initial balance" error={errors.initialBalance?.message}>
         <input
-          {...register("initialBalance")}
-          defaultValue={includeDefaults ? "0" : undefined}
+          {...register("initialBalance", { valueAsNumber: true })}
+          defaultValue={includeDefaults ? 0 : undefined}
           type="number"
           step="0.01"
           className={inputCls}

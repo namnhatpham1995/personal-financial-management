@@ -5,7 +5,7 @@ export interface Account {
   name: string;
   accountType: string;
   currency: string;
-  initialBalance: string;
+  initialBalance: number;
   currentBalance: string;
   description?: string;
   createdAt: string;
@@ -15,7 +15,7 @@ export interface CreateAccountPayload {
   name: string;
   accountType: string;
   currency: string;
-  initialBalance: string;
+  initialBalance: number;
   description?: string;
 }
 
@@ -23,7 +23,7 @@ export interface UpdateAccountPayload {
   name?: string;
   accountType?: string;
   currency?: string;
-  initialBalance?: string;
+  initialBalance?: number;
 }
 
 export interface AccountDeletePreview {
