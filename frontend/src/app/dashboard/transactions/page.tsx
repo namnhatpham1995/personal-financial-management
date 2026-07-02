@@ -92,7 +92,7 @@ function HistoryTab() {
   const invalidateAfterMutation = () => {
     qc.invalidateQueries({ queryKey: ["transactions"] });
     qc.invalidateQueries({ queryKey: ["accounts"] });
-    qc.invalidateQueries({ queryKey: ["netWorth"] });
+    qc.invalidateQueries({ queryKey: ["balances"] });
   };
 
   const createMutation = useMutation({

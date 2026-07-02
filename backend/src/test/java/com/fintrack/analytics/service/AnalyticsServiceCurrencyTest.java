@@ -4,7 +4,7 @@ import com.fintrack.account.domain.Account;
 import com.fintrack.account.domain.AccountType;
 import com.fintrack.account.repository.AccountRepository;
 import com.fintrack.analytics.repository.AnalyticsRepository;
-import com.fintrack.analytics.web.dto.CurrencyNetWorthDto;
+import com.fintrack.analytics.web.dto.CurrencyBalanceDto;
 import com.fintrack.analytics.web.dto.IncomeExpenseTrendDto;
 import com.fintrack.analytics.web.dto.SpendingByCategoryDto;
 import com.fintrack.budget.repository.BudgetRepository;
@@ -33,69 +33,66 @@ class AnalyticsServiceCurrencyTest {
 
     private static final Long USER_ID = 1L;
 
-    // ── Task 4.4: net worth grouped by currency ───────────────────────────────
+    // ── Task 4.4: account balances grouped by currency ────────────────────────
 
     @Test
-    void getNetWorth_singleCurrency_returnsOneBucket() {
+    void getBalances_singleCurrency_returnsOneBucket() {
         List<Account> accounts = List.of(
                 account(1L, "Bank", AccountType.BANK, "USD", new BigDecimal("1000.00")),
                 account(2L, "Savings", AccountType.SAVINGS, "USD", new BigDecimal("500.00"))
         );
         when(accountRepository.findAllByUserId(USER_ID)).thenReturn(accounts);
 
-        List<CurrencyNetWorthDto> result = analyticsService.getNetWorth(USER_ID);
+        List<CurrencyBalanceDto> result = analyticsService.getBalances(USER_ID);
 
         assertThat(result).hasSize(1);
-        CurrencyNetWorthDto usd = result.get(0);
+        CurrencyBalanceDto usd = result.get(0);
         assertThat(usd.currency()).isEqualTo("USD");
-        assertThat(usd.totalAssets()).isEqualByComparingTo(new BigDecimal("1500.00"));
-        assertThat(usd.netWorth()).isEqualByComparingTo(new BigDecimal("1500.00"));
+        assertThat(usd.totalBalance()).isEqualByComparingTo(new BigDecimal("1500.00"));
         assertThat(usd.accounts()).hasSize(2);
     }
 
     @Test
-    void getNetWorth_multiCurrency_returnsSeparateBuckets() {
+    void getBalances_multiCurrency_returnsSeparateBuckets() {
         List<Account> accounts = List.of(
                 account(1L, "USD Bank", AccountType.BANK, "USD", new BigDecimal("1000.00")),
                 account(2L, "EUR Savings", AccountType.SAVINGS, "EUR", new BigDecimal("800.00"))
         );
         when(accountRepository.findAllByUserId(USER_ID)).thenReturn(accounts);
 
-        List<CurrencyNetWorthDto> result = analyticsService.getNetWorth(USER_ID);
+        List<CurrencyBalanceDto> result = analyticsService.getBalances(USER_ID);
 
         assertThat(result).hasSize(2);
-        assertThat(result).extracting(CurrencyNetWorthDto::currency)
+        assertThat(result).extracting(CurrencyBalanceDto::currency)
                 .containsExactlyInAnyOrder("USD", "EUR");
 
-        CurrencyNetWorthDto usd = result.stream().filter(d -> "USD".equals(d.currency())).findFirst().orElseThrow();
-        assertThat(usd.totalAssets()).isEqualByComparingTo(new BigDecimal("1000.00"));
+        CurrencyBalanceDto usd = result.stream().filter(d -> "USD".equals(d.currency())).findFirst().orElseThrow();
+        assertThat(usd.totalBalance()).isEqualByComparingTo(new BigDecimal("1000.00"));
 
-        CurrencyNetWorthDto eur = result.stream().filter(d -> "EUR".equals(d.currency())).findFirst().orElseThrow();
-        assertThat(eur.totalAssets()).isEqualByComparingTo(new BigDecimal("800.00"));
+        CurrencyBalanceDto eur = result.stream().filter(d -> "EUR".equals(d.currency())).findFirst().orElseThrow();
+        assertThat(eur.totalBalance()).isEqualByComparingTo(new BigDecimal("800.00"));
     }
 
     @Test
-    void getNetWorth_creditCard_countsAsLiability() {
+    void getBalances_creditCard_countsTowardTotalLikeAnyOtherAccount() {
         List<Account> accounts = List.of(
                 account(1L, "Bank", AccountType.BANK, "USD", new BigDecimal("2000.00")),
                 account(2L, "Card", AccountType.CREDIT_CARD, "USD", new BigDecimal("400.00"))
         );
         when(accountRepository.findAllByUserId(USER_ID)).thenReturn(accounts);
 
-        List<CurrencyNetWorthDto> result = analyticsService.getNetWorth(USER_ID);
+        List<CurrencyBalanceDto> result = analyticsService.getBalances(USER_ID);
 
         assertThat(result).hasSize(1);
-        CurrencyNetWorthDto usd = result.get(0);
-        assertThat(usd.totalAssets()).isEqualByComparingTo(new BigDecimal("2000.00"));
-        assertThat(usd.totalLiabilities()).isEqualByComparingTo(new BigDecimal("400.00"));
-        assertThat(usd.netWorth()).isEqualByComparingTo(new BigDecimal("1600.00"));
+        CurrencyBalanceDto usd = result.get(0);
+        assertThat(usd.totalBalance()).isEqualByComparingTo(new BigDecimal("2400.00"));
     }
 
     @Test
-    void getNetWorth_noAccounts_returnsEmptyList() {
+    void getBalances_noAccounts_returnsEmptyList() {
         when(accountRepository.findAllByUserId(USER_ID)).thenReturn(List.of());
 
-        List<CurrencyNetWorthDto> result = analyticsService.getNetWorth(USER_ID);
+        List<CurrencyBalanceDto> result = analyticsService.getBalances(USER_ID);
 
         assertThat(result).isEmpty();
     }

@@ -41,6 +41,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -295,5 +296,35 @@ class BackendCorrectnessTest {
         // Balance should reflect exactly one application of the expense
         Account updated = accountRepository.findById(account.getId()).orElseThrow();
         assertThat(updated.getCurrentBalance()).isEqualByComparingTo("180.00");
+    }
+
+    // ── Loan/credit default categories (V9 migration) ─────────────────────────
+
+    @Test
+    void listCategories_includesLoanAndCreditDefaultCategories() throws Exception {
+        String tokenJson = registerAndLogin("correctness-loan-categories@test.com");
+        String token = objectMapper.readValue(tokenJson, TokenResponse.class).accessToken();
+
+        MvcResult result = mockMvc.perform(get("/api/v1/categories")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        var categories = objectMapper.readTree(result.getResponse().getContentAsString());
+        boolean hasLoanIncome = false;
+        boolean hasLoanExpense = false;
+        for (var category : categories) {
+            String name = category.get("name").asText();
+            String type = category.get("transactionType").asText();
+            boolean system = category.get("system").asBoolean();
+            if ("Loans & Credit".equals(name) && "INCOME".equals(type) && system) {
+                hasLoanIncome = true;
+            }
+            if ("Loan & Mortgage Payment".equals(name) && "EXPENSE".equals(type) && system) {
+                hasLoanExpense = true;
+            }
+        }
+        assertThat(hasLoanIncome).isTrue();
+        assertThat(hasLoanExpense).isTrue();
     }
 }

@@ -6,7 +6,6 @@ import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { toast } from "sonner";
 import {
   analyticsService,
-  CurrencyNetWorth,
   IncomeExpenseTrend,
   SpendingByCategory,
   ConvertedOverview,
@@ -19,13 +18,10 @@ import {
   CreateAccountPayload,
   UpdateAccountPayload,
 } from "@/services/account-service";
-import { formatCurrency } from "@/lib/utils";
-import { TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { CashFlowChart } from "@/components/charts/cash-flow-chart";
 import { SpendingDonutChart } from "@/components/charts/spending-donut-chart";
 import { BudgetProgressManager } from "@/components/charts/budget-progress-manager";
 import { RatesUsedNote } from "@/components/charts/rates-used-note";
-import { StatCell } from "@/components/ui/stat-tile";
 import { Card } from "@/components/ui/card";
 import {
   DeleteAccountDialog,
@@ -53,9 +49,9 @@ export default function DashboardPage() {
   const from = format(startOfMonth(subMonths(new Date(), months - 1)), "yyyy-MM-dd");
   const to = format(endOfMonth(new Date()), "yyyy-MM-dd");
 
-  const { data: netWorthByCurrency = [] } = useQuery({
-    queryKey: ["netWorth"],
-    queryFn: analyticsService.netWorth,
+  const { data: balancesByCurrency = [] } = useQuery({
+    queryKey: ["balances"],
+    queryFn: analyticsService.balances,
   });
   const { data: accounts = [] } = useQuery({
     queryKey: ["accounts"],
@@ -82,13 +78,12 @@ export default function DashboardPage() {
     enabled: currencyMode !== "per",
   });
 
-  // Derive available target currencies from net worth buckets
+  // Derive available target currencies from balance buckets
   const availableCurrencies = useMemo(
-    () => netWorthByCurrency.map((b) => b.currency),
-    [netWorthByCurrency]
+    () => balancesByCurrency.map((b) => b.currency),
+    [balancesByCurrency]
   );
 
-  const multiCurrency = netWorthByCurrency.length > 1;
   const currencies = Array.from(
     new Set([...trend.map((t) => t.currency), ...spending.map((s) => s.currency)])
   ).sort();
@@ -101,7 +96,7 @@ export default function DashboardPage() {
 
   const invalidateAccountViews = () => {
     qc.invalidateQueries({ queryKey: ["accounts"] });
-    qc.invalidateQueries({ queryKey: ["netWorth"] });
+    qc.invalidateQueries({ queryKey: ["balances"] });
     qc.invalidateQueries({ queryKey: ["transactions"] });
     qc.invalidateQueries({ queryKey: ["spending"] });
     qc.invalidateQueries({ queryKey: ["trend"] });
@@ -183,33 +178,21 @@ export default function DashboardPage() {
 
       {/* Main content — switches between per-currency and converted view */}
       {effectiveCurrencyMode === "per" ? (
-        <PerCurrencyView
-          netWorthByCurrency={netWorthByCurrency}
-          multiCurrency={multiCurrency}
-          currencies={currencies}
-          trend={trend}
-          spending={spending}
-        />
+        <PerCurrencyView currencies={currencies} trend={trend} spending={spending} />
       ) : (
         <ConvertedView
           targetCurrency={effectiveCurrencyMode}
           overview={overviewData ?? null}
           isLoading={overviewLoading}
           perCurrencyFallback={
-            <PerCurrencyView
-              netWorthByCurrency={netWorthByCurrency}
-              multiCurrency={multiCurrency}
-              currencies={currencies}
-              trend={trend}
-              spending={spending}
-            />
+            <PerCurrencyView currencies={currencies} trend={trend} spending={spending} />
           }
         />
       )}
 
       <BalanceBreakdown
         accounts={accounts}
-        netWorthByCurrency={netWorthByCurrency}
+        balancesByCurrency={balancesByCurrency}
         convertedCurrency={effectiveCurrencyMode === "per" ? null : effectiveCurrencyMode}
         showCreateForm={showCreateForm}
         isCreating={createMutation.isPending}
@@ -266,32 +249,14 @@ export default function DashboardPage() {
 // ---------------------------------------------------------------------------
 
 interface PerCurrencyViewProps {
-  netWorthByCurrency: CurrencyNetWorth[];
-  multiCurrency: boolean;
   currencies: string[];
   trend: IncomeExpenseTrend[];
   spending: SpendingByCategory[];
 }
 
-function PerCurrencyView({
-  netWorthByCurrency,
-  multiCurrency,
-  currencies,
-  trend,
-  spending,
-}: PerCurrencyViewProps) {
+function PerCurrencyView({ currencies, trend, spending }: PerCurrencyViewProps) {
   return (
     <>
-      {netWorthByCurrency.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No accounts yet. Create one to see your overview.
-        </p>
-      ) : (
-        netWorthByCurrency.map((bucket) => (
-          <NetWorthCards key={bucket.currency} bucket={bucket} showLabel={multiCurrency} />
-        ))
-      )}
-
       {currencies.length === 0 ? (
         <p className="text-sm text-muted-foreground">No transaction data for this period.</p>
       ) : (
@@ -382,29 +347,6 @@ function ConvertedView({
 
   return (
     <>
-      {/* Converted net worth summary */}
-      <KpiSummaryBox
-        items={[
-          {
-            title: `Net Worth (${targetCurrency})`,
-            value: formatCurrency(overview.netWorth, targetCurrency),
-            icon: <Wallet className="h-5 w-5" />,
-          },
-          {
-            title: "Total Assets",
-            value: formatCurrency(overview.totalAssets, targetCurrency),
-            icon: <TrendingUp className="h-5 w-5" />,
-            valueClassName: "text-emerald-600 dark:text-emerald-400",
-          },
-          {
-            title: "Total Liabilities",
-            value: formatCurrency(overview.totalLiabilities, targetCurrency),
-            icon: <TrendingDown className="h-5 w-5" />,
-            valueClassName: "text-rose-600 dark:text-rose-400",
-          },
-        ]}
-      />
-
       {/* Cash flow + spending charts */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card className="p-5">
@@ -436,59 +378,6 @@ function ConvertedView({
 // ---------------------------------------------------------------------------
 // Shared sub-components (unchanged from original)
 // ---------------------------------------------------------------------------
-
-function NetWorthCards({ bucket, showLabel }: { bucket: CurrencyNetWorth; showLabel: boolean }) {
-  return (
-    <section>
-      {showLabel && (
-        <h2 className="mb-3 text-sm font-semibold tracking-wide uppercase text-muted-foreground">
-          {bucket.currency}
-        </h2>
-      )}
-      <KpiSummaryBox
-        items={[
-          {
-            title: "Net Worth",
-            value: formatCurrency(bucket.netWorth, bucket.currency),
-            icon: <Wallet className="h-5 w-5" />,
-          },
-          {
-            title: "Total Assets",
-            value: formatCurrency(bucket.totalAssets, bucket.currency),
-            icon: <TrendingUp className="h-5 w-5" />,
-            valueClassName: "text-emerald-600 dark:text-emerald-400",
-          },
-          {
-            title: "Total Liabilities",
-            value: formatCurrency(bucket.totalLiabilities, bucket.currency),
-            icon: <TrendingDown className="h-5 w-5" />,
-            valueClassName: "text-rose-600 dark:text-rose-400",
-          },
-        ]}
-      />
-    </section>
-  );
-}
-
-// Combines Net Worth / Total Assets / Total Liabilities into one box so the
-// relationship (Net Worth = Assets − Liabilities) reads as connected, instead
-// of three independent cards.
-interface KpiSummaryItem {
-  title: string;
-  value: string;
-  icon: React.ReactNode;
-  valueClassName?: string;
-}
-
-function KpiSummaryBox({ items }: { items: KpiSummaryItem[] }) {
-  return (
-    <Card className="flex flex-col divide-y divide-border sm:flex-row sm:divide-x sm:divide-y-0">
-      {items.map((item) => (
-        <StatCell key={item.title} className="flex-1" {...item} />
-      ))}
-    </Card>
-  );
-}
 
 function ChartSection({
   currency,

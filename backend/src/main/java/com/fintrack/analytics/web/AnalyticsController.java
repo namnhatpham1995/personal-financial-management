@@ -3,7 +3,7 @@ package com.fintrack.analytics.web;
 import com.fintrack.analytics.service.AnalyticsService;
 import com.fintrack.analytics.web.dto.BudgetProgressDto;
 import com.fintrack.analytics.web.dto.ConvertedOverviewDto;
-import com.fintrack.analytics.web.dto.CurrencyNetWorthDto;
+import com.fintrack.analytics.web.dto.CurrencyBalanceDto;
 import com.fintrack.analytics.web.dto.IncomeExpenseTrendDto;
 import com.fintrack.analytics.web.dto.IncomingTransferTotalDto;
 import com.fintrack.analytics.web.dto.SpendingByCategoryDto;
@@ -71,11 +71,11 @@ public class AnalyticsController {
         return analyticsService.getBudgetProgress(principal.getUserId());
     }
 
-    @GetMapping("/net-worth")
-    @Operation(summary = "Net worth per currency: assets minus liabilities, grouped by account currency")
-    public List<CurrencyNetWorthDto> netWorth(
+    @GetMapping("/balances")
+    @Operation(summary = "Account balances grouped by currency, with a total per currency")
+    public List<CurrencyBalanceDto> balances(
             @AuthenticationPrincipal UserPrincipal principal) {
-        return analyticsService.getNetWorth(principal.getUserId());
+        return analyticsService.getBalances(principal.getUserId());
     }
 
     @GetMapping("/overview")

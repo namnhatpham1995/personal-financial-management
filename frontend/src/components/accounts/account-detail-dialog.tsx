@@ -11,7 +11,7 @@ import { formatCurrency } from "@/lib/utils";
 import { SpendingDonutChart } from "@/components/charts/spending-donut-chart";
 import { TransactionTable } from "@/components/transactions/transaction-table";
 import { Card } from "@/components/ui/card";
-import { formatAccountType, getAccountRole } from "@/components/accounts/account-management-ui";
+import { formatAccountType } from "@/components/accounts/account-management-ui";
 
 const PAGE_SIZE = 10;
 
@@ -33,8 +33,6 @@ export function AccountDetailDialog({ account, onClose }: { account: Account; on
   const [endDate, setEndDate] = useState(format(endOfMonth(new Date()), "yyyy-MM-dd"));
   const [ownPage, setOwnPage] = useState(0);
   const [incomingPage, setIncomingPage] = useState(0);
-
-  const role = getAccountRole(account.accountType);
 
   const { data: ownData, isLoading: ownLoading } = useQuery({
     queryKey: ["accountDetail", "own", account.id, startDate, endDate, ownPage],
@@ -79,7 +77,7 @@ export function AccountDetailDialog({ account, onClose }: { account: Account; on
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              {formatAccountType(account.accountType)} · {role}
+              {formatAccountType(account.accountType)}
             </p>
             <h2 className="mt-1 truncate text-xl font-bold tracking-tight text-foreground" title={account.name}>
               {account.name}

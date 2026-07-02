@@ -7,7 +7,7 @@ import com.fintrack.analytics.web.dto.BudgetProgressDto;
 import com.fintrack.analytics.web.dto.ConvertedOverviewDto;
 import com.fintrack.analytics.web.dto.ConvertedSpendingDto;
 import com.fintrack.analytics.web.dto.ConvertedTrendDto;
-import com.fintrack.analytics.web.dto.CurrencyNetWorthDto;
+import com.fintrack.analytics.web.dto.CurrencyBalanceDto;
 import com.fintrack.analytics.web.dto.ExcludedCurrencyDto;
 import com.fintrack.analytics.web.dto.IncomeExpenseTrendDto;
 import com.fintrack.analytics.web.dto.RateUsedDto;
@@ -50,7 +50,7 @@ public class AnalyticsService {
     private final CacheVersionService cacheVersionService;
 
     /**
-     * Returns all per-currency analytics (net worth, spending, trend) converted into
+     * Returns all per-currency analytics (spending, trend) converted into
      * {@code targetCurrency}. The overview ALWAYS returns successfully — if rates are
      * unavailable for a given source currency, that currency is added to
      * {@code excludedCurrencies} and {@code ratesUnavailable} is set to {@code true}.
@@ -68,13 +68,10 @@ public class AnalyticsService {
         String base = appProperties.getExchangeRate().getBase();
 
         // ── 1. Fetch per-currency raw data ────────────────────────────────────
-        List<CurrencyNetWorthDto> netWorthBuckets = getNetWorth(userId);
         List<SpendingByCategoryDto> spendingRows  = analyticsRepository.spendingByCategory(userId, from, to, null);
         List<IncomeExpenseTrendDto> trendRows      = analyticsRepository.incomeExpenseTrend(userId, from, to);
 
         // ── 2. Accumulators ───────────────────────────────────────────────────
-        BigDecimal totalAssets      = BigDecimal.ZERO;
-        BigDecimal totalLiabilities = BigDecimal.ZERO;
         // (currency, categoryId) → [convertedAmount, transactionCount, categoryName]
         Map<String, BigDecimal[]> spendingAccum = new HashMap<>();
         // "year-month" → [convertedIncome, convertedExpense]
@@ -87,32 +84,7 @@ public class AnalyticsService {
         // Track currencies that failed — used to skip rate-entry building later
         java.util.Set<String> failedCurrencies = new java.util.HashSet<>();
 
-        // ── 3. Convert net worth ──────────────────────────────────────────────
-        for (CurrencyNetWorthDto bucket : netWorthBuckets) {
-            String currency = bucket.currency();
-            if (currency.equals(targetCurrency)) {
-                // Identity: pass through unconverted
-                totalAssets      = totalAssets.add(bucket.totalAssets());
-                totalLiabilities = totalLiabilities.add(bucket.totalLiabilities());
-            } else {
-                try {
-                    // Sum-then-convert: bucket already has summed assets/liabilities per currency
-                    BigDecimal convertedAssets      = exchangeRateService.convert(bucket.totalAssets(), currency, targetCurrency);
-                    BigDecimal convertedLiabilities = exchangeRateService.convert(bucket.totalLiabilities(), currency, targetCurrency);
-                    totalAssets      = totalAssets.add(convertedAssets);
-                    totalLiabilities = totalLiabilities.add(convertedLiabilities);
-                    convertedSourceCurrencies.add(currency);
-                } catch (ExchangeRateUnavailableException ex) {
-                    log.warn("Rate unavailable for net worth conversion {} → {}: {}", currency, targetCurrency, ex.getMessage());
-                    ratesUnavailable = true;
-                    failedCurrencies.add(currency);
-                    BigDecimal nativeNetWorth = bucket.netWorth();
-                    excludedCurrencies.add(new ExcludedCurrencyDto(currency, nativeNetWorth));
-                }
-            }
-        }
-
-        // ── 4. Convert spending — sum native amounts per (currency, categoryId) first ──
+        // ── 3. Convert spending — sum native amounts per (currency, categoryId) first ──
         // Group: currency → categoryId → [nativeTotal, count, name]
         Map<String, Map<Long, Object[]>> spendingNative = new HashMap<>();
         for (SpendingByCategoryDto row : spendingRows) {
@@ -149,7 +121,6 @@ public class AnalyticsService {
                         log.warn("Rate unavailable for spending conversion {} → {}: {}", currency, targetCurrency, ex.getMessage());
                         ratesUnavailable = true;
                         failedCurrencies.add(currency);
-                        // Add to excluded only if not already present from net-worth pass
                         boolean alreadyExcluded = excludedCurrencies.stream()
                             .anyMatch(e -> e.currency().equals(currency));
                         if (!alreadyExcluded) {
@@ -169,7 +140,7 @@ public class AnalyticsService {
             }
         }
 
-        // ── 5. Convert trend — sum native income/expense per (currency, year, month) first ──
+        // ── 4. Convert trend — sum native income/expense per (currency, year, month) first ──
         Map<String, Map<String, BigDecimal[]>> trendNative = new HashMap<>();
         for (IncomeExpenseTrendDto row : trendRows) {
             String monthKey = row.year() + "-" + row.month();
@@ -223,15 +194,10 @@ public class AnalyticsService {
             }
         }
 
-        // ── 6. Assemble final totals ──────────────────────────────────────────
-        BigDecimal finalAssets      = totalAssets.setScale(4, RoundingMode.HALF_UP);
-        BigDecimal finalLiabilities = totalLiabilities.setScale(4, RoundingMode.HALF_UP);
-        BigDecimal finalNetWorth    = finalAssets.subtract(finalLiabilities);
-
-        // ── 7. Build spending list ────────────────────────────────────────────
+        // ── 5. Build spending list ────────────────────────────────────────────
         List<ConvertedSpendingDto> spendingList = buildSpendingList(spendingAccum, spendingRows);
 
-        // ── 8. Build trend list ───────────────────────────────────────────────
+        // ── 6. Build trend list ───────────────────────────────────────────────
         List<ConvertedTrendDto> trendList = trendAccum.entrySet().stream()
             .map(e -> {
                 String[] parts   = e.getKey().split("-");
@@ -246,7 +212,7 @@ public class AnalyticsService {
                 .thenComparingInt(ConvertedTrendDto::month))
             .toList();
 
-        // ── 9. Build rates list ───────────────────────────────────────────────
+        // ── 7. Build rates list ───────────────────────────────────────────────
         List<RateUsedDto> rates = new ArrayList<>();
         for (String currency : convertedSourceCurrencies) {
             if (!currency.equals(targetCurrency)) {
@@ -259,15 +225,12 @@ public class AnalyticsService {
             }
         }
 
-        // ── 10. Metadata ──────────────────────────────────────────────────────
+        // ── 8. Metadata ────────────────────────────────────────────────────────
         Instant asOf  = exchangeRateService.getAsOf(base).orElse(null);
         boolean stale = exchangeRateService.isStale(base);
 
         return new ConvertedOverviewDto(
             targetCurrency,
-            finalNetWorth,
-            finalAssets,
-            finalLiabilities,
             spendingList,
             trendList,
             rates,
@@ -343,7 +306,7 @@ public class AnalyticsService {
     }
 
     @Transactional(readOnly = true)
-    public List<CurrencyNetWorthDto> getNetWorth(Long userId) {
+    public List<CurrencyBalanceDto> getBalances(Long userId) {
         List<Account> accounts = accountRepository.findAllByUserId(userId);
         Map<String, List<Account>> byCurrency = accounts.stream()
                 .collect(Collectors.groupingBy(Account::getCurrency));
@@ -351,20 +314,14 @@ public class AnalyticsService {
         return byCurrency.entrySet().stream().map(entry -> {
             String currency = entry.getKey();
             List<Account> group = entry.getValue();
-            BigDecimal assets = BigDecimal.ZERO;
-            BigDecimal liabilities = BigDecimal.ZERO;
-            for (Account a : group) {
-                if ("CREDIT_CARD".equals(a.getAccountType().name())) {
-                    liabilities = liabilities.add(a.getCurrentBalance());
-                } else {
-                    assets = assets.add(a.getCurrentBalance());
-                }
-            }
-            List<CurrencyNetWorthDto.AccountBalanceDto> dtos = group.stream()
-                    .map(a -> new CurrencyNetWorthDto.AccountBalanceDto(
+            BigDecimal totalBalance = group.stream()
+                    .map(Account::getCurrentBalance)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            List<CurrencyBalanceDto.AccountBalanceDto> dtos = group.stream()
+                    .map(a -> new CurrencyBalanceDto.AccountBalanceDto(
                             a.getId(), a.getName(), a.getAccountType().name(), a.getCurrentBalance()))
                     .toList();
-            return new CurrencyNetWorthDto(currency, assets, liabilities, assets.subtract(liabilities), dtos);
+            return new CurrencyBalanceDto(currency, totalBalance, dtos);
         }).toList();
     }
 

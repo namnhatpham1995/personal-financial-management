@@ -1,8 +1,5 @@
 package com.fintrack.analytics.service;
 
-import com.fintrack.account.domain.Account;
-import com.fintrack.account.domain.AccountType;
-import com.fintrack.account.repository.AccountRepository;
 import com.fintrack.analytics.repository.AnalyticsRepository;
 import com.fintrack.analytics.web.dto.ConvertedOverviewDto;
 import com.fintrack.analytics.web.dto.IncomeExpenseTrendDto;
@@ -31,15 +28,14 @@ import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link AnalyticsService#getOverview} covering:
- * - multi-currency merge (USD + VND accounts)
- * - identity pass-through (all accounts in target currency)
+ * - multi-currency merge (USD + VND spending)
+ * - identity pass-through (all data in target currency)
  * - provider unavailable → ratesUnavailable=true, HTTP 200 (no exception propagated)
  * - sum-then-convert correctness for small-valued currencies (VND)
  */
 @ExtendWith(MockitoExtension.class)
 class AnalyticsServiceOverviewTest {
 
-    @Mock AccountRepository     accountRepository;
     @Mock AnalyticsRepository   analyticsRepository;
     @Mock BudgetRepository      budgetRepository;
     @Mock ExchangeRateService   exchangeRateService;
@@ -62,22 +58,10 @@ class AnalyticsServiceOverviewTest {
         when(exchangeRateService.isStale("USD")).thenReturn(false);
     }
 
-    // ── Merge test: USD + VND accounts ───────────────────────────────────────
+    // ── Merge test: USD + VND spending ───────────────────────────────────────
 
     @Test
     void getOverview_multiCurrency_mergesSpendingByCategory() {
-        // USD account: 1000 assets
-        // VND account: 25_000_000 VND assets → converted at 0.00004 USD/VND = 1000 USD
-        Account usdAccount = account(1L, "USD Bank", AccountType.BANK, "USD", new BigDecimal("1000.00"));
-        Account vndAccount = account(2L, "VND Bank", AccountType.BANK, "VND", new BigDecimal("25000000"));
-        when(accountRepository.findAllByUserId(USER_ID)).thenReturn(List.of(usdAccount, vndAccount));
-
-        // VND → USD rate: 1 VND = 0.00004 USD
-        when(exchangeRateService.convert(new BigDecimal("25000000"), "VND", "USD"))
-            .thenReturn(new BigDecimal("1000.0000"));
-        when(exchangeRateService.convert(BigDecimal.ZERO, "VND", "USD"))
-            .thenReturn(BigDecimal.ZERO.setScale(4));
-
         // Spending: same category from two currencies
         List<SpendingByCategoryDto> spending = List.of(
             new SpendingByCategoryDto("USD", 10L, "Food", new BigDecimal("200.00"), 3),
@@ -99,10 +83,6 @@ class AnalyticsServiceOverviewTest {
         assertThat(result.ratesUnavailable()).isFalse();
         assertThat(result.excludedCurrencies()).isEmpty();
 
-        // Net worth: 1000 USD (direct) + 1000 USD (converted VND) = 2000 USD
-        assertThat(result.totalAssets()).isEqualByComparingTo(new BigDecimal("2000.0000"));
-        assertThat(result.netWorth()).isEqualByComparingTo(new BigDecimal("2000.0000"));
-
         // Spending: single "Food" entry with 200 (USD direct) + 200 (VND converted) = 400
         assertThat(result.spending()).hasSize(1);
         assertThat(result.spending().get(0).categoryId()).isEqualTo(10L);
@@ -115,14 +95,10 @@ class AnalyticsServiceOverviewTest {
         assertThat(result.rates().get(0).to()).isEqualTo("USD");
     }
 
-    // ── Identity test: all accounts in target currency ────────────────────────
+    // ── Identity test: all data in target currency ────────────────────────────
 
     @Test
     void getOverview_identityCurrency_passesThrough_noRatesEntry() {
-        Account usd1 = account(1L, "Checking", AccountType.BANK,    "USD", new BigDecimal("500.00"));
-        Account usd2 = account(2L, "Savings",  AccountType.SAVINGS, "USD", new BigDecimal("1500.00"));
-        when(accountRepository.findAllByUserId(USER_ID)).thenReturn(List.of(usd1, usd2));
-
         List<SpendingByCategoryDto> spending = List.of(
             new SpendingByCategoryDto("USD", 5L, "Groceries", new BigDecimal("300.00"), 4)
         );
@@ -139,9 +115,6 @@ class AnalyticsServiceOverviewTest {
         assertThat(result.rates()).isEmpty(); // no conversion needed
         assertThat(result.excludedCurrencies()).isEmpty();
 
-        assertThat(result.totalAssets()).isEqualByComparingTo(new BigDecimal("2000.00"));
-        assertThat(result.netWorth()).isEqualByComparingTo(new BigDecimal("2000.00"));
-
         assertThat(result.spending()).hasSize(1);
         assertThat(result.spending().get(0).totalAmount()).isEqualByComparingTo(new BigDecimal("300.00"));
 
@@ -155,14 +128,15 @@ class AnalyticsServiceOverviewTest {
 
     @Test
     void getOverview_providerDown_setsRatesUnavailableTrue_doesNotThrow() {
-        Account usdAcc = account(1L, "USD",  AccountType.BANK, "USD", new BigDecimal("1000.00"));
-        Account vndAcc = account(2L, "VND",  AccountType.BANK, "VND", new BigDecimal("10000000"));
-        when(accountRepository.findAllByUserId(USER_ID)).thenReturn(List.of(usdAcc, vndAcc));
-
         // Provider is down for VND
         when(exchangeRateService.convert(any(BigDecimal.class), eq("VND"), eq("USD")))
             .thenThrow(new ExchangeRateUnavailableException("Provider unreachable"));
-        when(analyticsRepository.spendingByCategory(USER_ID, FROM, TO, null)).thenReturn(List.of());
+
+        List<SpendingByCategoryDto> spending = List.of(
+            new SpendingByCategoryDto("USD", 10L, "Food", new BigDecimal("100.00"), 1),
+            new SpendingByCategoryDto("VND", 10L, "Food", new BigDecimal("2500000"), 1)
+        );
+        when(analyticsRepository.spendingByCategory(USER_ID, FROM, TO, null)).thenReturn(spending);
         when(analyticsRepository.incomeExpenseTrend(USER_ID, FROM, TO)).thenReturn(List.of());
 
         // Must NOT throw — overview always returns 200
@@ -173,7 +147,8 @@ class AnalyticsServiceOverviewTest {
         assertThat(result.excludedCurrencies().get(0).currency()).isEqualTo("VND");
 
         // USD portion still included
-        assertThat(result.totalAssets()).isEqualByComparingTo(new BigDecimal("1000.00"));
+        assertThat(result.spending()).hasSize(1);
+        assertThat(result.spending().get(0).totalAmount()).isEqualByComparingTo(new BigDecimal("100.00"));
     }
 
     // ── Sum-then-convert: two VND rows must not truncate to zero ─────────────
@@ -187,7 +162,6 @@ class AnalyticsServiceOverviewTest {
         // sum-then-convert: 2 VND → convert(2, VND, USD) = verifiable
         // convert-then-sum at scale 4: convert(1, VND, USD) = 0.0000 * 2 = 0
 
-        when(accountRepository.findAllByUserId(USER_ID)).thenReturn(List.of());
         when(analyticsRepository.incomeExpenseTrend(USER_ID, FROM, TO)).thenReturn(List.of());
 
         // Two rows of 1 VND (same category)
@@ -209,15 +183,5 @@ class AnalyticsServiceOverviewTest {
         // Sum-then-convert: result is non-zero (0.0001)
         assertThat(result.spending().get(0).totalAmount()).isGreaterThan(BigDecimal.ZERO);
         assertThat(result.spending().get(0).transactionCount()).isEqualTo(2L);
-    }
-
-    // ── helpers ───────────────────────────────────────────────────────────────
-
-    private Account account(Long id, String name, AccountType type, String currency, BigDecimal balance) {
-        return Account.builder()
-                .id(id).name(name).accountType(type).currency(currency)
-                .currentBalance(balance).initialBalance(BigDecimal.ZERO)
-                .createdAt(Instant.now()).updatedAt(Instant.now())
-                .build();
     }
 }
