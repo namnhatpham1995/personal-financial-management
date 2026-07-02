@@ -45,7 +45,7 @@ export function BalanceBreakdown({
     <section className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight text-foreground">Balance Breakdown</h2>
+          <h2 className="text-lg font-semibold tracking-tight text-foreground">Accounts</h2>
           <p className="mt-0.5 text-sm text-muted-foreground">
             Account balances behind your assets, liabilities, and net worth.
           </p>
