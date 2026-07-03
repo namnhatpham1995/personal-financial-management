@@ -3,65 +3,81 @@
 @tailwind utilities;
 
 @layer base {
-  /* Light theme — modern minimalist, clean surfaces */
+  /* Reserve Gold — theme-invariant brand-shell tokens (landing hero, auth header).
+     Gold and the drenched evergreen never change with light/dark preference;
+     they are a fixed brand surface, per the gold-shell-only rule. */
   :root {
-    --background: 220 20% 96%;
-    --surface-raised: 0 0% 100%;
-    --surface-overlay: 214 22% 93%;
-    --hover-surface: 214 24% 91%;
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --primary: 160 84% 26%;
-    --primary-foreground: 160 100% 95%;
-    --secondary: 214 22% 93%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 214 22% 93%;
-    --muted-foreground: 215 25% 40%;
-    --accent: 214 22% 93%;
-    --accent-foreground: 222 47% 11%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 214 28% 78%;
-    --input: 214 28% 78%;
-    --ring: 160 84% 26%;
-    --radius: 0.75rem;
+    --reserve: 0.30 0.055 165;
+    --reserve-deep: 0.24 0.05 165;
+    --ivory-on-green: 0.97 0.005 160;
+    --gold: 0.83 0.115 88;
+    --gold-deep: 0.72 0.12 85;
 
-    --success: 160 84% 26%;
-    --success-foreground: 160 100% 95%;
-    --danger: 0 84% 60%;
-    --danger-foreground: 0 0% 98%;
-    --neutral: 215 25% 40%;
+    /* Destructive is a self-contained filled control (delete button, error banner):
+       its own fill-vs-text contrast doesn't depend on page theme, so one value serves both. */
+    --destructive: 0.50 0.20 18;
+    --destructive-foreground: 0.97 0.01 20;
+
+    /* Primary/action-green fill always takes light (ivory) text in both themes —
+       both the light-mode and dark-mode primary values sit in the H-K "saturated
+       mid-luminance" zone where white text reads correctly even though WCAG math
+       alone would allow dark text at the lighter end. */
+    --primary-foreground: 0.97 0.005 160;
+
+    --radius: 1.25rem; /* 20px — 12/16/20px scale, see tailwind.config.ts */
   }
 
-  /* Dark theme — deep, layered, sophisticated */
-  .dark {
-    --background: 222 47% 6%;
-    --surface-raised: 220 40% 10%;
-    --surface-overlay: 220 35% 13%;
-    --hover-surface: 220 38% 12%;
-    --foreground: 210 40% 96%;
-    --card: 220 40% 9%;
-    --card-foreground: 210 40% 96%;
-    --primary: 160 84% 39%;
-    --primary-foreground: 160 100% 95%;
-    --secondary: 220 35% 13%;
-    --secondary-foreground: 210 40% 96%;
-    --muted: 220 35% 13%;
-    --muted-foreground: 215 20% 55%;
-    --accent: 220 35% 13%;
-    --accent-foreground: 210 40% 96%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 220 32% 17%;
-    --input: 220 32% 17%;
-    --ring: 160 84% 39%;
+  /* Light theme — restrained interior: pure white body, evergreen only as an accent */
+  :root {
+    --background: 1 0 0;
+    --surface-raised: 0.985 0.004 165;
+    --surface-overlay: 0.965 0.007 165;
+    --hover-surface: 0.95 0.008 165;
+    --foreground: 0.20 0.02 165;
+    --card: 0.985 0.004 165;
+    --card-foreground: 0.20 0.02 165;
+    --primary: 0.38 0.07 165;
+    --secondary: 0.965 0.007 165;
+    --secondary-foreground: 0.20 0.02 165;
+    --muted: 0.965 0.007 165;
+    --muted-foreground: 0.46 0.02 165;
+    --accent: 0.965 0.007 165;
+    --accent-foreground: 0.20 0.02 165;
+    --border: 0.80 0.008 165;
+    --input: 0.80 0.008 165;
+    --ring: 0.38 0.07 165;
+    --success: 0.38 0.07 165;
 
-    --success: 160 84% 39%;
-    --success-foreground: 160 100% 95%;
-    --danger: 0 72% 51%;
-    --danger-foreground: 0 0% 98%;
-    --neutral: 215 20% 55%;
+    /* Semantic financial state — text/badge only, never a surface fill (see spec) */
+    --income: 0.46 0.14 152;
+    --expense: 0.58 0.20 18;
+    --transfer: 0.52 0.19 260;
+  }
+
+  /* Dark theme — green-black interior, same restraint */
+  .dark {
+    --background: 0.15 0.014 165;
+    --surface-raised: 0.195 0.018 165;
+    --surface-overlay: 0.22 0.02 165;
+    --hover-surface: 0.24 0.022 165;
+    --foreground: 0.95 0.004 160;
+    --card: 0.195 0.018 165;
+    --card-foreground: 0.95 0.004 160;
+    --primary: 0.50 0.09 165;
+    --secondary: 0.22 0.02 165;
+    --secondary-foreground: 0.95 0.004 160;
+    --muted: 0.22 0.02 165;
+    --muted-foreground: 0.66 0.015 160;
+    --accent: 0.22 0.02 165;
+    --accent-foreground: 0.95 0.004 160;
+    --border: 0.28 0.02 165;
+    --input: 0.28 0.02 165;
+    --ring: 0.50 0.09 165;
+    --success: 0.50 0.09 165;
+
+    --income: 0.78 0.12 150;
+    --expense: 0.72 0.17 18;
+    --transfer: 0.70 0.15 255;
   }
 }
 
