@@ -1,12 +1,18 @@
 import type { Metadata } from "next";
-import { Sora, Inter, JetBrains_Mono } from "next/font/google";
+import { Newsreader, Inter, Spline_Sans_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 
-const sora = Sora({ subsets: ["latin"], variable: "--font-display" });
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
-const jetbrainsMono = JetBrains_Mono({
+const newsreader = Newsreader({
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  style: ["normal", "italic"],
+  variable: "--font-display",
+});
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const splineSansMono = Spline_Sans_Mono({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
   variable: "--font-mono",
 });
 
@@ -20,7 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${sora.variable} ${inter.variable} ${jetbrainsMono.variable}`}
+      className={`${newsreader.variable} ${inter.variable} ${splineSansMono.variable}`}
     >
       <body className={inter.className}>
         <Providers>{children}</Providers>

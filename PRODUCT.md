@@ -30,7 +30,7 @@ Note: the chosen evergreen-and-gold palette is NOT the banned navy-and-gold — 
 - Every state is explicit — loading, empty, error, and over/under-budget states are designed, not afterthoughts.
 - Speed over ceremony — minimize clicks and confirmation friction for routine actions (adding a transaction, checking a balance).
 - Trust through precision — exact monetary values, consistent rounding, and clear audit trails reinforced visually, not just in the backend.
-- Stay inside the token system — use the "Reserve Gold" design tokens (evergreen primary, gold brand-shell accent, light/dark themes; see plans/260703-0736-warm-signal-redesign/design-brief.md until DESIGN.md is rewritten in Phase 1) rather than introducing ad hoc colors; the CI design-token gate enforces this.
+- Stay inside the token system — use the "Reserve Gold" design tokens documented in `DESIGN.md` (evergreen primary, gold brand-shell accent, light/dark themes) rather than introducing ad hoc colors; the CI design-token gate enforces this.
 
 ## Accessibility & Inclusion
 
