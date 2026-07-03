@@ -33,7 +33,11 @@ export function AuthThemeToggle({ className }: AuthThemeToggleProps) {
 
   const activeTheme = mounted ? documentTheme : resolvedTheme ?? (theme === "system" ? documentTheme : theme) ?? documentTheme;
   const isDark = activeTheme === "dark";
-  const label = isDark ? "Switch to light theme" : "Switch to dark theme";
+  const label = mounted
+    ? isDark
+      ? "Switch to light theme"
+      : "Switch to dark theme"
+    : "Toggle color theme";
 
   return (
     <button
