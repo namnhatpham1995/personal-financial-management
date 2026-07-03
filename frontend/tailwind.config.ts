@@ -11,58 +11,69 @@ const config: Config = {
     extend: {
       borderRadius: {
         lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        md: "calc(var(--radius) - 4px)",
+        sm: "calc(var(--radius) - 8px)",
       },
       fontFamily: {
-        display: ["var(--font-display)", "var(--font-sans)", "sans-serif"],
-        mono: ["var(--font-mono)", "JetBrains Mono", "Menlo", "monospace"],
+        display: ["var(--font-display)", "Newsreader", "Georgia", "serif"],
+        mono: ["var(--font-mono)", "Spline Sans Mono", "JetBrains Mono", "Menlo", "monospace"],
       },
       colors: {
-        background: "hsl(var(--background) / <alpha-value>)",
-        foreground: "hsl(var(--foreground) / <alpha-value>)",
-        "surface-raised": "hsl(var(--surface-raised) / <alpha-value>)",
-        "surface-overlay": "hsl(var(--surface-overlay) / <alpha-value>)",
-        "hover-surface": "hsl(var(--hover-surface) / <alpha-value>)",
+        background: "oklch(var(--background) / <alpha-value>)",
+        foreground: "oklch(var(--foreground) / <alpha-value>)",
+        "surface-raised": "oklch(var(--surface-raised) / <alpha-value>)",
+        "surface-overlay": "oklch(var(--surface-overlay) / <alpha-value>)",
+        "hover-surface": "oklch(var(--hover-surface) / <alpha-value>)",
         card: {
-          DEFAULT: "hsl(var(--card) / <alpha-value>)",
-          foreground: "hsl(var(--card-foreground) / <alpha-value>)",
+          DEFAULT: "oklch(var(--card) / <alpha-value>)",
+          foreground: "oklch(var(--card-foreground) / <alpha-value>)",
         },
         primary: {
-          DEFAULT: "hsl(var(--primary) / <alpha-value>)",
-          foreground: "hsl(var(--primary-foreground) / <alpha-value>)",
+          DEFAULT: "oklch(var(--primary) / <alpha-value>)",
+          foreground: "oklch(var(--primary-foreground) / <alpha-value>)",
         },
         secondary: {
-          DEFAULT: "hsl(var(--secondary) / <alpha-value>)",
-          foreground: "hsl(var(--secondary-foreground) / <alpha-value>)",
+          DEFAULT: "oklch(var(--secondary) / <alpha-value>)",
+          foreground: "oklch(var(--secondary-foreground) / <alpha-value>)",
         },
         muted: {
-          DEFAULT: "hsl(var(--muted) / <alpha-value>)",
-          foreground: "hsl(var(--muted-foreground) / <alpha-value>)",
+          DEFAULT: "oklch(var(--muted) / <alpha-value>)",
+          foreground: "oklch(var(--muted-foreground) / <alpha-value>)",
         },
         accent: {
-          DEFAULT: "hsl(var(--accent) / <alpha-value>)",
-          foreground: "hsl(var(--accent-foreground) / <alpha-value>)",
+          DEFAULT: "oklch(var(--accent) / <alpha-value>)",
+          foreground: "oklch(var(--accent-foreground) / <alpha-value>)",
         },
         destructive: {
-          DEFAULT: "hsl(var(--destructive) / <alpha-value>)",
-          foreground: "hsl(var(--destructive-foreground) / <alpha-value>)",
+          DEFAULT: "oklch(var(--destructive) / <alpha-value>)",
+          foreground: "oklch(var(--destructive-foreground) / <alpha-value>)",
         },
         success: {
-          DEFAULT: "hsl(var(--success) / <alpha-value>)",
-          foreground: "hsl(var(--success-foreground) / <alpha-value>)",
+          DEFAULT: "oklch(var(--success) / <alpha-value>)",
         },
-        danger: {
-          DEFAULT: "hsl(var(--danger) / <alpha-value>)",
-          foreground: "hsl(var(--danger-foreground) / <alpha-value>)",
+        border: "oklch(var(--border) / <alpha-value>)",
+        input: "oklch(var(--input) / <alpha-value>)",
+        ring: "oklch(var(--ring) / <alpha-value>)",
+
+        /* Brand shell — landing hero + auth header ONLY, never inside daily screens */
+        reserve: {
+          DEFAULT: "oklch(var(--reserve) / <alpha-value>)",
+          deep: "oklch(var(--reserve-deep) / <alpha-value>)",
         },
-        border: "hsl(var(--border) / <alpha-value>)",
-        input: "hsl(var(--input) / <alpha-value>)",
-        ring: "hsl(var(--ring) / <alpha-value>)",
+        gold: {
+          DEFAULT: "oklch(var(--gold) / <alpha-value>)",
+          deep: "oklch(var(--gold-deep) / <alpha-value>)",
+        },
+        ivory: "oklch(var(--ivory-on-green) / <alpha-value>)",
+
+        /* Semantic financial state — text/badge only, never a surface fill */
+        income: "oklch(var(--income) / <alpha-value>)",
+        expense: "oklch(var(--expense) / <alpha-value>)",
+        transfer: "oklch(var(--transfer) / <alpha-value>)",
       },
       boxShadow: {
-        card: "0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04)",
-        "card-hover": "0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06)",
+        card: "0 1px 3px 0 oklch(var(--reserve) / 0.10), 0 1px 2px -1px oklch(var(--reserve) / 0.06)",
+        "card-hover": "0 4px 6px -1px oklch(var(--reserve) / 0.14), 0 2px 4px -2px oklch(var(--reserve) / 0.08)",
       },
     },
   },

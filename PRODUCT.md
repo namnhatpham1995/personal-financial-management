@@ -16,9 +16,13 @@ Fintrack helps a user see and control their financial life: track accounts and t
 
 Sharp, modern, efficient. Fast and minimal-friction — a power tool, not a lecture. No hand-holding copy, no forced delight. Confidence comes from precision (exact numbers, clear states) rather than decoration.
 
+Quietly wealthy, private-banking calm — the "Reserve Gold" direction (deep evergreen + true gold, confirmed 2026-07-03): wealth is signaled through depth and restraint, never through loud metals or foil. Anchors: Rolex, Harrods, Coutts.
+
 ## Anti-references
 
 Avoid the generic "fintech SaaS" look: navy-and-gold palettes, hero-metric-card templates, gradient text, glassmorphism, tiny uppercase eyebrows over every section, numbered-step scaffolding where there's no real sequence. This is app UI, not a marketing pitch — resist landing-page patterns bleeding into dashboard screens.
+
+Note: the chosen evergreen-and-gold palette is NOT the banned navy-and-gold — gold is a pale metal with dark text, confined to the brand shell (landing/auth chrome) and never used inside daily app screens.
 
 ## Design Principles
 
@@ -26,7 +30,7 @@ Avoid the generic "fintech SaaS" look: navy-and-gold palettes, hero-metric-card 
 - Every state is explicit — loading, empty, error, and over/under-budget states are designed, not afterthoughts.
 - Speed over ceremony — minimize clicks and confirmation friction for routine actions (adding a transaction, checking a balance).
 - Trust through precision — exact monetary values, consistent rounding, and clear audit trails reinforced visually, not just in the backend.
-- Reuse the existing token system — extend the current HSL/Tailwind design tokens (teal-green primary, light/dark themes) rather than introducing new ad hoc colors; the CI design-token gate enforces this.
+- Stay inside the token system — use the "Reserve Gold" design tokens documented in `DESIGN.md` (evergreen primary, gold brand-shell accent, light/dark themes) rather than introducing ad hoc colors; the CI design-token gate enforces this.
 
 ## Accessibility & Inclusion
 
