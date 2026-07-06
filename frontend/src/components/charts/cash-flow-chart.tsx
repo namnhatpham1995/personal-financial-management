@@ -57,7 +57,7 @@ export function CashFlowChart({ data, currency }: Props) {
             fontSize: 12,
             color: theme.tooltipColor,
           }}
-          cursor={{ fill: "rgba(148,163,184,0.05)" }}
+          cursor={{ fill: theme.grid }}
         />
         <Legend wrapperStyle={{ fontSize: 12, color: theme.axis }} />
         <Bar dataKey="Income" fill={theme.income} radius={[4, 4, 0, 0]} />

@@ -29,6 +29,7 @@ import {
 } from "@/components/accounts/account-management-ui";
 import { BalanceBreakdown } from "@/components/accounts/balance-breakdown";
 import { AccountDetailDialog } from "@/components/accounts/account-detail-dialog";
+import { FeaturedBalanceCard } from "@/components/accounts/featured-balance-card";
 
 const RANGE_OPTIONS = [
   { label: "1M", months: 1 },
@@ -141,12 +142,12 @@ export default function DashboardPage() {
 
         <div className="flex flex-wrap items-center gap-2">
           {/* Range selector */}
-          <div className="flex rounded-lg border border-border bg-card p-0.5">
+          <div className="flex rounded-full border border-border bg-card p-0.5">
             {RANGE_OPTIONS.map(({ label, months: m }) => (
               <button
                 key={label}
                 onClick={() => setMonths(m)}
-                className={`rounded-md px-3 py-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                className={`rounded-full px-3 py-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
                   months === m
                     ? "bg-primary/10 text-primary border border-primary/20"
                     : "text-muted-foreground hover:text-foreground"
@@ -162,7 +163,7 @@ export default function DashboardPage() {
             <select
               value={effectiveCurrencyMode}
               onChange={(e) => setCurrencyMode(e.target.value)}
-              className="rounded-lg border border-border bg-card px-2 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-colors"
+              className="rounded-md border border-border bg-card px-2 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-colors"
               aria-label="View mode"
             >
               <option value="per">Per currency</option>
@@ -175,6 +176,10 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {balancesByCurrency.length > 0 && (
+        <FeaturedBalanceCard balances={balancesByCurrency} />
+      )}
 
       {/* Main content — switches between per-currency and converted view */}
       {effectiveCurrencyMode === "per" ? (

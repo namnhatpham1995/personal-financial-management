@@ -10,8 +10,8 @@ interface MoneyTextProps {
 }
 
 const typeStyles: Record<TransactionType, string> = {
-  INCOME: "text-emerald-500 dark:text-emerald-400",
-  EXPENSE: "text-rose-500 dark:text-rose-400",
+  INCOME: "text-income",
+  EXPENSE: "text-expense",
   TRANSFER: "text-muted-foreground",
 };
 
@@ -25,9 +25,9 @@ export function MoneyText({ amount, type, signed = false, className }: MoneyText
   const colorClass = type
     ? typeStyles[type]
     : signed && amount >= 0
-    ? "text-emerald-500 dark:text-emerald-400"
+    ? "text-income"
     : signed
-    ? "text-rose-500 dark:text-rose-400"
+    ? "text-expense"
     : "text-foreground";
   const sign = type ? typeSign[type] : "";
 

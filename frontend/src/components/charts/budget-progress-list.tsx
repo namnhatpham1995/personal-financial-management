@@ -6,9 +6,9 @@ const WARN_THRESHOLD = 70;
 const DANGER_THRESHOLD = 100;
 
 function barColor(pct: number): string {
-  if (pct >= DANGER_THRESHOLD) return "bg-rose-500";
+  if (pct >= DANGER_THRESHOLD) return "bg-destructive";
   if (pct >= WARN_THRESHOLD) return "bg-amber-500";
-  return "bg-emerald-500";
+  return "bg-primary";
 }
 
 interface Props {
@@ -36,7 +36,7 @@ export function BudgetProgressList({ budgets, renderActions, renderDetails, rend
             <div className="mb-1.5 flex items-center justify-between gap-3 text-sm">
               <span className="flex items-center gap-1.5 font-medium text-foreground">
                 {rawPct >= DANGER_THRESHOLD && (
-                  <AlertCircle className="h-3.5 w-3.5 text-rose-500 dark:text-rose-400" />
+                  <AlertCircle className="h-3.5 w-3.5 text-destructive" />
                 )}
                 {b.budgetName}
                 {renderCurrencyBadge?.(b)}

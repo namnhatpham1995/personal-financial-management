@@ -46,15 +46,15 @@ describe("MoneyText", () => {
     expect(el.textContent).not.toMatch(/[+−]/);
   });
 
-  it("applies INCOME green color class", () => {
+  it("applies the income color token", () => {
     render(<MoneyText amount={10} type="INCOME" />);
     const el = screen.getByText(/10/);
-    expect(el.className).toMatch(/emerald/);
+    expect(el.className).toMatch(/text-income/);
   });
 
-  it("applies EXPENSE red color class", () => {
+  it("applies the expense color token", () => {
     render(<MoneyText amount={10} type="EXPENSE" />);
     const el = screen.getByText(/10/);
-    expect(el.className).toMatch(/rose/);
+    expect(el.className).toMatch(/text-expense/);
   });
 });
