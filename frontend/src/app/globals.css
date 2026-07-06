@@ -47,6 +47,7 @@
     --input: 0.80 0.008 165;
     --ring: 0.38 0.07 165;
     --success: 0.38 0.07 165;
+    --warning: 0.60 0.16 55;
 
     /* Semantic financial state — text/badge only, never a surface fill (see spec) */
     --income: 0.46 0.14 152;
@@ -74,6 +75,7 @@
     --input: 0.28 0.02 165;
     --ring: 0.50 0.09 165;
     --success: 0.50 0.09 165;
+    --warning: 0.76 0.13 55;
 
     --income: 0.78 0.12 150;
     --expense: 0.72 0.17 18;

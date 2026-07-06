@@ -31,10 +31,10 @@ com.fintrack
 ├── auth/           domain, repository, service (JWT + refresh tokens), web
 ├── account/        domain, repository, service, mapper, web
 ├── category/       domain, repository, service, mapper, web
-├── transaction/    domain, repository, service, mapper, web
+├── transaction/    domain, repository, service, mapper, web (account/date/type/category/note/currency filters)
 ├── budget/         domain, repository, service, mapper, web (currency-scoped since V6)
 ├── recurring/      domain, repository, service (scheduler), mapper, web
-├── analytics/      repository (aggregations), service, web (per-currency + converted overview)
+├── analytics/      repository (aggregations), service, web (per-currency, converted balances, converted overview)
 ├── vault/          domain, repository, service (GridFS, import, search), parser, web
 ├── exchangerate/   domain, repository, provider, service, scheduler (open.er-api.com cache)
 └── common/
@@ -149,13 +149,21 @@ ExchangeRateRefreshScheduler  @Scheduled(01:30 UTC) + @SchedulerLock("exchangeRa
 - **No per-request external calls** — all conversions served from the `exchange_rates` cache.
 - **ShedLock** (`shedlock` table, V8) ensures exactly one Railway replica runs the daily refresh.
 - `stale` flag when `fetched_at` > 48 h; `ratesUnavailable` flag when a currency has no cached rate.
-- `ExchangeRateUnavailableException` → HTTP 503 for the raw rates endpoint; caught internally by `AnalyticsService.getOverview` so the converted overview always returns HTTP 200.
+- `ExchangeRateUnavailableException` → HTTP 503 for the raw rates endpoint; caught internally by converted analytics/balance summary flows so dashboard views can degrade gracefully.
 
 ## Multi-Currency Analytics
 
-`GET /api/v1/analytics/overview?targetCurrency=USD&from=…&to=…` converts all per-currency stats into a single target currency:
+`GET /api/v1/analytics/balances` returns native account-balance buckets grouped by currency. When called with `targetCurrency`, it returns a superset summary:
+
+- `buckets`: unchanged native per-currency balances.
+- `convertedTotal`: grand total converted into the requested target currency by `AnalyticsService` using `ExchangeRateService.convert()`.
+- `rates`, `asOf`, `stale`, `ratesUnavailable`, and `excludedCurrencies`: conversion metadata for the dashboard's featured balance card.
+
+`GET /api/v1/analytics/overview?targetCurrency=USD&from=...&to=...` remains available for converted trend/spending analytics:
 
 - **Sum-then-convert** per source currency (not convert-then-sum) to prevent VND row truncation at scale 4.
 - Missing-rate currencies reported in `excludedCurrencies` with native amounts — never silently dropped.
 - `asOf` timestamp from the provider's `time_last_update_unix`; `stale=true` if cache is days old.
-- Per-currency endpoints (`/analytics/net-worth`, `/analytics/spending`, `/analytics/trend`) are unchanged and remain the default.
+- Per-currency endpoints (`/analytics/spending-by-category`, `/analytics/income-vs-expense`, `/analytics/budget-progress`, `/analytics/balances`) remain the default source for the Overview sections.
+
+The Overview frontend is currency-centric: `frontend/src/app/dashboard/page.tsx` builds one section per currency found in balances, trend rows, spending rows, or budget progress. Each section contains horizontal cash flow, spending donut, recent transactions, account boxes, and budget limits in that native currency. Recent transaction lists call `GET /api/v1/transactions` with `currency`, `type`, pagination, and date sorting so filtering happens before pagination instead of client-side.
