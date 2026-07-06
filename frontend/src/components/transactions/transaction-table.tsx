@@ -123,6 +123,7 @@ export function TransactionTable({
                           <button
                             onClick={() => onEdit(tx)}
                             title="Edit transaction"
+                            aria-label={`Edit transaction from ${formatDate(tx.transactionDate)}`}
                             className="rounded text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors"
                           >
                             <Pencil className="h-4 w-4" />
@@ -133,6 +134,7 @@ export function TransactionTable({
                             onClick={() => onDelete(tx)}
                             disabled={deletingId === tx.id}
                             title="Delete transaction"
+                            aria-label={`Delete transaction from ${formatDate(tx.transactionDate)}`}
                             className="rounded text-muted-foreground hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-40 transition-colors"
                           >
                             <Trash2 className="h-4 w-4" />
