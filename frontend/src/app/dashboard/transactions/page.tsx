@@ -18,7 +18,7 @@ import { TransactionTable } from "@/components/transactions/transaction-table";
 import { Button } from "@/components/ui/button";
 
 const inputCls =
-  "w-full rounded-lg border border-border bg-card px-3 py-2 text-base text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-colors";
+  "w-full rounded-md border border-border bg-card px-3.5 py-2.5 text-base text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-colors";
 
 export default function TransactionsPage() {
   return (
@@ -178,7 +178,7 @@ function HistoryTab() {
       {isLoading ? (
         <p className="text-muted-foreground">Loading…</p>
       ) : isError ? (
-        <p className="text-rose-600 dark:text-rose-400">Failed to load transactions. Check your connection or try refreshing.</p>
+        <p className="text-destructive">Failed to load transactions. Check your connection or try refreshing.</p>
       ) : (
         <TransactionTable
           transactions={transactions}

@@ -28,7 +28,7 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 const inputCls =
-  "w-full rounded-lg border border-border bg-card px-3 py-2 text-base text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-colors";
+  "w-full rounded-md border border-border bg-card px-3.5 py-2.5 text-base text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-colors";
 
 export function RecurringTab() {
   const qc = useQueryClient();
@@ -156,13 +156,13 @@ export function RecurringTab() {
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => item.active ? pauseMutation.mutate(item.id) : resumeMutation.mutate(item.id)}
-                      className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+                      className="rounded-sm p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
                     >
                       {item.active ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                     </button>
                     <button
                       onClick={() => deleteMutation.mutate(item.id)}
-                      className="rounded-lg p-1.5 text-muted-foreground hover:bg-rose-500/10 hover:text-rose-500 dark:hover:text-rose-400 transition-colors"
+                      className="rounded-sm p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -182,7 +182,7 @@ function Field({ label, error, children }: { label: string; error?: string; chil
     <div>
       <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</label>
       {children}
-      {error && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{error}</p>}
+      {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
     </div>
   );
 }
