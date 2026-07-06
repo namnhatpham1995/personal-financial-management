@@ -25,7 +25,7 @@ const createSchema = z.object({
 type CreateValues = z.infer<typeof createSchema>;
 
 const inputCls =
-  "rounded-lg border border-border bg-card px-3 py-2 text-base text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-colors";
+  "rounded-md border border-border bg-card px-3.5 py-2.5 text-base text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-colors";
 
 export default function CategoriesPage() {
   const qc = useQueryClient();
@@ -166,7 +166,7 @@ function Section({ title, subtitle, children }: { title: string; subtitle?: stri
         <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</h2>
         {subtitle && <p className="text-xs text-muted-foreground/60">{subtitle}</p>}
       </div>
-      <div className="divide-y divide-border rounded-xl border border-border bg-card">
+      <div className="divide-y divide-border rounded-lg border border-border bg-card">
         {children}
       </div>
     </div>
@@ -177,13 +177,13 @@ function CreateForm({ onSubmit, onCancel, isPending }: { onSubmit: (v: CreateVal
   const { register, handleSubmit, formState: { errors } } = useForm<CreateValues>({ resolver: zodResolver(createSchema) });
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5">
+    <div className="rounded-lg border border-border bg-card p-5">
       <h2 className="mb-4 font-semibold tracking-tight text-foreground">New Category</h2>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-wrap items-end gap-4">
         <div className="min-w-40 flex-1">
           <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">Name</label>
           <input {...register("name")} placeholder="e.g. Gym & Fitness" className={`w-full ${inputCls}`} />
-          {errors.name && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors.name.message}</p>}
+          {errors.name && <p className="mt-1 text-xs text-destructive">{errors.name.message}</p>}
         </div>
         <div>
           <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">Type</label>

@@ -26,7 +26,7 @@ export interface CategoryRowProps {
 }
 
 const inputCls =
-  "rounded-lg border border-border bg-card px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-colors";
+  "rounded-md border border-border bg-card px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-colors";
 
 export function CategoryRow({
   category,
@@ -56,7 +56,7 @@ export function CategoryRow({
         >
           <input {...renameForm.register("name")} autoFocus className={`flex-1 ${inputCls}`} />
           {renameForm.formState.errors.name && (
-            <span className="text-xs text-rose-600 dark:text-rose-400">
+            <span className="text-xs text-destructive">
               {renameForm.formState.errors.name.message}
             </span>
           )}
@@ -125,7 +125,7 @@ export function CategoryRow({
               </button>
               <button
                 onClick={onDeleteRequest}
-                className="rounded p-1.5 text-muted-foreground hover:bg-rose-500/10 hover:text-rose-500 dark:hover:text-rose-400 transition-colors"
+                className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                 aria-label="Delete"
               >
                 <Trash2 className="h-3.5 w-3.5" />

@@ -11,8 +11,8 @@ function actionLabel(action: string): string {
 }
 
 function actionColor(action: string): string {
-  if (action.includes("deleted")) return "text-rose-600 dark:text-rose-400";
-  if (action.includes("created")) return "text-emerald-600 dark:text-emerald-400";
+  if (action.includes("deleted")) return "text-destructive";
+  if (action.includes("created")) return "text-success";
   if (action.includes("login")) return "text-sky-600 dark:text-sky-400";
   return "text-foreground";
 }
@@ -22,7 +22,7 @@ function EventRow({ event }: { event: ActivityEvent }) {
 
   return (
     <div className="flex items-start gap-4 border-b border-border py-3 last:border-0">
-      <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-secondary">
+      <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-secondary">
         <Activity className="h-4 w-4 text-muted-foreground" />
       </div>
       <div className="min-w-0 flex-1">
@@ -88,7 +88,7 @@ export default function ActivityPage() {
           <button
             onClick={() => setPage((p) => Math.max(0, p - 1))}
             disabled={page === 0}
-            className="rounded-lg border border-border p-2 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="rounded-sm border border-border p-2 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             aria-label="Previous page"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -99,7 +99,7 @@ export default function ActivityPage() {
           <button
             onClick={() => setPage((p) => Math.min(data.totalPages - 1, p + 1))}
             disabled={page >= data.totalPages - 1}
-            className="rounded-lg border border-border p-2 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="rounded-sm border border-border p-2 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             aria-label="Next page"
           >
             <ChevronRight className="h-4 w-4" />
