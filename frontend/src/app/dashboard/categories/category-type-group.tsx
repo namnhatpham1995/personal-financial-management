@@ -23,7 +23,7 @@ export function CategoryTypeGroup({ type, label, count, children }: CategoryType
         className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium hover:bg-hover-surface transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className={type === "INCOME" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}>{label}</span>
+          <span className={type === "INCOME" ? "text-income" : "text-expense"}>{label}</span>
           <Badge variant={type === "INCOME" ? "income" : "expense"}>{count}</Badge>
         </div>
         <ChevronDown
