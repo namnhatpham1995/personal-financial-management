@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { toast } from "sonner";
 import {
@@ -38,10 +38,24 @@ const RANGE_OPTIONS = [
   { label: "1Y", months: 12 },
 ] as const;
 
+const MAIN_CURRENCY_STORAGE_KEY = "fintrack.mainCurrency";
+
+function readStoredMainCurrency(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(MAIN_CURRENCY_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
 export default function DashboardPage() {
   const qc = useQueryClient();
   const [months, setMonths] = useState(6);
   const [currencyMode, setCurrencyMode] = useState<"per" | string>("per");
+  const [mainCurrencyOverride, setMainCurrencyOverride] = useState<string | null>(() =>
+    readStoredMainCurrency()
+  );
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Account | null>(null);
@@ -84,6 +98,28 @@ export default function DashboardPage() {
     () => balancesByCurrency.map((b) => b.currency),
     [balancesByCurrency]
   );
+
+  // Main currency for the featured balance card's converted grand total.
+  // Falls back to the first held currency when unset or no longer held.
+  const mainCurrency =
+    mainCurrencyOverride && availableCurrencies.includes(mainCurrencyOverride)
+      ? mainCurrencyOverride
+      : (availableCurrencies[0] ?? null);
+
+  useEffect(() => {
+    if (!mainCurrency) return;
+    try {
+      window.localStorage.setItem(MAIN_CURRENCY_STORAGE_KEY, mainCurrency);
+    } catch {
+      // localStorage unavailable (e.g. private browsing) — persistence is best-effort
+    }
+  }, [mainCurrency]);
+
+  const { data: balancesSummary, isLoading: balancesSummaryLoading } = useQuery({
+    queryKey: ["balancesSummary", mainCurrency],
+    queryFn: () => analyticsService.balancesSummary(mainCurrency!),
+    enabled: !!mainCurrency && availableCurrencies.length > 1,
+  });
 
   const currencies = Array.from(
     new Set([...trend.map((t) => t.currency), ...spending.map((s) => s.currency)])
@@ -178,7 +214,13 @@ export default function DashboardPage() {
       </div>
 
       {balancesByCurrency.length > 0 && (
-        <FeaturedBalanceCard balances={balancesByCurrency} />
+        <FeaturedBalanceCard
+          balances={balancesByCurrency}
+          mainCurrency={mainCurrency}
+          onMainCurrencyChange={setMainCurrencyOverride}
+          summary={balancesSummary ?? null}
+          isSummaryLoading={balancesSummaryLoading}
+        />
       )}
 
       {/* Main content — switches between per-currency and converted view */}
