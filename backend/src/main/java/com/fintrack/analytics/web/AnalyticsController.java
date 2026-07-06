@@ -72,10 +72,15 @@ public class AnalyticsController {
     }
 
     @GetMapping("/balances")
-    @Operation(summary = "Account balances grouped by currency, with a total per currency")
-    public List<CurrencyBalanceDto> balances(
-            @AuthenticationPrincipal UserPrincipal principal) {
-        return analyticsService.getBalances(principal.getUserId());
+    @Operation(summary = "Account balances grouped by currency, with a total per currency; " +
+            "pass targetCurrency to additionally receive a converted grand total")
+    public ResponseEntity<?> balances(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @RequestParam(required = false) @Pattern(regexp = "^[A-Z]{3}$") String targetCurrency) {
+        if (targetCurrency == null) {
+            return ResponseEntity.ok(analyticsService.getBalances(principal.getUserId()));
+        }
+        return ResponseEntity.ok(analyticsService.getConvertedBalances(principal.getUserId(), targetCurrency));
     }
 
     @GetMapping("/overview")

@@ -80,7 +80,7 @@ public class TransactionService {
     public PageResponse<TransactionResponse> list(
             Long userId, Long accountId, LocalDate startDate, LocalDate endDate,
             Long categoryId, TransactionType type, String note, Long transferAccountId,
-            int page, int size, String sortBy, String sortDir) {
+            String currency, int page, int size, String sortBy, String sortDir) {
 
         size = Math.min(size <= 0 ? DEFAULT_PAGE_SIZE : size, MAX_PAGE_SIZE);
         Sort sort = Sort.by(Sort.Direction.fromOptionalString(sortDir).orElse(Sort.Direction.DESC), sortBy == null ? "transactionDate" : sortBy);
@@ -94,7 +94,8 @@ public class TransactionService {
                 .and(TransactionSpecification.byEndDate(endDate))
                 .and(TransactionSpecification.byCategoryId(categoryId))
                 .and(TransactionSpecification.byType(type))
-                .and(TransactionSpecification.byNoteContaining(note));
+                .and(TransactionSpecification.byNoteContaining(note))
+                .and(TransactionSpecification.byCurrency(currency));
 
         return PageResponse.of(
                 transactionRepository.findAll(spec, pageable),

@@ -48,6 +48,12 @@ public class TransactionSpecification {
         return (root, query, cb) -> cb.equal(root.get("transactionType"), type);
     }
 
+    /** Matches transactions whose owning account is denominated in the given currency. */
+    public static Specification<Transaction> byCurrency(String currency) {
+        if (currency == null || currency.isBlank()) return null;
+        return (root, query, cb) -> cb.equal(root.get("account").get("currency"), currency);
+    }
+
     public static Specification<Transaction> byNoteContaining(String note) {
         if (note == null || note.isBlank()) return null;
         return (root, query, cb) ->

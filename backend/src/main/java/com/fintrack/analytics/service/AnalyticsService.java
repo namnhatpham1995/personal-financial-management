@@ -3,6 +3,7 @@ package com.fintrack.analytics.service;
 import com.fintrack.account.domain.Account;
 import com.fintrack.account.repository.AccountRepository;
 import com.fintrack.analytics.repository.AnalyticsRepository;
+import com.fintrack.analytics.web.dto.BalancesSummaryDto;
 import com.fintrack.analytics.web.dto.BudgetProgressDto;
 import com.fintrack.analytics.web.dto.ConvertedOverviewDto;
 import com.fintrack.analytics.web.dto.ConvertedSpendingDto;
@@ -323,6 +324,56 @@ public class AnalyticsService {
                     .toList();
             return new CurrencyBalanceDto(currency, totalBalance, dtos);
         }).toList();
+    }
+
+    /**
+     * Balances grouped by native currency (unchanged buckets) plus a grand total converted
+     * into {@code targetCurrency}. Buckets whose currency has no available rate are excluded
+     * from the total and disclosed in {@code excludedCurrencies}; the buckets themselves are
+     * always returned natively regardless of conversion success.
+     */
+    @Transactional(readOnly = true)
+    public BalancesSummaryDto getConvertedBalances(Long userId, String targetCurrency) {
+        List<CurrencyBalanceDto> buckets = getBalances(userId);
+        String base = appProperties.getExchangeRate().getBase();
+
+        BigDecimal total = BigDecimal.ZERO;
+        List<RateUsedDto> rates = new ArrayList<>();
+        List<ExcludedCurrencyDto> excludedCurrencies = new ArrayList<>();
+        boolean ratesUnavailable = false;
+
+        for (CurrencyBalanceDto bucket : buckets) {
+            String currency = bucket.currency();
+            BigDecimal nativeTotal = bucket.totalBalance();
+            if (currency.equals(targetCurrency)) {
+                total = total.add(nativeTotal);
+                continue;
+            }
+            try {
+                BigDecimal converted = exchangeRateService.convert(nativeTotal, currency, targetCurrency);
+                BigDecimal displayRate = exchangeRateService.convert(BigDecimal.ONE, currency, targetCurrency);
+                total = total.add(converted);
+                rates.add(new RateUsedDto(currency, targetCurrency, displayRate));
+            } catch (ExchangeRateUnavailableException ex) {
+                log.warn("Rate unavailable for balances conversion {} → {}: {}", currency, targetCurrency, ex.getMessage());
+                ratesUnavailable = true;
+                excludedCurrencies.add(new ExcludedCurrencyDto(currency, nativeTotal));
+            }
+        }
+
+        Instant asOf = exchangeRateService.getAsOf(base).orElse(null);
+        boolean stale = exchangeRateService.isStale(base);
+
+        return new BalancesSummaryDto(
+                buckets,
+                targetCurrency,
+                total.setScale(4, RoundingMode.HALF_UP),
+                rates,
+                asOf,
+                stale,
+                ratesUnavailable,
+                excludedCurrencies
+        );
     }
 
     private BudgetProgressDto buildProgress(Budget budget, LocalDate today) {
