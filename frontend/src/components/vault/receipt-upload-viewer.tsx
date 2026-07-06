@@ -74,8 +74,9 @@ export function ReceiptUploadViewer({ transactionId, documentId, onLinked }: Pro
           {doc.hasBinary && (
             <button
               onClick={openDownload}
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
               title="Download"
+              aria-label={`Download ${doc.originalFilename ?? "receipt"}`}
             >
               <Download className="h-4 w-4" />
             </button>
@@ -123,7 +124,8 @@ export function ReceiptUploadViewer({ transactionId, documentId, onLinked }: Pro
           />
           <button
             onClick={() => setPreviewUrl(null)}
-            className="absolute right-1 top-1 rounded-full bg-background/80 p-1 text-muted-foreground hover:text-foreground"
+            className="absolute right-1 top-1 inline-flex min-h-9 min-w-9 items-center justify-center rounded-full bg-background/80 text-muted-foreground hover:text-foreground"
+            aria-label="Remove receipt preview"
           >
             <X className="h-3 w-3" />
           </button>

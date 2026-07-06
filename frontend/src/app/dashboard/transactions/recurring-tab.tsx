@@ -156,13 +156,13 @@ export function RecurringTab() {
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => item.active ? pauseMutation.mutate(item.id) : resumeMutation.mutate(item.id)}
-                      className="rounded-sm p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+                      className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
                     >
                       {item.active ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                     </button>
                     <button
                       onClick={() => deleteMutation.mutate(item.id)}
-                      className="rounded-sm p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                      className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-sm text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>

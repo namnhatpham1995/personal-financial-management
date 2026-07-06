@@ -118,14 +118,14 @@ export function CategoryRow({
                   renameForm.reset({ name: category.name });
                   onEditStart();
                 }}
-                className="rounded p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
                 aria-label="Rename"
               >
                 <Pencil className="h-3.5 w-3.5" />
               </button>
               <button
                 onClick={onDeleteRequest}
-                className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                 aria-label="Delete"
               >
                 <Trash2 className="h-3.5 w-3.5" />

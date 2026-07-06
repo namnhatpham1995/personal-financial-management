@@ -21,9 +21,9 @@ type FormValues = z.infer<typeof schema>;
 
 const inputCls =
   "w-full rounded-md border border-input bg-card px-3.5 py-2.5 text-base text-foreground placeholder:text-muted-foreground/80 transition-colors focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/40";
-const passwordInputCls = `${inputCls} pr-10`;
+const passwordInputCls = `${inputCls} pr-12`;
 const passwordToggleCls =
-  "absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40";
+  "absolute right-1 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40";
 const labelCls =
   "mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground";
 const errorCls =
