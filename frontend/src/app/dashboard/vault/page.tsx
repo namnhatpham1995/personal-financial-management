@@ -87,7 +87,7 @@ function VaultContent() {
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Account</label>
             <select
-              className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+              className="w-full rounded-md border border-border bg-card px-3.5 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
               value={selectedAccountId ?? ""}
               onChange={(e) => setSelectedAccountId(Number(e.target.value) || null)}
             >
@@ -195,7 +195,7 @@ function VaultContent() {
                                 deleteMut.mutate(doc.id);
                               }
                             }}
-                            className="text-muted-foreground hover:text-red-500 transition-colors"
+                            className="text-muted-foreground hover:text-destructive transition-colors"
                             title="Delete"
                           >
                             <Trash2 className="h-4 w-4" />

@@ -62,7 +62,7 @@ export function ReceiptUploadViewer({ transactionId, documentId, onLinked }: Pro
     <div className="space-y-3">
       {doc ? (
         <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
-          <Receipt className="h-5 w-5 shrink-0 text-emerald-500" />
+          <Receipt className="h-5 w-5 shrink-0 text-success" />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium text-foreground">
               {doc.originalFilename ?? "Receipt"}
