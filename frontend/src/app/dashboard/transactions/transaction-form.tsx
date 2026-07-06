@@ -35,7 +35,7 @@ interface Props {
 }
 
 const inputCls =
-  "w-full rounded-lg border border-border bg-card px-3 py-2 text-base text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-colors";
+  "w-full rounded-md border border-border bg-card px-3.5 py-2.5 text-base text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-colors";
 
 export function TransactionForm({ editingTx, accounts, categories, isPending, onCancel, onSubmit }: Props) {
   const isEditing = editingTx !== null;
@@ -130,7 +130,7 @@ function Field({ label, error, children }: { label: string; error?: string; chil
     <div>
       <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</label>
       {children}
-      {error && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{error}</p>}
+      {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
     </div>
   );
 }

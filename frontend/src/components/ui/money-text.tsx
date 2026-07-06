@@ -6,6 +6,8 @@ interface MoneyTextProps {
   amount: number;
   type?: TransactionType;
   signed?: boolean;
+  /** Optional currency code appended after the amount (e.g. "EUR"). */
+  currency?: string;
   className?: string;
 }
 
@@ -21,7 +23,7 @@ const typeSign: Record<TransactionType, string> = {
   TRANSFER: "",
 };
 
-export function MoneyText({ amount, type, signed = false, className }: MoneyTextProps) {
+export function MoneyText({ amount, type, signed = false, currency, className }: MoneyTextProps) {
   const colorClass = type
     ? typeStyles[type]
     : signed && amount >= 0
@@ -39,6 +41,7 @@ export function MoneyText({ amount, type, signed = false, className }: MoneyText
     <span className={cn("font-mono tabular-nums", colorClass, className)}>
       {sign}
       {Math.abs(amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      {currency ? ` ${currency}` : ""}
     </span>
   );
 }

@@ -2,8 +2,9 @@
 
 import { ChevronLeft, ChevronRight, Pencil, Trash2 } from "lucide-react";
 import type { Transaction } from "@/services/transaction-service";
-import { formatCurrency, formatDate, cn } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { MoneyText } from "@/components/ui/money-text";
 
 export interface TransactionTablePagination {
   currentPage: number;
@@ -54,7 +55,7 @@ export function TransactionTable({
 
   return (
     <div className="space-y-6">
-      <div className="overflow-x-auto rounded-xl border border-border bg-card">
+      <div className="overflow-x-auto rounded-lg border border-border bg-card">
         <table className="w-full text-sm">
           <thead className="border-b border-border">
             <tr>
@@ -102,18 +103,13 @@ export function TransactionTable({
                     </Badge>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{tx.categoryName ?? "—"}</td>
-                  <td
-                    className={cn(
-                      "px-4 py-3 font-mono tabular-nums font-medium",
-                      tx.transactionType === "INCOME"
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : tx.transactionType === "EXPENSE"
-                        ? "text-rose-600 dark:text-rose-400"
-                        : "text-muted-foreground"
-                    )}
-                  >
-                    {tx.transactionType === "INCOME" ? "+" : tx.transactionType === "EXPENSE" ? "−" : ""}
-                    {formatCurrency(tx.amount, tx.currency)}
+                  <td className="px-4 py-3">
+                    <MoneyText
+                      amount={Number(tx.amount)}
+                      type={tx.transactionType}
+                      currency={tx.currency}
+                      className="font-medium"
+                    />
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
                     <span className="block max-w-[16rem] truncate" title={tx.note ?? undefined}>
@@ -137,7 +133,7 @@ export function TransactionTable({
                             onClick={() => onDelete(tx)}
                             disabled={deletingId === tx.id}
                             title="Delete transaction"
-                            className="rounded text-muted-foreground hover:text-rose-500 dark:hover:text-rose-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-40 transition-colors"
+                            className="rounded text-muted-foreground hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-40 transition-colors"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -161,14 +157,14 @@ export function TransactionTable({
             <button
               disabled={pagination.currentPage === 0}
               onClick={pagination.onPrev}
-              className="rounded-lg border border-border p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-40 transition-colors"
+              className="rounded-sm border border-border p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-40 transition-colors"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
             <button
               disabled={pagination.currentPage >= pagination.totalPages - 1}
               onClick={pagination.onNext}
-              className="rounded-lg border border-border p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-40 transition-colors"
+              className="rounded-sm border border-border p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-40 transition-colors"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
