@@ -29,6 +29,8 @@ export interface TransactionFilters {
   transferAccountId?: number;
   categoryId?: number;
   type?: string;
+  /** Restricts results to transactions of accounts denominated in this currency. */
+  currency?: string;
   startDate?: string;
   endDate?: string;
   note?: string;

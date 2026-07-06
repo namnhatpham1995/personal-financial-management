@@ -85,6 +85,18 @@ export interface IncomingTransferTotal {
   total: string;
 }
 
+/** Returned by GET /analytics/balances when targetCurrency is supplied. */
+export interface BalancesSummary {
+  buckets: CurrencyBalance[];
+  targetCurrency: string;
+  convertedTotal: string;
+  rates: RateUsed[];
+  asOf: string | null;
+  stale: boolean;
+  ratesUnavailable: boolean;
+  excludedCurrencies: ExcludedCurrency[];
+}
+
 export const analyticsService = {
   /** Spending breakdown by category; pass accountId to scope to a single account. */
   spendingByCategory: (from: string, to: string, accountId?: number) =>
@@ -111,6 +123,12 @@ export const analyticsService = {
     apiClient.get<BudgetProgress[]>("/analytics/budget-progress").then((r) => r.data),
 
   balances: () => apiClient.get<CurrencyBalance[]>("/analytics/balances").then((r) => r.data),
+
+  /** Native per-currency buckets plus a grand total converted into targetCurrency. */
+  balancesSummary: (targetCurrency: string) =>
+    apiClient
+      .get<BalancesSummary>("/analytics/balances", { params: { targetCurrency } })
+      .then((r) => r.data),
 
   getOverview: (targetCurrency: string, from: string, to: string): Promise<ConvertedOverview> =>
     apiClient
