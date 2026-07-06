@@ -24,10 +24,10 @@
 | auth | `AuthController` → `AuthService` | JWT issue, rotation, SHA-256 refresh token hashing |
 | account | `AccountController` → `AccountService` | `adjustBalance()` + `recomputeBalance()` |
 | category | `CategoryController` → `CategoryService` | System categories read-only; delete **removes budgets** + reassigns transactions/recurring to "Uncategorized"; type is editable (INCOME/EXPENSE only — TRANSFER rejected) |
-| transaction | `TransactionController` → `TransactionService` | Paginated + filtered list; balance delta on CRUD |
+| transaction | `TransactionController` → `TransactionService` | Paginated + filtered list, including account-currency filtering; balance delta on CRUD |
 | budget | `BudgetController` → `BudgetService` | Real-time progress via `sumSpentInPeriod()` |
 | recurring | `RecurringTransactionController` + `RecurringTransactionScheduler` + `RecurringOccurrenceProcessor` | Daily scheduler, per-occurrence `@Transactional` boundary, idempotent via unique constraint |
-| analytics | `AnalyticsController` → `AnalyticsService` | 4 aggregation endpoints; JPQL queries in `AnalyticsRepository` |
+| analytics | `AnalyticsController` → `AnalyticsService` | Per-currency analytics, converted balance summaries, budget progress; JPQL queries in `AnalyticsRepository` |
 
 ### Common Infrastructure
 - `JwtAuthenticationFilter` — extract Bearer, validate, set SecurityContext
@@ -44,12 +44,15 @@
 | `src/app/providers.tsx` | QueryClient + AuthProvider + Toaster (top-center) |
 | `src/components/auth-guard.tsx` | Redirect unauthenticated users to /login |
 | `src/components/sidebar.tsx` | Navigation sidebar (no separate Budgets entry) |
-| `src/components/limit-bar.tsx` | Reusable spend-vs-limit bar: blue/gray under limit; green/red over limit |
 | `src/services/*.ts` | Typed API service modules per feature |
-| `src/app/dashboard/page.tsx` | Overview: net worth, accounts, budget alerts |
+| `src/app/dashboard/page.tsx` | Overview: featured converted total, range toggle, per-currency sections |
+| `src/components/accounts/featured-balance-card.tsx` | Main-currency converted grand total with native per-currency balances |
+| `src/components/overview/currency-section.tsx` | One Overview section per currency: charts, recent transactions, accounts, budgets |
+| `src/components/accounts/balance-breakdown.tsx` | Overview account creation entry point plus reusable per-currency account boxes |
+| `src/components/accounts/recent-transactions-list.tsx` | Compact recent income/expense lists scoped by account currency |
+| `src/components/charts/budget-progress-manager.tsx` | Inline budget limit management, scoped by currency on Overview |
 | `src/app/dashboard/categories/page.tsx` | "Categories & Limit" — categories + inline spending-limit management |
 | `src/app/dashboard/categories/category-row.tsx` | CategoryRow: type dropdown (INCOME/EXPENSE), inline limit form, LimitBar |
-| `src/app/dashboard/analytics/page.tsx` | Recharts: bar (income/expense), pie (spending), budget bars |
 
 ## Test Coverage
 

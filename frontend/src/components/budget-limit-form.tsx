@@ -33,6 +33,8 @@ interface BudgetLimitFormProps {
   initialCurrency?: string;
   /** Available currency options sourced from the user's accounts. Falls back to USD/VND/EUR. */
   availableCurrencies?: string[];
+  /** When true, currency is fixed to initialCurrency and shown read-only (no select). */
+  lockCurrency?: boolean;
   onSubmit: (data: BudgetLimitPayload) => void;
   onCancel: () => void;
   isPending: boolean;
@@ -56,6 +58,7 @@ export function BudgetLimitForm({
   initialPeriod = "MONTHLY",
   initialCurrency = "USD",
   availableCurrencies,
+  lockCurrency = false,
   onSubmit,
   onCancel,
   isPending,
@@ -98,17 +101,21 @@ export function BudgetLimitForm({
           <option value="YEARLY">Yearly</option>
         </select>
       </div>
-      <div>
-        <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-muted-foreground">Currency</label>
-        <select {...form.register("currency")} className={inputCls}>
-          {currencies.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-        </select>
-        {form.formState.errors.currency && (
-          <p className="mt-0.5 text-xs text-rose-600 dark:text-rose-400">{form.formState.errors.currency.message}</p>
-        )}
-      </div>
+      {lockCurrency ? (
+        <input type="hidden" {...form.register("currency")} />
+      ) : (
+        <div>
+          <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-muted-foreground">Currency</label>
+          <select {...form.register("currency")} className={inputCls}>
+            {currencies.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+          {form.formState.errors.currency && (
+            <p className="mt-0.5 text-xs text-rose-600 dark:text-rose-400">{form.formState.errors.currency.message}</p>
+          )}
+        </div>
+      )}
       <div className="flex gap-1">
         <Button type="submit" size="sm" className="py-1" disabled={isPending}>
           {isPending ? "Saving..." : submitLabel}

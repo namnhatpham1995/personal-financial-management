@@ -4,25 +4,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo, useEffect } from "react";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { toast } from "sonner";
-import {
-  analyticsService,
-  IncomeExpenseTrend,
-  SpendingByCategory,
-  ConvertedOverview,
-  ConvertedTrend,
-  ConvertedSpending,
-} from "@/services/analytics-service";
+import { analyticsService } from "@/services/analytics-service";
 import {
   accountService,
   Account,
   CreateAccountPayload,
   UpdateAccountPayload,
 } from "@/services/account-service";
-import { CashFlowChart } from "@/components/charts/cash-flow-chart";
-import { SpendingDonutChart } from "@/components/charts/spending-donut-chart";
-import { BudgetProgressManager } from "@/components/charts/budget-progress-manager";
-import { RatesUsedNote } from "@/components/charts/rates-used-note";
-import { Card } from "@/components/ui/card";
 import {
   DeleteAccountDialog,
   EditAccountDialog,
@@ -30,6 +18,7 @@ import {
 import { BalanceBreakdown } from "@/components/accounts/balance-breakdown";
 import { AccountDetailDialog } from "@/components/accounts/account-detail-dialog";
 import { FeaturedBalanceCard } from "@/components/accounts/featured-balance-card";
+import { CurrencySection } from "@/components/overview/currency-section";
 
 const RANGE_OPTIONS = [
   { label: "1M", months: 1 },
@@ -52,7 +41,6 @@ function readStoredMainCurrency(): string | null {
 export default function DashboardPage() {
   const qc = useQueryClient();
   const [months, setMonths] = useState(6);
-  const [currencyMode, setCurrencyMode] = useState<"per" | string>("per");
   const [mainCurrencyOverride, setMainCurrencyOverride] = useState<string | null>(() =>
     readStoredMainCurrency()
   );
@@ -85,12 +73,9 @@ export default function DashboardPage() {
     queryKey: ["spending", from, to],
     queryFn: () => analyticsService.spendingByCategory(from, to),
   });
-
-  // Converted overview query — only fires when a target currency is selected
-  const { data: overviewData, isLoading: overviewLoading } = useQuery({
-    queryKey: ["overview", currencyMode, from, to],
-    queryFn: () => analyticsService.getOverview(currencyMode, from, to),
-    enabled: currencyMode !== "per",
+  const { data: budgetProgress = [] } = useQuery({
+    queryKey: ["budgetProgress"],
+    queryFn: analyticsService.budgetProgress,
   });
 
   // Derive available target currencies from balance buckets
@@ -121,20 +106,24 @@ export default function DashboardPage() {
     enabled: !!mainCurrency && availableCurrencies.length > 1,
   });
 
+  // Section list: every currency with a balance, transaction, or budget footprint.
   const currencies = Array.from(
-    new Set([...trend.map((t) => t.currency), ...spending.map((s) => s.currency)])
+    new Set([
+      ...balancesByCurrency.map((b) => b.currency),
+      ...trend.map((t) => t.currency),
+      ...spending.map((s) => s.currency),
+      ...budgetProgress.map((b) => b.currency),
+    ])
   ).sort();
 
-  // When the selected currency is removed from available list, reset to "per"
-  const effectiveCurrencyMode =
-    currencyMode !== "per" && !availableCurrencies.includes(currencyMode)
-      ? "per"
-      : currencyMode;
+  const bucketsByCurrency = new Map(balancesByCurrency.map((bucket) => [bucket.currency, bucket]));
 
   const invalidateAccountViews = () => {
     qc.invalidateQueries({ queryKey: ["accounts"] });
     qc.invalidateQueries({ queryKey: ["balances"] });
+    qc.invalidateQueries({ queryKey: ["balancesSummary"] });
     qc.invalidateQueries({ queryKey: ["transactions"] });
+    qc.invalidateQueries({ queryKey: ["recentTransactions"] });
     qc.invalidateQueries({ queryKey: ["spending"] });
     qc.invalidateQueries({ queryKey: ["trend"] });
   };
@@ -172,44 +161,24 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header: title + range selector + currency mode selector */}
+      {/* Header: title + range selector */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Overview</h1>
 
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Range selector */}
-          <div className="flex rounded-full border border-border bg-card p-0.5">
-            {RANGE_OPTIONS.map(({ label, months: m }) => (
-              <button
-                key={label}
-                onClick={() => setMonths(m)}
-                className={`rounded-full px-3 py-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
-                  months === m
-                    ? "bg-primary/10 text-primary border border-primary/20"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {/* Currency mode selector — only shown when multiple currencies are present */}
-          {availableCurrencies.length > 1 && (
-            <select
-              value={effectiveCurrencyMode}
-              onChange={(e) => setCurrencyMode(e.target.value)}
-              className="rounded-md border border-border bg-card px-2 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-colors"
-              aria-label="View mode"
+        <div className="flex rounded-full border border-border bg-card p-0.5">
+          {RANGE_OPTIONS.map(({ label, months: m }) => (
+            <button
+              key={label}
+              onClick={() => setMonths(m)}
+              className={`rounded-full px-3 py-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                months === m
+                  ? "bg-primary/10 text-primary border border-primary/20"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
             >
-              <option value="per">Per currency</option>
-              {availableCurrencies.map((c) => (
-                <option key={c} value={c}>
-                  Convert to {c}
-                </option>
-              ))}
-            </select>
-          )}
+              {label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -223,24 +192,8 @@ export default function DashboardPage() {
         />
       )}
 
-      {/* Main content — switches between per-currency and converted view */}
-      {effectiveCurrencyMode === "per" ? (
-        <PerCurrencyView currencies={currencies} trend={trend} spending={spending} />
-      ) : (
-        <ConvertedView
-          targetCurrency={effectiveCurrencyMode}
-          overview={overviewData ?? null}
-          isLoading={overviewLoading}
-          perCurrencyFallback={
-            <PerCurrencyView currencies={currencies} trend={trend} spending={spending} />
-          }
-        />
-      )}
-
       <BalanceBreakdown
-        accounts={accounts}
-        balancesByCurrency={balancesByCurrency}
-        convertedCurrency={effectiveCurrencyMode === "per" ? null : effectiveCurrencyMode}
+        hasAccounts={accounts.length > 0}
         showCreateForm={showCreateForm}
         isCreating={createMutation.isPending}
         onAdd={() => {
@@ -249,18 +202,28 @@ export default function DashboardPage() {
         }}
         onCreate={(values) => createMutation.mutate(values)}
         onCancelCreate={() => setShowCreateForm(false)}
-        onEdit={(account) => {
-          setEditingAccount(account);
-          setShowCreateForm(false);
-        }}
-        onDelete={setDeleteTarget}
-        onOpenDetail={setDetailAccount}
       />
 
-      <Card className="p-5">
-        <h2 className="mb-4 font-semibold tracking-tight text-foreground">Budget Progress</h2>
-        <BudgetProgressManager />
-      </Card>
+      {currencies.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No transaction data for this period.</p>
+      ) : (
+        currencies.map((currency) => (
+          <CurrencySection
+            key={currency}
+            currency={currency}
+            nativeTotal={bucketsByCurrency.get(currency)?.totalBalance}
+            trend={trend.filter((t) => t.currency === currency)}
+            spending={spending.filter((s) => s.currency === currency)}
+            accounts={accounts.filter((account) => account.currency === currency)}
+            onEditAccount={(account) => {
+              setEditingAccount(account);
+              setShowCreateForm(false);
+            }}
+            onDeleteAccount={setDeleteTarget}
+            onOpenAccountDetail={setDetailAccount}
+          />
+        ))
+      )}
 
       {detailAccount && (
         <AccountDetailDialog
@@ -287,173 +250,6 @@ export default function DashboardPage() {
           isPending={deleteMutation.isPending}
         />
       )}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Per-currency layout (default / no regression)
-// ---------------------------------------------------------------------------
-
-interface PerCurrencyViewProps {
-  currencies: string[];
-  trend: IncomeExpenseTrend[];
-  spending: SpendingByCategory[];
-}
-
-function PerCurrencyView({ currencies, trend, spending }: PerCurrencyViewProps) {
-  return (
-    <>
-      {currencies.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No transaction data for this period.</p>
-      ) : (
-        currencies.map((currency) => (
-          <ChartSection
-            key={currency}
-            currency={currency}
-            trend={trend.filter((t) => t.currency === currency)}
-            spending={spending.filter((s) => s.currency === currency)}
-            showLabel={currencies.length > 1}
-          />
-        ))
-      )}
-    </>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Converted (single-currency) view
-// ---------------------------------------------------------------------------
-
-interface ConvertedViewProps {
-  targetCurrency: string;
-  overview: ConvertedOverview | null;
-  isLoading: boolean;
-  perCurrencyFallback: React.ReactNode;
-}
-
-function ConvertedView({
-  targetCurrency,
-  overview,
-  isLoading,
-  perCurrencyFallback,
-}: ConvertedViewProps) {
-  if (isLoading) {
-    return (
-      <p className="text-sm text-muted-foreground animate-pulse">
-        Loading converted overview…
-      </p>
-    );
-  }
-
-  // All currencies excluded → rates entirely unavailable → graceful fallback
-  if (
-    overview?.ratesUnavailable &&
-    overview.excludedCurrencies.length > 0
-  ) {
-    return (
-      <>
-        <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
-          Live rates unavailable — showing per-currency view
-        </div>
-        {perCurrencyFallback}
-      </>
-    );
-  }
-
-  if (!overview) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        No data available for this period.
-      </p>
-    );
-  }
-
-  // Map ConvertedTrend → IncomeExpenseTrend shape that CashFlowChart expects
-  const trendData: IncomeExpenseTrend[] = overview.trend.map(
-    (t: ConvertedTrend) => ({
-      currency: targetCurrency,
-      year: t.year,
-      month: t.month,
-      totalIncome: String(t.income),
-      totalExpense: String(t.expense),
-      net: String(t.net),
-    })
-  );
-
-  // Map ConvertedSpending → SpendingByCategory shape that SpendingDonutChart expects
-  const spendingData: SpendingByCategory[] = overview.spending.map(
-    (s: ConvertedSpending) => ({
-      currency: targetCurrency,
-      categoryId: s.categoryId,
-      categoryName: s.categoryName,
-      total: String(s.totalAmount),
-      transactionCount: s.transactionCount,
-    })
-  );
-
-  return (
-    <>
-      {/* Cash flow + spending charts */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card className="p-5">
-          <h2 className="mb-4 font-semibold tracking-tight text-foreground">Cash Flow</h2>
-          <CashFlowChart data={trendData} currency={targetCurrency} />
-        </Card>
-        <Card className="p-5">
-          <h2 className="mb-4 font-semibold tracking-tight text-foreground">Spending by Category</h2>
-          <SpendingDonutChart data={spendingData} currency={targetCurrency} />
-        </Card>
-      </div>
-
-      {/* Rates used note — always shown when in converted mode */}
-      <Card className="p-4">
-        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Conversion Info
-        </h2>
-        <RatesUsedNote
-          rates={overview.rates}
-          asOf={overview.asOf}
-          stale={overview.stale}
-          excludedCurrencies={overview.excludedCurrencies}
-        />
-      </Card>
-    </>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Shared sub-components (unchanged from original)
-// ---------------------------------------------------------------------------
-
-function ChartSection({
-  currency,
-  trend,
-  spending,
-  showLabel,
-}: {
-  currency: string;
-  trend: IncomeExpenseTrend[];
-  spending: SpendingByCategory[];
-  showLabel: boolean;
-}) {
-  return (
-    <div className="space-y-4">
-      {showLabel && (
-        <h2 className="text-sm font-semibold tracking-wide uppercase text-muted-foreground">
-          {currency}
-        </h2>
-      )}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card className="p-5">
-          <h2 className="mb-4 font-semibold tracking-tight text-foreground">Cash Flow</h2>
-          <CashFlowChart data={trend} currency={currency} />
-        </Card>
-        <Card className="p-5">
-          <h2 className="mb-4 font-semibold tracking-tight text-foreground">Spending by Category</h2>
-          <SpendingDonutChart data={spending} currency={currency} />
-        </Card>
-      </div>
     </div>
   );
 }

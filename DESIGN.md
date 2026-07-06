@@ -32,6 +32,8 @@ colors:
   expense-dark: "oklch(0.72 0.17 18)"
   transfer-light: "oklch(0.52 0.19 260)"
   transfer-dark: "oklch(0.70 0.15 255)"
+  warning-light: "oklch(0.60 0.16 55)"
+  warning-dark: "oklch(0.76 0.13 55)"
 typography:
   display:
     fontFamily: "Newsreader, Georgia, serif"
@@ -124,6 +126,7 @@ Restrained interior palette: near-neutral surfaces carrying structure, one actio
 - **Income** (`oklch(0.46 0.14 152)` light / `oklch(0.78 0.12 150)` dark): credit/income amounts and badges. Deliberately a **distinct token from Action Green** — a button and a gain must never look like the same color doing double duty.
 - **Expense** (`oklch(0.58 0.20 18)` light / `oklch(0.72 0.17 18)` dark): debit/expense amounts and badges. Always paired with a leading `−` sign; the state is never conveyed by hue alone.
 - **Transfer** (`oklch(0.52 0.19 260)` light / `oklch(0.70 0.15 255)` dark): account-to-account transfer badges.
+- **Warning** (`oklch(0.60 0.16 55)` light / `oklch(0.76 0.13 55)` dark): budget-risk progress states between safe and over-limit. This is a semantic traffic-light state only; it is not the brand Gold token and must not be used decoratively.
 - **Destructive** (`oklch(0.50 0.20 18)`, theme-invariant, paired with `oklch(0.97 0.01 20)` foreground): destructive actions, over-budget states, errors. Shares the rose hue family with Expense but is calibrated separately since it renders as a solid filled control, not text.
 
 ### Named Rules

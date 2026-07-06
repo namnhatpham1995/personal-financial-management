@@ -1,13 +1,14 @@
 import { BudgetProgress } from "@/services/analytics-service";
 import { AlertCircle } from "lucide-react";
 import { type ReactNode } from "react";
+import { formatCurrency } from "@/lib/utils";
 
 const WARN_THRESHOLD = 70;
 const DANGER_THRESHOLD = 100;
 
 function barColor(pct: number): string {
   if (pct >= DANGER_THRESHOLD) return "bg-destructive";
-  if (pct >= WARN_THRESHOLD) return "bg-amber-500";
+  if (pct >= WARN_THRESHOLD) return "bg-warning";
   return "bg-primary";
 }
 
@@ -43,7 +44,7 @@ export function BudgetProgressList({ budgets, renderActions, renderDetails, rend
               </span>
               <div className="flex shrink-0 items-center gap-2">
                 <span className="font-mono tabular-nums text-xs text-muted-foreground">
-                  {b.spent} / {b.limitAmount}
+                  {formatCurrency(b.spent, b.currency)} / {formatCurrency(b.limitAmount, b.currency)}
                 </span>
                 {renderActions?.(b)}
               </div>

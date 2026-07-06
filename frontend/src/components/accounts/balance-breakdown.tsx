@@ -2,7 +2,6 @@
 
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import type { Account, CreateAccountPayload } from "@/services/account-service";
-import type { CurrencyBalance } from "@/services/analytics-service";
 import { formatCurrency } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,48 +10,33 @@ import {
   formatAccountType,
 } from "@/components/accounts/account-management-ui";
 
+/**
+ * Top-of-page account management entry point: add-account action, inline create
+ * form, and the empty state shown when the user has no accounts anywhere yet.
+ * Existing accounts render per currency section via AccountsGroup below —
+ * this component no longer groups or lists them itself.
+ */
 export function BalanceBreakdown({
-  accounts,
-  balancesByCurrency,
-  convertedCurrency,
+  hasAccounts,
   showCreateForm,
   isCreating,
   onAdd,
   onCreate,
   onCancelCreate,
-  onEdit,
-  onDelete,
-  onOpenDetail,
 }: {
-  accounts: Account[];
-  balancesByCurrency: CurrencyBalance[];
-  convertedCurrency: string | null;
+  hasAccounts: boolean;
   showCreateForm: boolean;
   isCreating: boolean;
   onAdd: () => void;
   onCreate: (values: CreateAccountPayload) => void;
   onCancelCreate: () => void;
-  onEdit: (account: Account) => void;
-  onDelete: (account: Account) => void;
-  onOpenDetail: (account: Account) => void;
 }) {
-  const currencies = Array.from(new Set(accounts.map((account) => account.currency))).sort();
-  const multiCurrency = currencies.length > 1;
-  const bucketsByCurrency = new Map(balancesByCurrency.map((bucket) => [bucket.currency, bucket]));
-
   return (
     <section className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold tracking-tight text-foreground">Accounts</h2>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            Your account balances.
-          </p>
-          {convertedCurrency && (
-            <p className="mt-1 text-xs text-muted-foreground">
-              Account rows show native balances; converted totals above are shown in {convertedCurrency}.
-            </p>
-          )}
+          <p className="mt-0.5 text-sm text-muted-foreground">Your account balances.</p>
         </div>
         <Button size="sm" onClick={onAdd}>
           <Plus className="h-4 w-4" /> Add account
@@ -67,7 +51,7 @@ export function BalanceBreakdown({
         />
       )}
 
-      {accounts.length === 0 ? (
+      {!hasAccounts && !showCreateForm && (
         <Card className="flex flex-col items-start gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="font-medium text-foreground">No accounts yet</p>
@@ -79,71 +63,38 @@ export function BalanceBreakdown({
             Add account
           </Button>
         </Card>
-      ) : (
-        <div className="space-y-3">
-          {currencies.map((currency) => (
-            <CurrencyBalanceGroup
-              key={currency}
-              currency={currency}
-              accounts={accounts.filter((account) => account.currency === currency)}
-              bucket={bucketsByCurrency.get(currency)}
-              showHeading={multiCurrency}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onOpenDetail={onOpenDetail}
-            />
-          ))}
-        </div>
       )}
     </section>
   );
 }
 
-function CurrencyBalanceGroup({
-  currency,
+/** Grid of account boxes for one currency section on Overview. */
+export function AccountsGroup({
   accounts,
-  bucket,
-  showHeading,
   onEdit,
   onDelete,
   onOpenDetail,
 }: {
-  currency: string;
   accounts: Account[];
-  bucket?: CurrencyBalance;
-  showHeading: boolean;
   onEdit: (account: Account) => void;
   onDelete: (account: Account) => void;
   onOpenDetail: (account: Account) => void;
 }) {
+  if (accounts.length === 0) {
+    return <p className="text-sm text-muted-foreground">No accounts in this currency yet.</p>;
+  }
+
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h3 className="font-semibold tracking-tight text-foreground">
-            {showHeading ? currency : "Accounts"}
-          </h3>
-          {bucket && (
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              Total {formatCurrency(bucket.totalBalance, currency)}
-            </p>
-          )}
-        </div>
-        <span className="rounded-md bg-card px-2 py-1 font-mono text-[11px] font-semibold tabular-nums text-muted-foreground">
-          {currency}
-        </span>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {accounts.map((account) => (
-          <AccountBox
-            key={account.id}
-            account={account}
-            onEdit={onEdit}
-            onDelete={onDelete}
-            onOpenDetail={onOpenDetail}
-          />
-        ))}
-      </div>
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      {accounts.map((account) => (
+        <AccountBox
+          key={account.id}
+          account={account}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onOpenDetail={onOpenDetail}
+        />
+      ))}
     </div>
   );
 }
