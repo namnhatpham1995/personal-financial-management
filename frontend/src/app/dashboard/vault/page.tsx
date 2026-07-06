@@ -183,8 +183,9 @@ function VaultContent() {
                           {doc.hasBinary && (
                             <button
                               onClick={() => openDownload(doc)}
-                              className="text-muted-foreground hover:text-foreground transition-colors"
+                              className="inline-flex min-h-10 min-w-10 items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                               title="Download"
+                              aria-label={`Download ${doc.originalFilename ?? "document"}`}
                             >
                               <Download className="h-4 w-4" />
                             </button>
@@ -195,8 +196,9 @@ function VaultContent() {
                                 deleteMut.mutate(doc.id);
                               }
                             }}
-                            className="text-muted-foreground hover:text-destructive transition-colors"
+                            className="inline-flex min-h-10 min-w-10 items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
                             title="Delete"
+                            aria-label={`Delete ${doc.originalFilename ?? "document"}`}
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -214,7 +216,7 @@ function VaultContent() {
               <button
                 disabled={page === 0}
                 onClick={() => setPage((p) => p - 1)}
-                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors"
+                className="flex min-h-11 items-center gap-1 text-sm text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors"
               >
                 <ChevronLeft className="h-4 w-4" /> Prev
               </button>
@@ -224,7 +226,7 @@ function VaultContent() {
               <button
                 disabled={page + 1 >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
-                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors"
+                className="flex min-h-11 items-center gap-1 text-sm text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors"
               >
                 Next <ChevronRight className="h-4 w-4" />
               </button>

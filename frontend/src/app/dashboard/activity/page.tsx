@@ -88,7 +88,7 @@ export default function ActivityPage() {
           <button
             onClick={() => setPage((p) => Math.max(0, p - 1))}
             disabled={page === 0}
-            className="rounded-sm border border-border p-2 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-sm border border-border text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             aria-label="Previous page"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -99,7 +99,7 @@ export default function ActivityPage() {
           <button
             onClick={() => setPage((p) => Math.min(data.totalPages - 1, p + 1))}
             disabled={page >= data.totalPages - 1}
-            className="rounded-sm border border-border p-2 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-sm border border-border text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             aria-label="Next page"
           >
             <ChevronRight className="h-4 w-4" />

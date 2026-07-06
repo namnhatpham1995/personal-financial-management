@@ -123,7 +123,8 @@ export function TransactionTable({
                           <button
                             onClick={() => onEdit(tx)}
                             title="Edit transaction"
-                            className="rounded text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors"
+                            aria-label={`Edit transaction from ${formatDate(tx.transactionDate)}`}
+                            className="inline-flex min-h-10 min-w-10 items-center justify-center rounded text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors"
                           >
                             <Pencil className="h-4 w-4" />
                           </button>
@@ -133,7 +134,8 @@ export function TransactionTable({
                             onClick={() => onDelete(tx)}
                             disabled={deletingId === tx.id}
                             title="Delete transaction"
-                            className="rounded text-muted-foreground hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-40 transition-colors"
+                            aria-label={`Delete transaction from ${formatDate(tx.transactionDate)}`}
+                            className="inline-flex min-h-10 min-w-10 items-center justify-center rounded text-muted-foreground hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-40 transition-colors"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -157,14 +159,14 @@ export function TransactionTable({
             <button
               disabled={pagination.currentPage === 0}
               onClick={pagination.onPrev}
-              className="rounded-sm border border-border p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-40 transition-colors"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-sm border border-border text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-40 transition-colors"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
             <button
               disabled={pagination.currentPage >= pagination.totalPages - 1}
               onClick={pagination.onNext}
-              className="rounded-sm border border-border p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-40 transition-colors"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-sm border border-border text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-40 transition-colors"
             >
               <ChevronRight className="h-4 w-4" />
             </button>

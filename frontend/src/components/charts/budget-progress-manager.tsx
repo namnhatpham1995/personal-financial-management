@@ -133,7 +133,7 @@ export function BudgetProgressManager() {
         <button
           type="button"
           onClick={() => setEditingBudgetId(budget.id)}
-          className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
           aria-label={`Edit ${item.budgetName} limit`}
         >
           <Pencil className="h-3.5 w-3.5" />
@@ -142,7 +142,7 @@ export function BudgetProgressManager() {
           type="button"
           onClick={() => removeMutation.mutate(budget.id)}
           disabled={pending}
-          className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-50 transition-colors"
+          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-50 transition-colors"
           aria-label={`Remove ${item.budgetName} limit`}
         >
           <Trash2 className="h-3.5 w-3.5" />
