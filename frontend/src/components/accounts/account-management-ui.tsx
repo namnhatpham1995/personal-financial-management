@@ -32,7 +32,7 @@ export type CreateAccountFormValues = z.infer<typeof createSchema>;
 export type EditAccountFormValues = z.infer<typeof editSchema>;
 
 const inputCls =
-  "w-full rounded-lg border border-border bg-card px-3 py-2 text-base text-foreground placeholder:text-muted-foreground/50 transition-colors focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/40";
+  "w-full rounded-md border border-border bg-card px-3.5 py-2.5 text-base text-foreground placeholder:text-muted-foreground/50 transition-colors focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/40";
 
 const ACCOUNT_TYPES = ["CASH", "BANK", "CREDIT_CARD", "SAVINGS", "OTHER"];
 
@@ -137,7 +137,7 @@ export function DeleteAccountDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
       <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6 shadow-card">
-        <h2 className="mb-2 text-lg font-semibold tracking-tight text-rose-600 dark:text-rose-400">
+        <h2 className="mb-2 text-lg font-semibold tracking-tight text-destructive">
           Delete account
         </h2>
         <p className="text-sm text-muted-foreground">
@@ -148,7 +148,7 @@ export function DeleteAccountDialog({
         ) : transactionCount === 0 ? (
           <p className="mt-2 text-sm text-muted-foreground">This account has no transactions.</p>
         ) : (
-          <p className="mt-2 rounded-lg border border-rose-500/20 bg-rose-500/10 p-3 text-sm text-rose-600 dark:text-rose-400">
+          <p className="mt-2 rounded-md border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
             <strong>
               {transactionCount} transaction{transactionCount !== 1 ? "s" : ""}
             </strong>{" "}
@@ -235,7 +235,7 @@ function Field({
         </span>
         {children}
       </label>
-      {error && <p className="mt-1 text-xs text-rose-500 dark:text-rose-400">{error}</p>}
+      {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
     </div>
   );
 }

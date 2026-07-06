@@ -191,7 +191,7 @@ function AccountBox({
               e.stopPropagation();
               onEdit(account);
             }}
-            className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="rounded-sm p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             title="Edit account"
             aria-label={`Edit ${account.name}`}
           >
@@ -202,7 +202,7 @@ function AccountBox({
               e.stopPropagation();
               onDelete(account);
             }}
-            className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-rose-500/10 hover:text-rose-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 dark:hover:text-rose-400"
+            className="rounded-sm p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             title="Delete account"
             aria-label={`Delete ${account.name}`}
           >

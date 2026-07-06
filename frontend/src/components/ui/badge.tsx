@@ -9,9 +9,9 @@ interface BadgeProps {
 }
 
 const variantStyles: Record<BadgeVariant, string> = {
-  income: "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 dark:text-emerald-400",
-  expense: "bg-rose-500/10 text-rose-500 border border-rose-500/20 dark:text-rose-400",
-  transfer: "bg-blue-500/10 text-blue-500 border border-blue-500/20 dark:text-blue-400",
+  income: "bg-income/10 text-income border border-income/20",
+  expense: "bg-expense/10 text-expense border border-expense/20",
+  transfer: "bg-transfer/10 text-transfer border border-transfer/20",
   neutral: "bg-secondary text-muted-foreground border border-border",
   default: "bg-secondary text-muted-foreground border border-border",
 };

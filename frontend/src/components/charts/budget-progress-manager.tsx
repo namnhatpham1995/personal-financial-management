@@ -142,7 +142,7 @@ export function BudgetProgressManager() {
           type="button"
           onClick={() => removeMutation.mutate(budget.id)}
           disabled={pending}
-          className="rounded p-1 text-muted-foreground hover:bg-rose-500/10 hover:text-rose-500 dark:hover:text-rose-400 disabled:opacity-50 transition-colors"
+          className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-50 transition-colors"
           aria-label={`Remove ${item.budgetName} limit`}
         >
           <Trash2 className="h-3.5 w-3.5" />
