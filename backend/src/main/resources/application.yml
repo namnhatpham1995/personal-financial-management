@@ -75,3 +75,6 @@ app:
     ttl-hours: ${EXCHANGE_RATE_TTL_HOURS:24}
     stale-hours: ${EXCHANGE_RATE_STALE_HOURS:48}
     provider-url: ${EXCHANGE_RATE_PROVIDER_URL:https://open.er-api.com/v6/latest}
+  pat:
+    enabled: ${PAT_ENABLED:true}
+    requests-per-minute: ${PAT_RATE_LIMIT:60}

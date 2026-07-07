@@ -37,6 +37,7 @@ com.fintrack
 ├── analytics/      repository (aggregations), service, web (per-currency, converted balances, converted overview)
 ├── vault/          domain, repository, service (GridFS, import, search), parser, web
 ├── exchangerate/   domain, repository, provider, service, scheduler (open.er-api.com cache)
+├── apitoken/       domain, repository, service, web — scoped personal access tokens for API/MCP clients
 └── common/
     ├── config/     SecurityConfig, AppProperties, OpenApiConfig, RestClientConfig, SchedulerConfig
     ├── domain/     TransactionType (shared enum)
@@ -44,7 +45,7 @@ com.fintrack
     ├── exception/  GlobalExceptionHandler + typed exceptions
     ├── logging/    CorrelationIdFilter
     ├── ratelimit/  AuthRateLimitFilter (Bucket4j)
-    └── security/   JwtAuthenticationFilter, UserPrincipal
+    └── security/   JwtAuthenticationFilter, PatAuthenticationFilter, PatEndpointPolicy, UserPrincipal, AuthMethod
 ```
 
 ## Authentication Flow
@@ -61,6 +62,29 @@ Refresh → POST /auth/refresh → validate hash in DB
   → revoke old token → issue new pair (rotation)
   → detect reuse (revoked): revoke ALL user tokens
 ```
+
+## Personal Access Token (PAT) Authentication
+
+A second, independent credential type for non-browser clients (API scripts, the `mcp-server/` MCP adapter — see below). Sits alongside JWT sessions, not instead of them.
+
+```
+POST /api/v1/tokens (JWT session only) → ApiTokenService.create()
+  → generate 256-bit SecureRandom, prefix "fintrack_pat_" → SHA-256 hash → DB
+  → mandatory expiry (30/90/365 days) → plaintext returned once, never stored
+
+Request with "Bearer fintrack_pat_..." → PatAuthenticationFilter (runs before JwtAuthenticationFilter)
+  → hash lookup → reject unknown/expired/revoked → touch last_used_at
+  → per-token Bucket4j rate limit (app.pat.requests-per-minute, default 60/min)
+  → PatEndpointPolicy.isAllowed(method, uri, scope) — deny-by-default allowlist:
+      read scope  → GET on accounts/transactions/categories/budgets/recurring-transactions/analytics
+      write scope → additionally POST/PUT on transactions only
+      always denied, any scope → /api/v1/auth/**, /api/v1/tokens/**, all DELETE, /api/vault/**
+  → UserPrincipal(user, AuthMethod.PAT, tokenId) → SecurityContext
+
+ActivityAuditInterceptor → when AuthMethod.PAT, audit_log.meta includes {"auth":"pat","tokenId":N}
+```
+
+Kill switch: `app.pat.enabled=false` (env `PAT_ENABLED=false`) disables the filter entirely without a schema rollback.
 
 ## Balance Maintenance
 
