@@ -102,10 +102,38 @@ jobs:
           NEXT_PUBLIC_API_URL: http://localhost:8080
         run: npm run build
 
+  mcp-server:
+    name: MCP Server — Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        working-directory: mcp-server
+        run: npm install
+
+      - name: Type check
+        working-directory: mcp-server
+        run: npm run type-check
+
+      - name: Test
+        working-directory: mcp-server
+        run: npm test
+
+      - name: Build
+        working-directory: mcp-server
+        run: npm run build
+
   docker:
     name: Docker — Compose Build Check
     runs-on: ubuntu-latest
-    needs: [backend, frontend]
+    needs: [backend, frontend, mcp-server]
     if: github.ref == 'refs/heads/main'
 
     steps:
@@ -119,7 +147,7 @@ jobs:
   deploy:
     name: Deploy — Railway (gated on green main)
     runs-on: ubuntu-latest
-    needs: [backend, frontend, docker]
+    needs: [backend, frontend, mcp-server, docker]
     if: github.ref == 'refs/heads/main' && success()
 
     steps:
