@@ -98,14 +98,15 @@ npm run test:watch                               # watch mode during development
 
 ## CI/CD Pipeline
 
-GitHub Actions runs four sequential jobs on every push to `main` (PRs run backend + frontend only):
+GitHub Actions runs five jobs on every push to `main` (PRs run backend + frontend + MCP server only):
 
 | Job | What it does |
 |---|---|
 | **Backend** | `mvn clean verify` with a live PostgreSQL 16 service; uploads Surefire + JaCoCo reports |
 | **Frontend** | Type-check → lint → Vitest → design-token gate (no raw palette classes) → `next build` |
+| **MCP Server** | `npm install` → type-check → Vitest → `npm run build` in `mcp-server/` |
 | **Docker** | `docker compose build --no-cache` — verifies the full image stack compiles |
-| **Deploy** | `railway up` to Railway — gated on all three prior jobs passing on `main` |
+| **Deploy** | `railway up` to Railway — gated on all prior jobs passing on `main` |
 
 The design-token gate fails the build if any `.tsx`/`.ts` file uses raw Tailwind palette classes (`text-slate-*`, `bg-gray-*`, etc.) instead of token-backed utilities.
 
@@ -119,7 +120,7 @@ The design-token gate fails the build if any `.tsx`/`.ts` file uses raw Tailwind
 | Transactions | CRUD + paginated list with filters |
 | Budgets | CRUD with real-time progress (spent/remaining/%) |
 | Recurring | CRUD + POST /{id}/pause, /{id}/resume |
-| Analytics | GET spending-by-category, income-vs-expense, budget-progress, net-worth |
+| Analytics | GET spending-by-category, incoming-transfer-total, income-vs-expense, budget-progress, balances, overview |
 | API Tokens | POST/GET /tokens, DELETE /tokens/{id} — scoped personal access tokens for API/MCP clients (JWT session only) |
 | Vault | POST /vault/upload, GET /vault, GET /vault/{id}, GET /vault/{id}/download, PATCH /vault/{id}/link, POST /vault/search, DELETE /vault/{id} |
 | Statement Import | POST /vault/import/upload, GET /vault/import/{id}/rows, POST /vault/import/{id}/confirm |

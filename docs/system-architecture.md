@@ -86,6 +86,19 @@ ActivityAuditInterceptor → when AuthMethod.PAT, audit_log.meta includes {"auth
 
 Kill switch: `app.pat.enabled=false` (env `PAT_ENABLED=false`) disables the filter entirely without a schema rollback.
 
+## MCP Server (`mcp-server/`)
+
+A standalone Node/TypeScript process, external to the backend and frontend, that exposes Fintrack to MCP clients (Claude Desktop, Claude Code). Not deployed alongside the backend/frontend — it runs wherever the MCP client launches it (typically the user's own machine), pointed at a Fintrack backend URL via `FINTRACK_API_URL`.
+
+```
+MCP client (stdio) ⇄ fintrack-mcp-server ── HTTPS Bearer fintrack_pat_... ──▶ Backend (PatAuthenticationFilter)
+```
+
+- Holds no database connection and no credential beyond the one configured PAT — every tool call is a plain REST request through the same PatAuthenticationFilter / PatEndpointPolicy path described above, so the token's scope and the deny-by-default allowlist bound it exactly as they would any other API client.
+- Curated tool surface only (`list_accounts`, `list_transactions`, `get_transaction`, `list_budgets_with_progress`, `get_spending_by_category`, `get_income_vs_expense`, `get_account_balances`, `create_transaction`, `update_transaction`) — no raw-request passthrough tool, no delete tool for any resource.
+- Errors are mapped to short, credential-safe messages (never the token, headers, or a stack trace); tool descriptions tell the model returned financial data is data, not instructions.
+- See `mcp-server/README.md` for setup and the full security posture.
+
 ## Balance Maintenance
 
 Every transaction mutation calls `AccountService.adjustBalance(accountId, delta)`:
