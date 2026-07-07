@@ -15,6 +15,7 @@ public class AppProperties {
     private Cors cors = new Cors();
     private RateLimit rateLimit = new RateLimit();
     private ExchangeRate exchangeRate = new ExchangeRate();
+    private Pat pat = new Pat();
 
     @Getter
     @Setter
@@ -47,5 +48,13 @@ public class AppProperties {
         private int staleHours = 48;
         /** Base URL of the exchange rate provider (path segment per currency appended at call time). */
         private String providerUrl = "https://open.er-api.com/v6/latest";
+    }
+
+    @Getter
+    @Setter
+    public static class Pat {
+        /** Kill switch for PAT authentication — rollback path without a schema change. */
+        private boolean enabled = true;
+        private int requestsPerMinute = 60;
     }
 }

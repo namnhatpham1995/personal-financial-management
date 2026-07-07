@@ -19,14 +19,25 @@ public class UserPrincipal implements UserDetails {
     private final String email;
     private final String passwordHash;
     private final Collection<? extends GrantedAuthority> authorities;
+    @Getter
+    private final AuthMethod authMethod;
+    @Getter
+    private final Long apiTokenId;
 
     public UserPrincipal(User user) {
+        this(user, AuthMethod.JWT, null);
+    }
+
+    /** Used by PatAuthenticationFilter so the audit trail can attribute the action to a specific token. */
+    public UserPrincipal(User user, AuthMethod authMethod, Long apiTokenId) {
         this.userId = user.getId();
         this.email = user.getEmail();
         this.passwordHash = user.getPasswordHash();
         this.authorities = user.getRoles().stream()
                 .map(role -> new SimpleGrantedAuthority(role.getName()))
                 .toList();
+        this.authMethod = authMethod;
+        this.apiTokenId = apiTokenId;
     }
 
     @Override public String getUsername() { return email; }

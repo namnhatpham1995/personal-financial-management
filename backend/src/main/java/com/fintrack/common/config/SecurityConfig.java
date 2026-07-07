@@ -1,9 +1,13 @@
 package com.fintrack.common.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fintrack.apitoken.service.ApiTokenService;
 import com.fintrack.auth.service.JwtService;
 import com.fintrack.auth.service.UserDetailsServiceImpl;
 import com.fintrack.common.ratelimit.AuthRateLimitFilter;
 import com.fintrack.common.security.JwtAuthenticationFilter;
+import com.fintrack.common.security.PatAuthenticationFilter;
+import com.fintrack.common.security.PatEndpointPolicy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -38,6 +42,9 @@ public class SecurityConfig {
     private final JwtService jwtService;
     private final UserDetailsServiceImpl userDetailsService;
     private final AppProperties appProperties;
+    private final ApiTokenService apiTokenService;
+    private final PatEndpointPolicy patEndpointPolicy;
+    private final ObjectMapper objectMapper;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -58,6 +65,9 @@ public class SecurityConfig {
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(new JwtAuthenticationFilter(jwtService, userDetailsService),
                     UsernamePasswordAuthenticationFilter.class)
+            // PAT runs before JWT so a fintrack_pat_ bearer never falls through to JWT parsing.
+            .addFilterBefore(new PatAuthenticationFilter(apiTokenService, patEndpointPolicy, appProperties, objectMapper),
+                    JwtAuthenticationFilter.class)
             .headers(headers -> headers
                 .frameOptions(frame -> frame.sameOrigin())
                 .contentTypeOptions(c -> {})

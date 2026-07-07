@@ -120,6 +120,7 @@ The design-token gate fails the build if any `.tsx`/`.ts` file uses raw Tailwind
 | Budgets | CRUD with real-time progress (spent/remaining/%) |
 | Recurring | CRUD + POST /{id}/pause, /{id}/resume |
 | Analytics | GET spending-by-category, income-vs-expense, budget-progress, net-worth |
+| API Tokens | POST/GET /tokens, DELETE /tokens/{id} — scoped personal access tokens for API/MCP clients (JWT session only) |
 | Vault | POST /vault/upload, GET /vault, GET /vault/{id}, GET /vault/{id}/download, PATCH /vault/{id}/link, POST /vault/search, DELETE /vault/{id} |
 | Statement Import | POST /vault/import/upload, GET /vault/import/{id}/rows, POST /vault/import/{id}/confirm |
 

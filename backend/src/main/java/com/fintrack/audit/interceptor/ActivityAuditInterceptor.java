@@ -1,6 +1,7 @@
 package com.fintrack.audit.interceptor;
 
 import com.fintrack.audit.service.AuditLogWriter;
+import com.fintrack.common.security.AuthMethod;
 import com.fintrack.common.security.UserPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -11,6 +12,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -48,9 +50,14 @@ public class ActivityAuditInterceptor implements HandlerInterceptor {
 
         // status omitted from meta: capture fires after HTTP response is already sent,
         // and the action name already conveys what happened.
-        auditLogWriter.write(principal.getUserId(), action, correlationId,
-                Map.of("method", request.getMethod(),
-                       "uri",    uri));
+        Map<String, Object> meta = new HashMap<>();
+        meta.put("method", request.getMethod());
+        meta.put("uri", uri);
+        if (principal.getAuthMethod() == AuthMethod.PAT) {
+            meta.put("auth", "pat");
+            meta.put("tokenId", principal.getApiTokenId());
+        }
+        auditLogWriter.write(principal.getUserId(), action, correlationId, meta);
     }
 
     private String resolveAction(String method, String uri) {
