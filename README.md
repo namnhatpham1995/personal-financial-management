@@ -134,6 +134,7 @@ fintrack/
 │   ├── src/main/java/com/fintrack/
 │   │   ├── FintrackApplication.java
 │   │   ├── auth/             # Authentication & JWT
+│   │   ├── apitoken/         # Personal access tokens (API/MCP client auth)
 │   │   ├── account/          # Account management
 │   │   ├── category/         # Transaction categories
 │   │   ├── transaction/      # Transaction CRUD
@@ -151,6 +152,7 @@ fintrack/
 │       ├── components/       # Shared UI components
 │       ├── services/         # API service layer
 │       └── lib/              # Auth context, API client, utils
+├── mcp-server/                # MCP server (AI clients via a scoped API token — see mcp-server/README.md)
 ├── docker-compose.yml
 └── .github/workflows/ci.yml
 ```
