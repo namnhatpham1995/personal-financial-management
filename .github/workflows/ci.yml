@@ -130,6 +130,101 @@ jobs:
         working-directory: mcp-server
         run: npm run build
 
+  mcp-integration:
+    name: MCP Server — Backend Integration
+    runs-on: ubuntu-latest
+    needs: [backend, mcp-server]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: fintrack_mcp_it
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ping:1})'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: temurin
+          cache: maven
+
+      - name: Build backend jar
+        working-directory: backend
+        run: mvn clean package -DskipTests
+
+      - name: Start backend
+        working-directory: backend
+        env:
+          SPRING_PROFILES_ACTIVE: test
+          DB_URL: jdbc:postgresql://localhost:5432/fintrack_mcp_it
+          DB_USERNAME: test
+          DB_PASSWORD: test
+          JWT_SECRET: ci-mcp-integration-test-secret-that-is-long-enough-256-bits
+          SPRING_CACHE_TYPE: redis
+          SPRING_DATA_REDIS_URL: redis://localhost:6379
+          SPRING_DATA_MONGODB_URI: mongodb://localhost:27017/fintrack_mcp_it
+        run: |
+          nohup java -jar target/*.jar > backend.log 2>&1 &
+          echo "Waiting for backend to become healthy..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/actuator/health | grep -q '"status":"UP"'; then
+              echo "Backend is healthy"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Backend failed to become healthy in time"
+          cat backend.log
+          exit 1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        working-directory: mcp-server
+        run: npm install
+
+      - name: Build
+        working-directory: mcp-server
+        run: npm run build
+
+      - name: Run backend integration test
+        working-directory: mcp-server
+        env:
+          FINTRACK_TEST_BACKEND_URL: http://localhost:8080
+        run: npm test
+
   docker:
     name: Docker — Compose Build Check
     runs-on: ubuntu-latest
