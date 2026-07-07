@@ -15,6 +15,10 @@ frontend/.next/
 frontend/out/
 frontend/dist/
 
+# MCP server
+mcp-server/node_modules/
+mcp-server/dist/
+
 # Node/npm
 node_modules/
 package-lock.json
