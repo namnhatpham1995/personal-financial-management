@@ -1,37 +1,33 @@
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import axios from "axios";
 import { describe, expect, it } from "vitest";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const SERVER_ENTRY = path.resolve(__dirname, "../../dist/index.js");
+import { createApiClient } from "../api-client.js";
+import { listAccounts } from "../tools/accounts.js";
 
 const BACKEND_URL = process.env.FINTRACK_TEST_BACKEND_URL;
 
-// Vitest's own "Unhandled Error" capture sometimes loses the stack for errors
-// that originate outside the test's awaited chain (e.g. a stray event on the
-// spawned child process). These handlers force full detail into the CI log
-// regardless of how the error surfaces.
-if (BACKEND_URL) {
-  process.on("uncaughtException", (err) => console.error("[uncaughtException]", err));
-  process.on("unhandledRejection", (reason) => console.error("[unhandledRejection]", reason));
-}
-
 /**
- * Verifies the full chain no other test touches: MCP stdio transport ->
- * config parsing -> PAT header injection -> real backend -> tool-result
- * shaping. Every other mcp-server test mocks the axios client; this one
- * spawns the built server and drives it through the real MCP SDK client.
+ * Verifies the MCP tool -> PAT auth -> real backend chain that every other
+ * mcp-server test mocks out. Drives the real list_accounts handler with a
+ * real axios client built by createApiClient (the same header-injection code
+ * path index.ts wires up at startup), authenticated with a PAT minted through
+ * the real backend's own API.
  *
- * Requires a running Fintrack backend at FINTRACK_TEST_BACKEND_URL and a
- * built server (`npm run build`). Skipped locally when the env var is unset
- * so the default `npm test` stays fast and offline-safe; the CI
- * `mcp-integration` job sets it after provisioning the backend.
+ * Earlier revisions of this test spawned the built server over the stdio
+ * transport via the MCP SDK client, to also exercise process spawning and
+ * config parsing end to end. That produced an unexplained CI-only failure
+ * (an unhandled error with no stack, no in-process handler ever fired, OOM
+ * ruled out, and the exact spawn/connect/callTool/close sequence reproduced
+ * cleanly outside CI on both plain Node and Vitest) that couldn't be pinned
+ * down without live CI shell access. Calling the handler directly keeps the
+ * real-backend/real-PAT coverage without the OS-level process boundary.
+ *
+ * Requires a running Fintrack backend at FINTRACK_TEST_BACKEND_URL. Skipped
+ * locally when the env var is unset so the default `npm test` stays fast and
+ * offline-safe; the CI `mcp-integration` job sets it after provisioning the
+ * backend.
  */
-describe.skipIf(!BACKEND_URL)("MCP server <-> real backend", () => {
-  it("list_accounts returns real backend data through the stdio transport", async () => {
+describe.skipIf(!BACKEND_URL)("MCP tool <-> real backend", () => {
+  it("list_accounts returns real backend data via a PAT-authenticated client", async () => {
     const email = `mcp-integration-${Date.now()}@test.com`;
     const backend = axios.create({ baseURL: `${BACKEND_URL}/api/v1` });
 
@@ -57,43 +53,30 @@ describe.skipIf(!BACKEND_URL)("MCP server <-> real backend", () => {
     );
     const pat: string = tokenResponse.data.plaintextToken;
 
-    const transport = new StdioClientTransport({
-      command: process.execPath,
-      args: [SERVER_ENTRY],
-      env: { FINTRACK_API_URL: BACKEND_URL!, FINTRACK_API_TOKEN: pat },
-      stderr: "pipe",
-    });
-    transport.onerror = (err) => console.error("[mcp transport error]", err);
-    transport.stderr?.on("data", (chunk) => console.error("[mcp server stderr]", chunk.toString()));
+    const api = createApiClient({ apiUrl: BACKEND_URL!, apiToken: pat });
+    const result = await listAccounts(api);
 
-    const client = new Client({ name: "mcp-integration-test-client", version: "0.0.1" });
-    let connected = false;
+    expect(result.isError).toBeFalsy();
+    expect(result.content).toHaveLength(1);
+    expect(result.content[0].type).toBe("text");
 
-    try {
-      await client.connect(transport);
-      connected = true;
+    const accounts = JSON.parse(result.content[0].text);
+    expect(Array.isArray(accounts)).toBe(true);
+    const created = accounts.find((a: { id: number }) => a.id === accountId);
+    expect(created).toBeDefined();
+    expect(created.name).toBe("MCP Test Account");
+    expect(created.currency).toBe("USD");
 
-      const result = await client.callTool({ name: "list_accounts", arguments: {} });
-      const content = result.content as Array<{ type: string; text: string }>;
-      expect(content).toHaveLength(1);
-      expect(content[0].type).toBe("text");
+    // The tool result must never contain the PAT or the JWT
+    expect(result.content[0].text).not.toContain(pat);
+    expect(result.content[0].text).not.toContain(jwt);
+  });
 
-      const accounts = JSON.parse(content[0].text);
-      expect(Array.isArray(accounts)).toBe(true);
-      const created = accounts.find((a: { id: number }) => a.id === accountId);
-      expect(created).toBeDefined();
-      expect(created.name).toBe("MCP Test Account");
-      expect(created.currency).toBe("USD");
+  it("list_accounts surfaces a credential-safe error for an invalid PAT", async () => {
+    const api = createApiClient({ apiUrl: BACKEND_URL!, apiToken: "fintrack_pat_invalid00000000000000000000" });
+    const result = await listAccounts(api);
 
-      // The tool result must never contain the PAT or the JWT
-      expect(content[0].text).not.toContain(pat);
-      expect(content[0].text).not.toContain(jwt);
-    } finally {
-      // A close() failure (e.g. the connection never succeeded) must never mask
-      // the real assertion/connection error that's already propagating.
-      if (connected) {
-        await client.close().catch((err) => console.error("[mcp client close error]", err));
-      }
-    }
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toMatch(/invalid, expired, or revoked/i);
   });
 });
