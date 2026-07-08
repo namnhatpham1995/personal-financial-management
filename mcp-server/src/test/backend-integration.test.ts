@@ -75,7 +75,7 @@ describe.skipIf(!BACKEND_URL)("MCP tool <-> real backend", () => {
     const tokenResponse = await unwrapAxiosErrors(() =>
       backend.post(
         "/tokens",
-        { name: "MCP Integration Test Token", scope: "READ", expiryDays: 1 },
+        { name: "MCP Integration Test Token", scope: "READ", expiryDays: 30 },
         { headers: { Authorization: `Bearer ${jwt}` } }
       )
     );
