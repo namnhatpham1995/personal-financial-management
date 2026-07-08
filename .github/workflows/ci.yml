@@ -230,6 +230,16 @@ jobs:
           FINTRACK_TEST_BACKEND_URL: http://localhost:8080
         run: npm test
 
+      - name: Diagnose unexplained failure (OOM check)
+        if: failure()
+        run: |
+          echo "--- free -h ---"
+          free -h || true
+          echo "--- dmesg (last 50 kill/oom lines) ---"
+          sudo dmesg --ctime 2>/dev/null | grep -iE "killed process|out of memory|oom" | tail -50 || echo "dmesg unavailable or no matches"
+          echo "--- backend.log tail ---"
+          tail -100 backend/backend.log || true
+
   docker:
     name: Docker — Compose Build Check
     runs-on: ubuntu-latest
