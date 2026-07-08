@@ -58,6 +58,7 @@ class AuthLogoutIntegrationTest {
         TokenResponse tokens = HttpTestHelper.registerAndLoginFull(mockMvc, objectMapper, "logout.revoke@test.com");
 
         mockMvc.perform(post("/api/v1/auth/logout")
+                        .header("Authorization", "Bearer " + tokens.accessToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("refreshToken", tokens.refreshToken()))))
                 .andExpect(status().isNoContent());
