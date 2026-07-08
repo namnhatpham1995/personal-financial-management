@@ -10,6 +10,15 @@ const SERVER_ENTRY = path.resolve(__dirname, "../../dist/index.js");
 
 const BACKEND_URL = process.env.FINTRACK_TEST_BACKEND_URL;
 
+// Vitest's own "Unhandled Error" capture sometimes loses the stack for errors
+// that originate outside the test's awaited chain (e.g. a stray event on the
+// spawned child process). These handlers force full detail into the CI log
+// regardless of how the error surfaces.
+if (BACKEND_URL) {
+  process.on("uncaughtException", (err) => console.error("[uncaughtException]", err));
+  process.on("unhandledRejection", (reason) => console.error("[unhandledRejection]", reason));
+}
+
 /**
  * Verifies the full chain no other test touches: MCP stdio transport ->
  * config parsing -> PAT header injection -> real backend -> tool-result
