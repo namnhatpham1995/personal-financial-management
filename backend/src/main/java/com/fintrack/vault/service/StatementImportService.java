@@ -97,7 +97,9 @@ public class StatementImportService {
         return rows.stream()
                 .map(r -> new StagedRowResponse(
                         (String) r.get("date"),
-                        ((Number) r.get("amount")).toString(),
+                        // MongoDB round-trips this untyped map value as a String, not a Number
+                        // (matches the .toString() handling already used in confirm() below).
+                        r.get("amount").toString(),
                         (String) r.get("type"),
                         (String) r.get("description"),
                         (String) r.get("dedupKey")
