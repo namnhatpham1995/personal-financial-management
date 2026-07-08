@@ -1,9 +1,31 @@
-import axios from "axios";
+import axios, { isAxiosError } from "axios";
 import { describe, expect, it } from "vitest";
 import { createApiClient } from "../api-client.js";
 import { listAccounts } from "../tools/accounts.js";
 
 const BACKEND_URL = process.env.FINTRACK_TEST_BACKEND_URL;
+
+/**
+ * A raw AxiosError embeds its request config (including transformRequest
+ * functions), which Vitest's worker pool cannot structured-clone when
+ * reporting a failure -- an uncaught AxiosError here surfaces as an opaque
+ * "DataCloneError" with no indication of the real HTTP failure underneath.
+ * Setup calls are wrapped through this so a real failure (wrong status,
+ * validation error, etc.) is always reported as a plain, readable Error.
+ */
+async function unwrapAxiosErrors<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    if (isAxiosError(err)) {
+      throw new Error(
+        `Backend setup call failed: ${err.config?.method?.toUpperCase()} ${err.config?.url} -> ` +
+          `${err.response?.status} ${JSON.stringify(err.response?.data)}`
+      );
+    }
+    throw err;
+  }
+}
 
 /**
  * Verifies the MCP tool -> PAT auth -> real backend chain that every other
@@ -31,25 +53,31 @@ describe.skipIf(!BACKEND_URL)("MCP tool <-> real backend", () => {
     const email = `mcp-integration-${Date.now()}@test.com`;
     const backend = axios.create({ baseURL: `${BACKEND_URL}/api/v1` });
 
-    const registerResponse = await backend.post("/auth/register", {
-      email,
-      password: "pass1234",
-      firstName: "MCP",
-      lastName: "Integration",
-    });
+    const registerResponse = await unwrapAxiosErrors(() =>
+      backend.post("/auth/register", {
+        email,
+        password: "pass1234",
+        firstName: "MCP",
+        lastName: "Integration",
+      })
+    );
     const jwt: string = registerResponse.data.accessToken;
 
-    const accountResponse = await backend.post(
-      "/accounts",
-      { name: "MCP Test Account", accountType: "BANK", currency: "USD", initialBalance: "250.00" },
-      { headers: { Authorization: `Bearer ${jwt}` } }
+    const accountResponse = await unwrapAxiosErrors(() =>
+      backend.post(
+        "/accounts",
+        { name: "MCP Test Account", accountType: "BANK", currency: "USD", initialBalance: "250.00" },
+        { headers: { Authorization: `Bearer ${jwt}` } }
+      )
     );
     const accountId: number = accountResponse.data.id;
 
-    const tokenResponse = await backend.post(
-      "/tokens",
-      { name: "MCP Integration Test Token", scope: "READ", expiryDays: 1 },
-      { headers: { Authorization: `Bearer ${jwt}` } }
+    const tokenResponse = await unwrapAxiosErrors(() =>
+      backend.post(
+        "/tokens",
+        { name: "MCP Integration Test Token", scope: "READ", expiryDays: 1 },
+        { headers: { Authorization: `Bearer ${jwt}` } }
+      )
     );
     const pat: string = tokenResponse.data.plaintextToken;
 
