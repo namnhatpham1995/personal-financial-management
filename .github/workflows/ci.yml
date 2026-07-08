@@ -185,9 +185,14 @@ jobs:
         working-directory: backend
         env:
           SPRING_PROFILES_ACTIVE: test
-          DB_URL: jdbc:postgresql://localhost:5432/fintrack_mcp_it
-          DB_USERNAME: test
-          DB_PASSWORD: test
+          # application-test.yml hardcodes spring.datasource.url (for the Testcontainers-based
+          # Surefire tests, where @DynamicPropertySource overrides it at the highest precedence
+          # anyway). Booting the packaged jar directly has no such override, so the canonical
+          # SPRING_DATASOURCE_* env vars are used here instead of the app's DB_URL placeholder --
+          # as raw OS env vars they outrank any YAML file, profile-specific or not.
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/fintrack_mcp_it
+          SPRING_DATASOURCE_USERNAME: test
+          SPRING_DATASOURCE_PASSWORD: test
           JWT_SECRET: ci-mcp-integration-test-secret-that-is-long-enough-256-bits
           SPRING_CACHE_TYPE: redis
           SPRING_DATA_REDIS_URL: redis://localhost:6379
