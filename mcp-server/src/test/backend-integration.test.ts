@@ -52,11 +52,17 @@ describe.skipIf(!BACKEND_URL)("MCP server <-> real backend", () => {
       command: process.execPath,
       args: [SERVER_ENTRY],
       env: { FINTRACK_API_URL: BACKEND_URL!, FINTRACK_API_TOKEN: pat },
+      stderr: "pipe",
     });
+    transport.onerror = (err) => console.error("[mcp transport error]", err);
+    transport.stderr?.on("data", (chunk) => console.error("[mcp server stderr]", chunk.toString()));
+
     const client = new Client({ name: "mcp-integration-test-client", version: "0.0.1" });
+    let connected = false;
 
     try {
       await client.connect(transport);
+      connected = true;
 
       const result = await client.callTool({ name: "list_accounts", arguments: {} });
       const content = result.content as Array<{ type: string; text: string }>;
@@ -74,7 +80,11 @@ describe.skipIf(!BACKEND_URL)("MCP server <-> real backend", () => {
       expect(content[0].text).not.toContain(pat);
       expect(content[0].text).not.toContain(jwt);
     } finally {
-      await client.close();
+      // A close() failure (e.g. the connection never succeeded) must never mask
+      // the real assertion/connection error that's already propagating.
+      if (connected) {
+        await client.close().catch((err) => console.error("[mcp client close error]", err));
+      }
     }
   });
 });
