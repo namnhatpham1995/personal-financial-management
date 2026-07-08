@@ -131,7 +131,8 @@ class StatementImportPipelineIntegrationTest {
                 .andExpect(status().isOk())
                 .andReturn();
         JsonNode transactions = objectMapper.readTree(txResult.getResponse().getContentAsString());
-        assertThat(transactions).hasSize(2);
+        // GET /api/v1/transactions returns a paginated envelope, not a bare array
+        assertThat(transactions.get("content")).hasSize(2);
     }
 
     @Test
