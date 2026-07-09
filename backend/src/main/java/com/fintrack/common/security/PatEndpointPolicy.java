@@ -28,7 +28,13 @@ public class PatEndpointPolicy {
 
     private static final List<Rule> WRITE_RULES = List.of(
             rule("POST", "/api/v1/transactions"),
-            rule("PUT", "/api/v1/transactions/[^/]+")
+            rule("PUT", "/api/v1/transactions/[^/]+"),
+            rule("POST", "/api/v1/accounts"),
+            rule("PUT", "/api/v1/accounts/[^/]+"),
+            rule("POST", "/api/v1/categories"),
+            rule("PUT", "/api/v1/categories/[^/]+"),
+            rule("POST", "/api/v1/budgets"),
+            rule("PUT", "/api/v1/budgets/[^/]+")
     );
 
     public boolean isAllowed(String method, String uri, ApiTokenScope scope) {
