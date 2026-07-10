@@ -56,6 +56,7 @@ class PatAuthenticationIntegrationTest {
                 () -> "org.hibernate.dialect.PostgreSQLDialect");
         registry.add("spring.data.mongodb.uri", () -> "mongodb://localhost:27017/unused");
         registry.add("spring.data.redis.repositories.enabled", () -> "false");
+        registry.add("app.rate-limit.auth-requests-per-minute", () -> "1000");
     }
 
     @Autowired MockMvc mockMvc;

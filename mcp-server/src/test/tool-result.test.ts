@@ -25,6 +25,13 @@ describe("toToolResult", () => {
     expect(parsed.note).toBe(malicious.note);
     expect(result.isError).toBeUndefined();
   });
+
+  it("preserves mutation warning metadata in structured output", () => {
+    const result = toToolResult({ id: 1, warnings: [{ code: "account_balance_negative", accountId: 4 }] });
+    expect(JSON.parse(result.content[0].text).warnings).toEqual([
+      { code: "account_balance_negative", accountId: 4 },
+    ]);
+  });
 });
 
 describe("toErrorResult", () => {

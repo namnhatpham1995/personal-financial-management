@@ -19,6 +19,7 @@ import com.fintrack.transaction.web.dto.BatchTransactionResponse;
 import com.fintrack.transaction.web.dto.BatchTransactionRowResult;
 import com.fintrack.transaction.web.dto.TransactionResponse;
 import com.fintrack.transaction.web.dto.UpdateTransactionRequest;
+import com.fintrack.transaction.web.dto.MutationWarning;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -57,6 +58,13 @@ public class TransactionService {
     public TransactionResponse create(Long userId, CreateTransactionRequest req) {
         User user = userRepository.getReferenceById(userId);
         Account account = accountService.findOwned(userId, req.accountId());
+        List<MutationWarning> warnings = new ArrayList<>();
+        if (req.importDedupKey() == null && transactionRepository
+                .existsByUserIdAndAccountIdAndTransactionDateAndAmountAndTransactionTypeAndNote(
+                        userId, req.accountId(), req.transactionDate(), req.amount(), req.transactionType(), req.note())) {
+            warnings.add(new MutationWarning("possible_duplicate_transaction",
+                    "A similar transaction already exists", req.accountId()));
+        }
 
         Transaction tx = Transaction.builder()
                 .user(user)
@@ -79,12 +87,18 @@ public class TransactionService {
             }
             Account dest = accountService.findOwned(userId, req.transferAccountId());
             tx.setTransferAccount(dest);
+            if (!account.getCurrency().equals(dest.getCurrency())) {
+                warnings.add(new MutationWarning("currency_mismatch_or_unsupported_cross_currency_transfer",
+                        "Transfer accounts use different currencies; no conversion was performed", account.getId()));
+            }
         }
+
+        addNegativeBalanceWarning(warnings, account, req.transactionType(), req.amount());
 
         Transaction saved = transactionRepository.save(tx);
         applyBalanceDelta(saved, saved.getAmount());
         cacheVersionService.bump(userId);
-        return transactionMapper.toResponse(saved);
+        return TransactionResponse.withWarnings(transactionMapper.toResponse(saved), warnings);
     }
 
     /** Processes each row independently so one invalid import does not roll back valid rows. */
@@ -167,6 +181,17 @@ public class TransactionService {
     public TransactionResponse update(Long userId, Long txId, UpdateTransactionRequest req) {
         Transaction tx = findOwned(userId, txId);
         BigDecimal oldAmount = tx.getAmount();
+        BigDecimal finalAmount = req.amount() == null ? oldAmount : req.amount();
+        List<MutationWarning> warnings = new ArrayList<>();
+        BigDecimal balanceDelta = finalAmount.subtract(oldAmount);
+        if (tx.getTransactionType() == TransactionType.EXPENSE || tx.getTransactionType() == TransactionType.TRANSFER) {
+            addNegativeBalanceWarning(warnings, tx.getAccount(), tx.getTransactionType(), balanceDelta);
+        }
+        if (tx.getTransactionType() == TransactionType.TRANSFER
+                && !tx.getAccount().getCurrency().equals(tx.getTransferAccount().getCurrency())) {
+            warnings.add(new MutationWarning("currency_mismatch_or_unsupported_cross_currency_transfer",
+                    "Transfer accounts use different currencies; no conversion was performed", tx.getAccount().getId()));
+        }
 
         if (req.amount() != null && req.amount().compareTo(oldAmount) != 0) {
             // Reverse old balance effect, apply new
@@ -182,7 +207,7 @@ public class TransactionService {
 
         TransactionResponse result = transactionMapper.toResponse(transactionRepository.save(tx));
         cacheVersionService.bump(userId);
-        return result;
+        return TransactionResponse.withWarnings(result, warnings);
     }
 
     @Transactional
@@ -216,6 +241,16 @@ public class TransactionService {
                 accountService.adjustBalance(tx.getAccount().getId(), amount);
                 accountService.adjustBalance(tx.getTransferAccount().getId(), amount.negate());
             }
+        }
+    }
+
+    private void addNegativeBalanceWarning(List<MutationWarning> warnings, Account account,
+                                           TransactionType type, BigDecimal amount) {
+        if ((type == TransactionType.EXPENSE || type == TransactionType.TRANSFER)
+                && amount.signum() > 0
+                && account.getCurrentBalance().subtract(amount).signum() < 0) {
+            warnings.add(new MutationWarning("account_balance_negative",
+                    "This mutation leaves the account balance negative", account.getId()));
         }
     }
 

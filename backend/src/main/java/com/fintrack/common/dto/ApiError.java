@@ -12,15 +12,20 @@ public record ApiError(
         String message,
         String path,
         Instant timestamp,
-        List<FieldError> fieldErrors
+        List<FieldError> fieldErrors,
+        Long retryAfterSeconds
 ) {
     public record FieldError(String field, String message) {}
 
     public static ApiError of(int status, String error, String message, String path) {
-        return new ApiError(status, error, message, path, Instant.now(), null);
+        return new ApiError(status, error, message, path, Instant.now(), null, null);
     }
 
     public static ApiError of(int status, String error, String message, String path, List<FieldError> fieldErrors) {
-        return new ApiError(status, error, message, path, Instant.now(), fieldErrors);
+        return new ApiError(status, error, message, path, Instant.now(), fieldErrors, null);
+    }
+
+    public static ApiError rateLimited(String message, String path, long retryAfterSeconds) {
+        return new ApiError(429, "Too Many Requests", message, path, Instant.now(), null, retryAfterSeconds);
     }
 }

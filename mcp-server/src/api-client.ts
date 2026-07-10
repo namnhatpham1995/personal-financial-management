@@ -33,7 +33,14 @@ export function mapApiError(error: unknown): FintrackApiError {
       return new FintrackApiError("The API token's scope does not permit this operation.");
     }
     if (status === 429) {
-      return new FintrackApiError("Rate limit exceeded for this token. Slow down and try again shortly.");
+      const bodyRetry = Number(error.response?.data?.retryAfterSeconds);
+      const headerRetry = Number(error.response?.headers?.["retry-after"]);
+      const retryAfter = Number.isFinite(bodyRetry) && bodyRetry > 0 ? bodyRetry : headerRetry;
+      return new FintrackApiError(
+        Number.isFinite(retryAfter) && retryAfter > 0
+          ? `Rate limit exceeded for this token. Retry after ${Math.ceil(retryAfter)} seconds.`
+          : "Rate limit exceeded for this token. Slow down and try again shortly."
+      );
     }
     if (status !== undefined && status >= 400 && status < 500) {
       return new FintrackApiError(`Request rejected by the Fintrack API (${status}).`);

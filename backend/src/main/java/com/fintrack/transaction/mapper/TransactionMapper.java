@@ -15,5 +15,6 @@ public interface TransactionMapper {
     @Mapping(target = "transferAccountName", source = "transferAccount.name")
     @Mapping(target = "categoryId", source = "category.id")
     @Mapping(target = "categoryName", source = "category.name")
+    @Mapping(target = "warnings", ignore = true)
     TransactionResponse toResponse(Transaction transaction);
 }

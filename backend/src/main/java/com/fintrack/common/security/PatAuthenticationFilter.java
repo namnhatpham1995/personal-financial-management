@@ -7,6 +7,7 @@ import com.fintrack.common.config.AppProperties;
 import com.fintrack.common.dto.ApiError;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
+import io.github.bucket4j.ConsumptionProbe;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -83,9 +84,11 @@ public class PatAuthenticationFilter extends OncePerRequestFilter {
 
         ApiToken token = tokenOpt.get();
 
-        if (!tryConsume(token.getId())) {
-            writeJsonError(response, 429, "Too Many Requests",
-                    "Rate limit exceeded for this token", request.getRequestURI());
+        RateLimitDecision rateLimit = tryConsume(token.getId());
+        if (!rateLimit.allowed()) {
+            response.setHeader("Retry-After", Long.toString(rateLimit.retryAfterSeconds()));
+            writeRateLimitError(response, "Rate limit exceeded for this token",
+                    request.getRequestURI(), rateLimit.retryAfterSeconds());
             return;
         }
 
@@ -112,9 +115,13 @@ public class PatAuthenticationFilter extends OncePerRequestFilter {
         return null;
     }
 
-    private boolean tryConsume(Long tokenId) {
+    private RateLimitDecision tryConsume(Long tokenId) {
         Bucket bucket = tokenBuckets.computeIfAbsent(tokenId, id -> createBucket());
-        return bucket.tryConsume(1);
+        ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
+        long retryAfterSeconds = probe.isConsumed()
+                ? 0
+                : Math.max(1, (probe.getNanosToWaitForRefill() + 999_999_999L) / 1_000_000_000L);
+        return new RateLimitDecision(probe.isConsumed(), retryAfterSeconds);
     }
 
     private Bucket createBucket() {
@@ -133,4 +140,14 @@ public class PatAuthenticationFilter extends OncePerRequestFilter {
         response.getWriter().write(
                 objectMapper.writeValueAsString(ApiError.of(status, error, message, path)));
     }
+
+    private void writeRateLimitError(HttpServletResponse response, String message,
+                                     String path, long retryAfterSeconds) throws IOException {
+        response.setStatus(429);
+        response.setContentType("application/json");
+        response.getWriter().write(objectMapper.writeValueAsString(
+                ApiError.rateLimited(message, path, retryAfterSeconds)));
+    }
+
+    private record RateLimitDecision(boolean allowed, long retryAfterSeconds) {}
 }
