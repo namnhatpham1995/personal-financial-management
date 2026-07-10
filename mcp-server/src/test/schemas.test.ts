@@ -2,6 +2,7 @@ import { z } from "zod";
 import { describe, expect, it } from "vitest";
 import {
   createAccountShape,
+  createTransactionsBatchShape,
   createBudgetShape,
   createCategoryShape,
   createTransactionShape,
@@ -114,5 +115,12 @@ describe("tool input schemas reject malformed input before any API call", () => 
       currency: "EURO",
     }).success).toBe(false);
     expect(z.object(updateBudgetShape).safeParse({ id: 1, amountLimit: 120, period: "MONTHLY" }).success).toBe(true);
+  });
+
+  it("batch transactions reject empty batches and unknown row fields", () => {
+    expect(z.object(createTransactionsBatchShape).safeParse({ transactions: [] }).success).toBe(false);
+    expect(z.object(createTransactionsBatchShape).safeParse({ transactions: [{
+      transactionType: "EXPENSE", amount: 5, transactionDate: "2026-01-01", accountId: 1, unsafe: true,
+    }] }).success).toBe(false);
   });
 });
