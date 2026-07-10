@@ -14,6 +14,15 @@ export async function listAccounts(api: AxiosInstance): Promise<ToolResult> {
   }
 }
 
+export async function createAccount(api: AxiosInstance, params: unknown): Promise<ToolResult> {
+  try {
+    const { data } = await api.post("/accounts", params);
+    return toToolResult(data);
+  } catch (err) {
+    return toErrorResult(mapApiError(err));
+  }
+}
+
 export function registerAccountTools(server: McpServer, api: AxiosInstance): void {
   server.tool(
     "list_accounts",
@@ -41,14 +50,7 @@ export function registerAccountTools(server: McpServer, api: AxiosInstance): voi
     "create_account",
     "Create a financial account. Requires a write-scoped API token.",
     createAccountShape,
-    async (params): Promise<ToolResult> => {
-      try {
-        const { data } = await api.post("/accounts", params);
-        return toToolResult(data);
-      } catch (err) {
-        return toErrorResult(mapApiError(err));
-      }
-    }
+    (params) => createAccount(api, params)
   );
 
   server.tool(

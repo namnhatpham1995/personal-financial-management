@@ -4,6 +4,15 @@ import { mapApiError } from "../api-client.js";
 import { createCategoryShape, listCategoriesShape, updateCategoryShape } from "./schemas.js";
 import { toErrorResult, toToolResult, type ToolResult } from "./tool-result.js";
 
+export async function createCategory(api: AxiosInstance, params: unknown): Promise<ToolResult> {
+  try {
+    const { data } = await api.post("/categories", params);
+    return toToolResult(data);
+  } catch (err) {
+    return toErrorResult(mapApiError(err));
+  }
+}
+
 export function registerCategoryTools(server: McpServer, api: AxiosInstance): void {
   server.tool(
     "list_categories",
@@ -24,14 +33,7 @@ export function registerCategoryTools(server: McpServer, api: AxiosInstance): vo
     "create_category",
     "Create a user-defined category. Requires a write-scoped API token.",
     createCategoryShape,
-    async (params): Promise<ToolResult> => {
-      try {
-        const { data } = await api.post("/categories", params);
-        return toToolResult(data);
-      } catch (err) {
-        return toErrorResult(mapApiError(err));
-      }
-    }
+    (params) => createCategory(api, params)
   );
 
   server.tool(

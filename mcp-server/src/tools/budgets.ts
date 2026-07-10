@@ -4,6 +4,15 @@ import { mapApiError } from "../api-client.js";
 import { createBudgetShape, updateBudgetShape } from "./schemas.js";
 import { toErrorResult, toToolResult, type ToolResult } from "./tool-result.js";
 
+export async function createBudget(api: AxiosInstance, params: unknown): Promise<ToolResult> {
+  try {
+    const { data } = await api.post("/budgets", params);
+    return toToolResult(data);
+  } catch (err) {
+    return toErrorResult(mapApiError(err));
+  }
+}
+
 export function registerBudgetTools(server: McpServer, api: AxiosInstance): void {
   server.tool(
     "list_budgets_with_progress",
@@ -24,14 +33,7 @@ export function registerBudgetTools(server: McpServer, api: AxiosInstance): void
     "create_budget",
     "Create a budget for an expense category and period. Requires a write-scoped API token.",
     createBudgetShape,
-    async (params): Promise<ToolResult> => {
-      try {
-        const { data } = await api.post("/budgets", params);
-        return toToolResult(data);
-      } catch (err) {
-        return toErrorResult(mapApiError(err));
-      }
-    }
+    (params) => createBudget(api, params)
   );
 
   server.tool(
