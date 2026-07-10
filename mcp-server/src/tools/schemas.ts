@@ -39,6 +39,19 @@ export const updateTransactionShape = {
   note: z.string().max(2000).optional(),
 };
 
+export const createTransactionsBatchShape = {
+  transactions: z.array(z.object({
+    transactionType,
+    amount: z.number().positive(),
+    transactionDate: isoDate,
+    accountId: z.number().int(),
+    transferAccountId: z.number().int().optional(),
+    categoryId: z.number().int().optional(),
+    note: z.string().max(2000).optional(),
+    importDedupKey: z.string().min(1).max(255).optional(),
+  }).strict()).min(1).max(100),
+};
+
 export const dateRangeShape = {
   from: isoDate,
   to: isoDate,

@@ -3,11 +3,21 @@ import type { AxiosInstance } from "axios";
 import { mapApiError } from "../api-client.js";
 import {
   createTransactionShape,
+  createTransactionsBatchShape,
   getTransactionShape,
   listTransactionsShape,
   updateTransactionShape,
 } from "./schemas.js";
 import { toErrorResult, toToolResult, type ToolResult } from "./tool-result.js";
+
+export async function createTransactionsBatch(api: AxiosInstance, params: unknown): Promise<ToolResult> {
+  try {
+    const { data } = await api.post("/transactions/batch", params);
+    return toToolResult(data);
+  } catch (err) {
+    return toErrorResult(mapApiError(err));
+  }
+}
 
 export function registerTransactionTools(server: McpServer, api: AxiosInstance): void {
   server.tool(
@@ -23,6 +33,14 @@ export function registerTransactionTools(server: McpServer, api: AxiosInstance):
         return toErrorResult(mapApiError(err));
       }
     }
+  );
+
+  server.tool(
+    "create_transactions_batch",
+    "Create up to 100 transactions independently. Each result reports CREATED, SKIPPED_DUPLICATE, " +
+      "or FAILED with its input row index. Requires a write-scoped API token.",
+    createTransactionsBatchShape,
+    (params) => createTransactionsBatch(api, params)
   );
 
   server.tool(

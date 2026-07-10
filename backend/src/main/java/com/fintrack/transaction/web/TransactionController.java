@@ -5,6 +5,8 @@ import com.fintrack.common.dto.PageResponse;
 import com.fintrack.common.security.UserPrincipal;
 import com.fintrack.transaction.service.TransactionService;
 import com.fintrack.transaction.web.dto.CreateTransactionRequest;
+import com.fintrack.transaction.web.dto.BatchTransactionRequest;
+import com.fintrack.transaction.web.dto.BatchTransactionResponse;
 import com.fintrack.transaction.web.dto.TransactionResponse;
 import com.fintrack.transaction.web.dto.UpdateTransactionRequest;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,6 +38,15 @@ public class TransactionController {
             @Valid @RequestBody CreateTransactionRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(transactionService.create(principal.getUserId(), request));
+    }
+
+    @PostMapping("/batch")
+    @Operation(summary = "Create transactions independently and return a result for every row")
+    public ResponseEntity<BatchTransactionResponse> createBatch(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody BatchTransactionRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(transactionService.createBatch(principal.getUserId(), request.transactions()));
     }
 
     @GetMapping
