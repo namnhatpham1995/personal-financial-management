@@ -2,6 +2,7 @@ import type { AxiosInstance } from "axios";
 import { describe, expect, it, vi } from "vitest";
 import { registerAccountTools } from "../tools/accounts.js";
 import { registerBudgetTools } from "../tools/budgets.js";
+import { registerTransactionTools } from "../tools/transactions.js";
 import { registerCategoryTools } from "../tools/categories.js";
 import type { ToolResult } from "../tools/tool-result.js";
 
@@ -23,6 +24,7 @@ function setupTools() {
   registerAccountTools(server as never, api as unknown as AxiosInstance);
   registerCategoryTools(server as never, api as unknown as AxiosInstance);
   registerBudgetTools(server as never, api as unknown as AxiosInstance);
+  registerTransactionTools(server as never, api as unknown as AxiosInstance);
 
   return { api, handlers };
 }
@@ -86,5 +88,14 @@ describe("setup MCP tools", () => {
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain("scope does not permit");
     expect(result.content[0].text).not.toContain(secret);
+  });
+
+  it("maps batch transaction creation to its dedicated endpoint", async () => {
+    const { api, handlers } = setupTools();
+    api.post.mockResolvedValue({ data: { results: [{ rowIndex: 0, status: "CREATED" }] } });
+    await handlers.get("create_transactions_batch")!({ transactions: [{
+      transactionType: "EXPENSE", amount: 12, transactionDate: "2026-01-01", accountId: 1,
+    }] });
+    expect(api.post).toHaveBeenCalledWith("/transactions/batch", expect.any(Object));
   });
 });
