@@ -28,6 +28,13 @@ describe("mapApiError", () => {
     expect(result.message).toMatch(/Rate limit exceeded/);
   });
 
+  it("includes credential-safe retry guidance from a 429 response", () => {
+    const error = fakeAxiosError(429);
+    error.response.data = { retryAfterSeconds: 12 };
+    error.response.headers = { "retry-after": "12" };
+    expect(mapApiError(error).message).toBe("Rate limit exceeded for this token. Retry after 12 seconds.");
+  });
+
   it("maps other 4xx to a generic rejected message", () => {
     const result = mapApiError(fakeAxiosError(400));
     expect(result.message).toContain("400");

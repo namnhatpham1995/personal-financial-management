@@ -74,7 +74,14 @@ class PatRateLimitIntegrationTest {
         mockMvc.perform(get("/api/v1/accounts").header("Authorization", "Bearer " + patA))
                 .andExpect(status().isOk());
         mockMvc.perform(get("/api/v1/accounts").header("Authorization", "Bearer " + patA))
-                .andExpect(status().isTooManyRequests());
+                .andExpect(status().isTooManyRequests())
+                .andExpect(result -> {
+                    long headerRetry = Long.parseLong(result.getResponse().getHeader("Retry-After"));
+                    long bodyRetry = objectMapper.readTree(result.getResponse().getContentAsString())
+                            .get("retryAfterSeconds").asLong();
+                    org.assertj.core.api.Assertions.assertThat(headerRetry).isPositive();
+                    org.assertj.core.api.Assertions.assertThat(bodyRetry).isEqualTo(headerRetry);
+                });
 
         // Token B has its own independent bucket.
         mockMvc.perform(get("/api/v1/accounts").header("Authorization", "Bearer " + patB))

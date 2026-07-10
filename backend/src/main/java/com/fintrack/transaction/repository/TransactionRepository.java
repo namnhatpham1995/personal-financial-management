@@ -1,12 +1,14 @@
 package com.fintrack.transaction.repository;
 
 import com.fintrack.transaction.domain.Transaction;
+import com.fintrack.common.domain.TransactionType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,6 +18,10 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
     Optional<Transaction> findByIdAndUserId(Long id, Long userId);
 
     boolean existsByImportDedupKey(String importDedupKey);
+
+    boolean existsByUserIdAndAccountIdAndTransactionDateAndAmountAndTransactionTypeAndNote(
+            Long userId, Long accountId, LocalDate transactionDate, BigDecimal amount,
+            TransactionType transactionType, String note);
 
     boolean existsByIdAndUserId(Long id, Long userId);
 

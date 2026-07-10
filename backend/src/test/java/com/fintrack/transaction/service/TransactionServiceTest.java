@@ -108,6 +108,49 @@ class TransactionServiceTest {
         verify(accountService, never()).adjustBalance(anyLong(), any());
     }
 
+    @Test
+    void create_expenseBelowZero_returnsNegativeBalanceWarning() {
+        account.setCurrency("EUR");
+        account.setCurrentBalance(new BigDecimal("10.00"));
+        when(transactionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        TransactionResponse result = transactionService.create(1L,
+                new CreateTransactionRequest(TransactionType.EXPENSE, new BigDecimal("25.00"),
+                        LocalDate.now(), 10L, null, null, "Rent", null));
+
+        assertThat(result.warnings()).extracting("code").contains("account_balance_negative");
+    }
+
+    @Test
+    void create_similarTransactionWithoutDedupKey_returnsDuplicateWarning() {
+        account.setCurrency("EUR");
+        account.setCurrentBalance(new BigDecimal("100.00"));
+        when(transactionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(transactionRepository.existsByUserIdAndAccountIdAndTransactionDateAndAmountAndTransactionTypeAndNote(
+                anyLong(), anyLong(), any(), any(), any(), any())).thenReturn(true);
+
+        TransactionResponse result = transactionService.create(1L,
+                new CreateTransactionRequest(TransactionType.EXPENSE, BigDecimal.TEN,
+                        LocalDate.now(), 10L, null, null, "Coffee", null));
+
+        assertThat(result.warnings()).extracting("code").contains("possible_duplicate_transaction");
+    }
+
+    @Test
+    void create_crossCurrencyTransfer_returnsCurrencyWarning() {
+        account.setCurrency("EUR");
+        account.setCurrentBalance(new BigDecimal("500.00"));
+        destAccount.setCurrency("USD");
+        when(transactionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        TransactionResponse result = transactionService.create(1L,
+                new CreateTransactionRequest(TransactionType.TRANSFER, BigDecimal.TEN,
+                        LocalDate.now(), 10L, 20L, null, null, null));
+
+        assertThat(result.warnings()).extracting("code")
+                .contains("currency_mismatch_or_unsupported_cross_currency_transfer");
+    }
+
     // ─── update: reverses old delta, applies new ──────────────────────────────
 
     @Test

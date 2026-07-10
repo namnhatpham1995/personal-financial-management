@@ -5,6 +5,7 @@ import com.fintrack.common.domain.TransactionType;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 
 public record TransactionResponse(
         Long id,
@@ -23,5 +24,17 @@ public record TransactionResponse(
         /** Set when this transaction was imported from a statement file. */
         String sourceDocumentId,
         Instant createdAt,
-        Instant updatedAt
-) {}
+        Instant updatedAt,
+        List<MutationWarning> warnings
+) {
+    public TransactionResponse {
+        warnings = warnings == null ? List.of() : List.copyOf(warnings);
+    }
+
+    public static TransactionResponse withWarnings(TransactionResponse source, List<MutationWarning> mutationWarnings) {
+        return new TransactionResponse(source.id, source.transactionType, source.amount, source.currency,
+                source.transactionDate, source.accountId, source.accountName, source.transferAccountId,
+                source.transferAccountName, source.categoryId, source.categoryName, source.note,
+                source.recurringId, source.sourceDocumentId, source.createdAt, source.updatedAt, mutationWarnings);
+    }
+}
