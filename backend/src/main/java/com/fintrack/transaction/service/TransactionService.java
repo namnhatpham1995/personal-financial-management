@@ -15,6 +15,8 @@ import com.fintrack.transaction.mapper.TransactionMapper;
 import com.fintrack.transaction.repository.TransactionRepository;
 import com.fintrack.transaction.repository.TransactionSpecification;
 import com.fintrack.transaction.web.dto.CreateTransactionRequest;
+import com.fintrack.transaction.web.dto.BatchTransactionResponse;
+import com.fintrack.transaction.web.dto.BatchTransactionRowResult;
 import com.fintrack.transaction.web.dto.TransactionResponse;
 import com.fintrack.transaction.web.dto.UpdateTransactionRequest;
 import lombok.RequiredArgsConstructor;
@@ -24,9 +26,16 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -41,8 +50,10 @@ public class TransactionService {
     private final CategoryService categoryService;
     private final TransactionMapper transactionMapper;
     private final CacheVersionService cacheVersionService;
+    private final Validator validator;
+    private final PlatformTransactionManager transactionManager;
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public TransactionResponse create(Long userId, CreateTransactionRequest req) {
         User user = userRepository.getReferenceById(userId);
         Account account = accountService.findOwned(userId, req.accountId());
@@ -74,6 +85,51 @@ public class TransactionService {
         applyBalanceDelta(saved, saved.getAmount());
         cacheVersionService.bump(userId);
         return transactionMapper.toResponse(saved);
+    }
+
+    /** Processes each row independently so one invalid import does not roll back valid rows. */
+    public BatchTransactionResponse createBatch(Long userId, List<CreateTransactionRequest> requests) {
+        List<BatchTransactionRowResult> results = new ArrayList<>();
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        for (int index = 0; index < requests.size(); index++) {
+            CreateTransactionRequest request = requests.get(index);
+            String dedupKey = request == null ? null : request.importDedupKey();
+            if (request == null) {
+                results.add(failed(index, null, "Transaction row must not be null"));
+                continue;
+            }
+            var violations = validator.validate(request);
+            if (!violations.isEmpty()) {
+                results.add(failed(index, dedupKey, validationMessage(violations)));
+                continue;
+            }
+            if (dedupKey != null && transactionRepository.existsByImportDedupKey(dedupKey)) {
+                results.add(new BatchTransactionRowResult(index, BatchTransactionRowResult.Status.SKIPPED_DUPLICATE,
+                        dedupKey, null, null));
+                continue;
+            }
+            try {
+                TransactionResponse response = transactionTemplate.execute(status -> create(userId, request));
+                results.add(new BatchTransactionRowResult(index, BatchTransactionRowResult.Status.CREATED,
+                        dedupKey, response, null));
+            } catch (RuntimeException ex) {
+                results.add(failed(index, dedupKey, safeMessage(ex)));
+            }
+        }
+        return new BatchTransactionResponse(results);
+    }
+
+    private BatchTransactionRowResult failed(int index, String dedupKey, String error) {
+        return new BatchTransactionRowResult(index, BatchTransactionRowResult.Status.FAILED, dedupKey, null, error);
+    }
+
+    private String validationMessage(java.util.Set<? extends ConstraintViolation<?>> violations) {
+        return violations.iterator().next().getMessage();
+    }
+
+    private String safeMessage(RuntimeException exception) {
+        String message = exception.getMessage();
+        return message == null || message.isBlank() ? "Transaction row could not be created" : message;
     }
 
     @Transactional(readOnly = true)

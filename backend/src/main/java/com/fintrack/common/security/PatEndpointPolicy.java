@@ -28,6 +28,7 @@ public class PatEndpointPolicy {
 
     private static final List<Rule> WRITE_RULES = List.of(
             rule("POST", "/api/v1/transactions"),
+            rule("POST", "/api/v1/transactions/batch"),
             rule("PUT", "/api/v1/transactions/[^/]+"),
             rule("POST", "/api/v1/accounts"),
             rule("PUT", "/api/v1/accounts/[^/]+"),

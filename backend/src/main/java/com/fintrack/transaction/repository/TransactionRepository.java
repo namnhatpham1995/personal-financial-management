@@ -15,6 +15,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
 
     Optional<Transaction> findByIdAndUserId(Long id, Long userId);
 
+    boolean existsByImportDedupKey(String importDedupKey);
+
     boolean existsByIdAndUserId(Long id, Long userId);
 
     boolean existsByRecurringIdAndOccurrenceDate(Long recurringId, LocalDate occurrenceDate);
