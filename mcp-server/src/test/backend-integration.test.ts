@@ -1,7 +1,9 @@
 import axios, { isAxiosError } from "axios";
 import { describe, expect, it } from "vitest";
 import { createApiClient } from "../api-client.js";
-import { listAccounts } from "../tools/accounts.js";
+import { createAccount, listAccounts } from "../tools/accounts.js";
+import { createBudget } from "../tools/budgets.js";
+import { createCategory } from "../tools/categories.js";
 
 const BACKEND_URL = process.env.FINTRACK_TEST_BACKEND_URL;
 
@@ -106,5 +108,72 @@ describe.skipIf(!BACKEND_URL)("MCP tool <-> real backend", () => {
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/invalid, expired, or revoked/i);
+  });
+
+  it("creates an account, category, and budget through a write-scoped PAT", async () => {
+    const suffix = Date.now();
+    const email = `mcp-setup-${suffix}@test.com`;
+    const backend = axios.create({ baseURL: `${BACKEND_URL}/api/v1` });
+
+    const registerResponse = await unwrapAxiosErrors(() =>
+      backend.post("/auth/register", {
+        email,
+        password: "pass1234",
+        firstName: "MCP",
+        lastName: "Setup",
+      })
+    );
+    const jwt: string = registerResponse.data.accessToken;
+
+    const tokenResponse = await unwrapAxiosErrors(() =>
+      backend.post(
+        "/tokens",
+        { name: "MCP Setup Write Token", scope: "WRITE", expiryDays: 30 },
+        { headers: { Authorization: `Bearer ${jwt}` } }
+      )
+    );
+    const pat: string = tokenResponse.data.plaintextToken;
+    const api = createApiClient({ apiUrl: BACKEND_URL!, apiToken: pat });
+
+    const accountResult = await createAccount(api, {
+      name: `MCP setup account ${suffix}`,
+      accountType: "BANK",
+      currency: "EUR",
+      initialBalance: 250,
+    });
+    const categoryResult = await createCategory(api, {
+      name: `MCP setup category ${suffix}`,
+      transactionType: "EXPENSE",
+    });
+
+    expect(accountResult.isError).toBeFalsy();
+    expect(categoryResult.isError).toBeFalsy();
+    const account = JSON.parse(accountResult.content[0].text) as { id: number; currency: string };
+    const category = JSON.parse(categoryResult.content[0].text) as { id: number; name: string };
+
+    const budgetResult = await createBudget(api, {
+      categoryId: category.id,
+      period: "MONTHLY",
+      amountLimit: 500,
+      startDate: "2026-01-01",
+      currency: "EUR",
+    });
+
+    expect(budgetResult.isError).toBeFalsy();
+    const budget = JSON.parse(budgetResult.content[0].text) as {
+      categoryId: number;
+      currency: string;
+      amountLimit: number;
+    };
+    expect(account.currency).toBe("EUR");
+    expect(category.name).toBe(`MCP setup category ${suffix}`);
+    expect(budget.categoryId).toBe(category.id);
+    expect(budget.currency).toBe("EUR");
+    expect(budget.amountLimit).toBe(500);
+
+    for (const result of [accountResult, categoryResult, budgetResult]) {
+      expect(result.content[0].text).not.toContain(pat);
+      expect(result.content[0].text).not.toContain(jwt);
+    }
   });
 });
