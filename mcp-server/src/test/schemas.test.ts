@@ -1,9 +1,17 @@
 import { z } from "zod";
 import { describe, expect, it } from "vitest";
 import {
+  createAccountShape,
+  createBudgetShape,
+  createCategoryShape,
   createTransactionShape,
+  getAccountShape,
   getTransactionShape,
+  listCategoriesShape,
   listTransactionsShape,
+  updateAccountShape,
+  updateBudgetShape,
+  updateCategoryShape,
   updateTransactionShape,
 } from "../tools/schemas.js";
 
@@ -65,5 +73,46 @@ describe("tool input schemas reject malformed input before any API call", () => 
       note: "x".repeat(2001),
     });
     expect(result.success).toBe(false);
+  });
+
+  it("get_account rejects unknown fields", () => {
+    const result = z.object(getAccountShape).strict().safeParse({ id: 1, path: "/vault" });
+    expect(result.success).toBe(false);
+  });
+
+  it("create_account rejects an invalid currency and negative initial balance", () => {
+    const result = z.object(createAccountShape).safeParse({
+      name: "EUR checking",
+      accountType: "BANK",
+      currency: "eur",
+      initialBalance: -1,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("update_account accepts a partial non-destructive update", () => {
+    const result = z.object(updateAccountShape).safeParse({ id: 1, name: "Main account" });
+    expect(result.success).toBe(true);
+  });
+
+  it("list_categories rejects an invalid transaction type", () => {
+    const result = z.object(listCategoriesShape).safeParse({ type: "DELETE" });
+    expect(result.success).toBe(false);
+  });
+
+  it("category schemas enforce a name and allow an optional update type", () => {
+    expect(z.object(createCategoryShape).safeParse({ name: "", transactionType: "EXPENSE" }).success).toBe(false);
+    expect(z.object(updateCategoryShape).safeParse({ id: 1, name: "Groceries" }).success).toBe(true);
+  });
+
+  it("budget schemas require positive amounts, ISO currency, and valid periods", () => {
+    expect(z.object(createBudgetShape).safeParse({
+      categoryId: 1,
+      period: "WEEKLY",
+      amountLimit: 0,
+      startDate: "2026-01-01",
+      currency: "EURO",
+    }).success).toBe(false);
+    expect(z.object(updateBudgetShape).safeParse({ id: 1, amountLimit: 120, period: "MONTHLY" }).success).toBe(true);
   });
 });
