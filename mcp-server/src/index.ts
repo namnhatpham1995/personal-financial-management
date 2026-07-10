@@ -4,6 +4,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { loadConfig, type Config } from "./config.js";
 import { createApiClient } from "./api-client.js";
 import { registerAccountTools } from "./tools/accounts.js";
+import { registerCategoryTools } from "./tools/categories.js";
 import { registerTransactionTools } from "./tools/transactions.js";
 import { registerBudgetTools } from "./tools/budgets.js";
 import { registerAnalyticsTools } from "./tools/analytics.js";
@@ -25,6 +26,7 @@ async function main(): Promise<void> {
   const server = new McpServer({ name: "fintrack-mcp-server", version: "0.1.0" });
 
   registerAccountTools(server, apiClient);
+  registerCategoryTools(server, apiClient);
   registerTransactionTools(server, apiClient);
   registerBudgetTools(server, apiClient);
   registerAnalyticsTools(server, apiClient);

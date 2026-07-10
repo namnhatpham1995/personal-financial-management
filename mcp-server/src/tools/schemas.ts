@@ -2,6 +2,9 @@ import { z } from "zod";
 
 export const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected an ISO date (YYYY-MM-DD)");
 export const transactionType = z.enum(["INCOME", "EXPENSE", "TRANSFER"]);
+export const accountType = z.enum(["CASH", "BANK", "CREDIT_CARD", "SAVINGS", "OTHER"]);
+export const budgetPeriod = z.enum(["MONTHLY", "YEARLY"]);
+export const currencyCode = z.string().regex(/^[A-Z]{3}$/, "Expected an uppercase ISO 4217 currency code");
 
 export const listTransactionsShape = {
   accountId: z.number().int().optional(),
@@ -47,5 +50,53 @@ export const spendingByCategoryShape = {
 };
 
 export const accountBalancesShape = {
-  targetCurrency: z.string().length(3).optional(),
+  targetCurrency: currencyCode.optional(),
+};
+
+export const getAccountShape = {
+  id: z.number().int(),
+};
+
+export const createAccountShape = {
+  name: z.string().trim().min(1).max(255),
+  accountType,
+  currency: currencyCode,
+  initialBalance: z.number().nonnegative().optional(),
+};
+
+export const updateAccountShape = {
+  id: z.number().int(),
+  name: z.string().trim().min(1).max(255).optional(),
+  accountType: accountType.optional(),
+  currency: currencyCode.optional(),
+  initialBalance: z.number().nonnegative().optional(),
+};
+
+export const listCategoriesShape = {
+  type: transactionType.optional(),
+};
+
+export const createCategoryShape = {
+  name: z.string().trim().min(1).max(100),
+  transactionType,
+};
+
+export const updateCategoryShape = {
+  id: z.number().int(),
+  name: z.string().trim().min(1).max(100),
+  transactionType: transactionType.optional(),
+};
+
+export const createBudgetShape = {
+  categoryId: z.number().int(),
+  period: budgetPeriod,
+  amountLimit: z.number().positive(),
+  startDate: isoDate,
+  currency: currencyCode,
+};
+
+export const updateBudgetShape = {
+  id: z.number().int(),
+  amountLimit: z.number().positive().optional(),
+  period: budgetPeriod.optional(),
 };
