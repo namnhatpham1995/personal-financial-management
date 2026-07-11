@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
 import { AuthThemeToggle } from "@/components/auth-theme-toggle";
 import { Button } from "@/components/ui/button";
+import { classifyAuthError } from "@/lib/auth-error";
 
 const schema = z
   .object({
@@ -55,13 +56,8 @@ export default function RegisterPage() {
     try {
       await registerUser(payload);
       router.push("/dashboard");
-    } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 409) toast.error("Email is already in use.");
-      else if (status === 400)
-        toast.error("Invalid registration details. Please check your input.");
-      else if (status === 500) toast.error("Server error. Please try again later.");
-      else toast.error("Registration failed. Please try again.");
+    } catch (error: unknown) {
+      toast.error(classifyAuthError(error, "register").message);
     }
   };
 

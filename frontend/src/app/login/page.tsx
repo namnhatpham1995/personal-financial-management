@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
 import { AuthThemeToggle } from "@/components/auth-theme-toggle";
 import { Button } from "@/components/ui/button";
+import { classifyAuthError } from "@/lib/auth-error";
 
 const schema = z.object({
   email: z.string().email(),
@@ -43,8 +44,8 @@ export default function LoginPage() {
     try {
       await login(values.email, values.password);
       router.push("/dashboard");
-    } catch {
-      toast.error("Invalid email or password.");
+    } catch (error: unknown) {
+      toast.error(classifyAuthError(error, "login").message);
     }
   };
 
