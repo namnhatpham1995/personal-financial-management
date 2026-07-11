@@ -6,6 +6,7 @@ import {
   createBudgetShape,
   createCategoryShape,
   createTransactionShape,
+  budgetHistoryShape,
   getAccountShape,
   getTransactionShape,
   listCategoriesShape,
@@ -122,5 +123,14 @@ describe("tool input schemas reject malformed input before any API call", () => 
     expect(z.object(createTransactionsBatchShape).safeParse({ transactions: [{
       transactionType: "EXPENSE", amount: 5, transactionDate: "2026-01-01", accountId: 1, unsafe: true,
     }] }).success).toBe(false);
+  });
+
+  it("budget history accepts valid ranges and rejects malformed currencies and dates", () => {
+    expect(z.object(budgetHistoryShape).strict().safeParse({
+      from: "2026-01-01", to: "2026-03-31", currency: "EUR",
+    }).success).toBe(true);
+    expect(z.object(budgetHistoryShape).strict().safeParse({
+      from: "2026/01/01", to: "2026-03-31", currency: "eur",
+    }).success).toBe(false);
   });
 });

@@ -4,6 +4,7 @@ import com.fintrack.account.domain.Account;
 import com.fintrack.account.repository.AccountRepository;
 import com.fintrack.analytics.repository.AnalyticsRepository;
 import com.fintrack.analytics.web.dto.BalancesSummaryDto;
+import com.fintrack.analytics.web.dto.BudgetHistoryDto;
 import com.fintrack.analytics.web.dto.BudgetProgressDto;
 import com.fintrack.analytics.web.dto.ConvertedOverviewDto;
 import com.fintrack.analytics.web.dto.ConvertedSpendingDto;
@@ -304,6 +305,61 @@ public class AnalyticsService {
         LocalDate today = LocalDate.now();
         List<Budget> budgets = budgetRepository.findAllByUserId(userId);
         return budgets.stream().map(b -> buildProgress(b, today)).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<BudgetHistoryDto> getBudgetHistory(
+            Long userId, LocalDate from, LocalDate to, String currency) {
+        if (from.isAfter(to)) {
+            throw new IllegalArgumentException("from must be on or before to");
+        }
+        List<BudgetHistoryDto> rows = new ArrayList<>();
+        budgetRepository.findAllByUserId(userId).stream()
+                .filter(b -> currency == null || currency.equals(b.getCurrency()))
+                .forEach(budget -> appendBudgetHistory(rows, budget, from, to));
+        return rows.stream()
+                .sorted(Comparator.comparing(BudgetHistoryDto::periodStart)
+                        .thenComparing(BudgetHistoryDto::currency)
+                        .thenComparing(BudgetHistoryDto::budgetId))
+                .toList();
+    }
+
+    private void appendBudgetHistory(List<BudgetHistoryDto> rows, Budget budget,
+                                     LocalDate from, LocalDate to) {
+        LocalDate effectiveFrom = from.isAfter(budget.getStartDate()) ? from : budget.getStartDate();
+        if (effectiveFrom.isAfter(to)) {
+            return;
+        }
+        LocalDate cursor = periodStart(budget, effectiveFrom);
+        while (!cursor.isAfter(to)) {
+            LocalDate periodEnd = periodEnd(budget, cursor);
+            LocalDate spendFrom = cursor.isAfter(effectiveFrom) ? cursor : effectiveFrom;
+            LocalDate spendTo = periodEnd.isBefore(to) ? periodEnd : to;
+            BigDecimal spent = budgetRepository.sumSpentInPeriod(
+                    budget.getUser().getId(), budget.getCategory().getId(),
+                    spendFrom, spendTo, budget.getCurrency());
+            if (spent == null) spent = BigDecimal.ZERO;
+            BigDecimal limit = budget.getAmountLimit();
+            BigDecimal remaining = limit.subtract(spent);
+            BigDecimal percent = limit.signum() == 0 ? BigDecimal.ZERO
+                    : spent.multiply(BigDecimal.valueOf(100)).divide(limit, 2, RoundingMode.HALF_UP);
+            rows.add(new BudgetHistoryDto(
+                    budget.getId(), budget.getCategory().getId(), budget.getCategory().getName(),
+                    budget.getPeriod(), cursor, periodEnd, budget.getCurrency(), limit, spent,
+                    remaining, percent, spent.compareTo(limit) > 0));
+            cursor = budget.getPeriod() == com.fintrack.budget.domain.BudgetPeriod.MONTHLY
+                    ? cursor.plusMonths(1) : cursor.plusYears(1);
+        }
+    }
+
+    private LocalDate periodStart(Budget budget, LocalDate date) {
+        return budget.getPeriod() == com.fintrack.budget.domain.BudgetPeriod.MONTHLY
+                ? YearMonth.from(date).atDay(1) : LocalDate.of(date.getYear(), 1, 1);
+    }
+
+    private LocalDate periodEnd(Budget budget, LocalDate start) {
+        return budget.getPeriod() == com.fintrack.budget.domain.BudgetPeriod.MONTHLY
+                ? YearMonth.from(start).atEndOfMonth() : LocalDate.of(start.getYear(), 12, 31);
     }
 
     @Transactional(readOnly = true)

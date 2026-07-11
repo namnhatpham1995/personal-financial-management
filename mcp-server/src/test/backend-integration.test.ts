@@ -2,8 +2,10 @@ import axios, { isAxiosError } from "axios";
 import { describe, expect, it } from "vitest";
 import { createApiClient } from "../api-client.js";
 import { createAccount, listAccounts } from "../tools/accounts.js";
+import { getBudgetHistory } from "../tools/analytics.js";
 import { createBudget } from "../tools/budgets.js";
 import { createCategory } from "../tools/categories.js";
+import { createTransaction } from "../tools/transactions.js";
 
 const BACKEND_URL = process.env.FINTRACK_TEST_BACKEND_URL;
 
@@ -171,7 +173,31 @@ describe.skipIf(!BACKEND_URL)("MCP tool <-> real backend", () => {
     expect(budget.currency).toBe("EUR");
     expect(budget.amountLimit).toBe(500);
 
-    for (const result of [accountResult, categoryResult, budgetResult]) {
+    const transactionResult = await createTransaction(api, {
+      transactionType: "EXPENSE",
+      amount: 25,
+      transactionDate: "2026-01-15",
+      accountId: account.id,
+      categoryId: category.id,
+    });
+    expect(transactionResult.isError).toBeFalsy();
+
+    const historyResult = await getBudgetHistory(api, {
+      from: "2026-01-01",
+      to: "2026-02-28",
+      currency: "EUR",
+    });
+    expect(historyResult.isError).toBeFalsy();
+    const history = JSON.parse(historyResult.content[0].text) as Array<{
+      currency: string;
+      periodStart: string;
+      spent: number;
+    }>;
+    expect(history).toHaveLength(2);
+    expect(history[0]).toMatchObject({ currency: "EUR", periodStart: "2026-01-01", spent: 25 });
+    expect(history[1]).toMatchObject({ currency: "EUR", periodStart: "2026-02-01", spent: 0 });
+
+    for (const result of [accountResult, categoryResult, budgetResult, transactionResult, historyResult]) {
       expect(result.content[0].text).not.toContain(pat);
       expect(result.content[0].text).not.toContain(jwt);
     }
