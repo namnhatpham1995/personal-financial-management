@@ -66,6 +66,11 @@ export const accountBalancesShape = {
   targetCurrency: currencyCode.optional(),
 };
 
+export const budgetHistoryShape = {
+  ...dateRangeShape,
+  currency: currencyCode.optional(),
+};
+
 export const getAccountShape = {
   id: z.number().int(),
 };

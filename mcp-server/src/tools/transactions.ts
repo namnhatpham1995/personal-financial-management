@@ -19,6 +19,15 @@ export async function createTransactionsBatch(api: AxiosInstance, params: unknow
   }
 }
 
+export async function createTransaction(api: AxiosInstance, params: unknown): Promise<ToolResult> {
+  try {
+    const { data } = await api.post("/transactions", params);
+    return toToolResult(data);
+  } catch (err) {
+    return toErrorResult(mapApiError(err));
+  }
+}
+
 export function registerTransactionTools(server: McpServer, api: AxiosInstance): void {
   server.tool(
     "list_transactions",
@@ -64,14 +73,7 @@ export function registerTransactionTools(server: McpServer, api: AxiosInstance):
     "Create an INCOME, EXPENSE, or TRANSFER transaction. Requires a write-scoped API token — " +
       "if the token is read-only, this fails with a scope error.",
     createTransactionShape,
-    async (params): Promise<ToolResult> => {
-      try {
-        const { data } = await api.post("/transactions", params);
-        return toToolResult(data);
-      } catch (err) {
-        return toErrorResult(mapApiError(err));
-      }
-    }
+    (params) => createTransaction(api, params)
   );
 
   server.tool(

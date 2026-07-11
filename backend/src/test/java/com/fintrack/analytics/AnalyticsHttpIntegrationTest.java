@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -19,9 +20,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -98,5 +101,94 @@ class AnalyticsHttpIntegrationTest {
                         .param("from", today.toString())
                         .param("to", today.toString()))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void budgetHistory_returnsEmptyPeriodsSeparatesCurrenciesAndAllowsReadPat() throws Exception {
+        String jwt = HttpTestHelper.registerAndLogin(mockMvc, objectMapper, "analytics.history@test.com");
+        String eurAccount = HttpTestHelper.createAccount(mockMvc, objectMapper, jwt, "EUR");
+        String usdAccount = HttpTestHelper.createAccount(mockMvc, objectMapper, jwt, "USD");
+        String categoryId = HttpTestHelper.createCategory(
+                mockMvc, objectMapper, jwt, "Historical groceries", "EXPENSE");
+
+        createBudget(jwt, categoryId, "EUR", "500.00", "2026-01-01");
+        createBudget(jwt, categoryId, "USD", "300.00", "2026-01-01");
+        HttpTestHelper.createExpenseTransaction(
+                mockMvc, objectMapper, jwt, eurAccount, categoryId, "125.00", "2026-01-15");
+        HttpTestHelper.createExpenseTransaction(
+                mockMvc, objectMapper, jwt, eurAccount, categoryId, "75.00", "2026-03-10");
+        HttpTestHelper.createExpenseTransaction(
+                mockMvc, objectMapper, jwt, usdAccount, categoryId, "40.00", "2026-01-20");
+
+        JsonNode allRows = getBudgetHistory(jwt, null);
+        assertThat(allRows).hasSize(6);
+        assertHistoryRow(allRows, "EUR", "2026-01-01", "125.00");
+        assertHistoryRow(allRows, "EUR", "2026-02-01", "0");
+        assertHistoryRow(allRows, "EUR", "2026-03-01", "75.00");
+        assertHistoryRow(allRows, "USD", "2026-01-01", "40.00");
+        assertHistoryRow(allRows, "USD", "2026-02-01", "0");
+        assertHistoryRow(allRows, "USD", "2026-03-01", "0");
+
+        JsonNode eurRows = getBudgetHistory(jwt, "EUR");
+        assertThat(eurRows).hasSize(3);
+        assertThat(eurRows).allMatch(row -> row.get("currency").asText().equals("EUR"));
+
+        String readPat = createReadPat(jwt);
+        JsonNode patRows = getBudgetHistory(readPat, "USD");
+        assertThat(patRows).hasSize(3);
+        assertThat(patRows).allMatch(row -> row.get("currency").asText().equals("USD"));
+    }
+
+    private void createBudget(
+            String jwt, String categoryId, String currency, String limit, String startDate) throws Exception {
+        mockMvc.perform(post("/api/v1/budgets")
+                        .header("Authorization", "Bearer " + jwt)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "categoryId", Long.parseLong(categoryId),
+                                "period", "MONTHLY",
+                                "amountLimit", limit,
+                                "startDate", startDate,
+                                "currency", currency))))
+                .andExpect(status().isCreated());
+    }
+
+    private String createReadPat(String jwt) throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/v1/tokens")
+                        .header("Authorization", "Bearer " + jwt)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "name", "Budget history test", "scope", "READ", "expiryDays", 30))))
+                .andExpect(status().isCreated())
+                .andReturn();
+        return objectMapper.readTree(result.getResponse().getContentAsString())
+                .get("plaintextToken").asText();
+    }
+
+    private JsonNode getBudgetHistory(String credential, String currency) throws Exception {
+        var request = get("/api/v1/analytics/budget-history")
+                .header("Authorization", "Bearer " + credential)
+                .param("from", "2026-01-01")
+                .param("to", "2026-03-31");
+        if (currency != null) {
+            request.param("currency", currency);
+        }
+        MvcResult result = mockMvc.perform(request)
+                .andExpect(status().isOk())
+                .andReturn();
+        return objectMapper.readTree(result.getResponse().getContentAsString());
+    }
+
+    private void assertHistoryRow(JsonNode rows, String currency, String periodStart, String spent) {
+        JsonNode row = null;
+        for (JsonNode candidate : rows) {
+            if (candidate.get("currency").asText().equals(currency)
+                    && candidate.get("periodStart").asText().equals(periodStart)) {
+                row = candidate;
+                break;
+            }
+        }
+        assertThat(row).as("history row for %s in %s", currency, periodStart).isNotNull();
+        assertThat(new BigDecimal(row.get("spent").asText())).isEqualByComparingTo(spent);
     }
 }

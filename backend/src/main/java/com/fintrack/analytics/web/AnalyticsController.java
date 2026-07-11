@@ -1,6 +1,7 @@
 package com.fintrack.analytics.web;
 
 import com.fintrack.analytics.service.AnalyticsService;
+import com.fintrack.analytics.web.dto.BudgetHistoryDto;
 import com.fintrack.analytics.web.dto.BudgetProgressDto;
 import com.fintrack.analytics.web.dto.ConvertedOverviewDto;
 import com.fintrack.analytics.web.dto.CurrencyBalanceDto;
@@ -69,6 +70,16 @@ public class AnalyticsController {
     public List<BudgetProgressDto> budgetProgress(
             @AuthenticationPrincipal UserPrincipal principal) {
         return analyticsService.getBudgetProgress(principal.getUserId());
+    }
+
+    @GetMapping("/budget-history")
+    @Operation(summary = "Historical budget performance by calendar period and native currency")
+    public List<BudgetHistoryDto> budgetHistory(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(required = false) @Pattern(regexp = "^[A-Z]{3}$") String currency) {
+        return analyticsService.getBudgetHistory(principal.getUserId(), from, to, currency);
     }
 
     @GetMapping("/balances")

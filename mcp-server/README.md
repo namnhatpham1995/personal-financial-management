@@ -63,7 +63,8 @@ claude mcp add fintrack \
 | `list_categories` | read | `GET /categories` (optional transaction-type filter) |
 | `list_transactions` | read | `GET /transactions` (filters + pagination) |
 | `get_transaction` | read | `GET /transactions/{id}` |
-| `list_budgets_with_progress` | read | `GET /budgets` |
+| `list_budgets_with_progress` | read | `GET /budgets` (current-period operational progress) |
+| `get_budget_history` | read | `GET /analytics/budget-history` (period-by-period history for a date range) |
 | `get_spending_by_category` | read | `GET /analytics/spending-by-category` |
 | `get_income_vs_expense` | read | `GET /analytics/income-vs-expense` |
 | `get_account_balances` | read | `GET /analytics/balances` (net-worth-style view) |

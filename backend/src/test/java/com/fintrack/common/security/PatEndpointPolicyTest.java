@@ -37,6 +37,11 @@ class PatEndpointPolicyTest {
     }
 
     @Test
+    void readScopedPatCanReadHistoricalBudgetPerformance() {
+        assertAllowed(ApiTokenScope.READ, "GET", "/api/v1/analytics/budget-history");
+    }
+
+    @Test
     void patCannotAccessSensitiveEndpointsRegardlessOfScope() {
         for (ApiTokenScope scope : ApiTokenScope.values()) {
             assertDenied(scope, "POST", "/api/v1/auth/login");
