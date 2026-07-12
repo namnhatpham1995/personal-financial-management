@@ -95,8 +95,12 @@ MCP client (stdio) ⇄ fintrack-mcp-server ── HTTPS Bearer fintrack_pat_... 
 ```
 
 - Holds no database connection and no credential beyond the one configured PAT — every tool call is a plain REST request through the same PatAuthenticationFilter / PatEndpointPolicy path described above, so the token's scope and the deny-by-default allowlist bound it exactly as they would any other API client.
-- Curated tool surface only (`list_accounts`, `list_transactions`, `get_transaction`, `list_budgets_with_progress`, `get_spending_by_category`, `get_income_vs_expense`, `get_account_balances`, `create_transaction`, `update_transaction`) — no raw-request passthrough tool, no delete tool for any resource.
+- Curated tool surface only — reads (`list_accounts`, `get_account`, `list_categories`, `list_transactions`, `get_transaction`, `list_budgets_with_progress`, `get_spending_by_category`, `get_income_vs_expense`, `get_account_balances`, `get_budget_history`), non-destructive writes gated on a `WRITE`-scoped token (`create_account`, `update_account`, `create_category`, `update_category`, `create_budget`, `update_budget`, `create_transaction`, `create_transactions_batch`, `update_transaction`) — no raw-request passthrough tool, no delete tool for any resource, no token/session management, no vault access.
+- `create_transactions_batch` lets an agent enter up to 100 transactions in one call instead of hammering the per-token rate limit; each row independently reports `CREATED` / `SKIPPED_DUPLICATE` / `FAILED` so a batch with one bad row still commits the rest.
+- 429 responses carry retry guidance (`Retry-After` / `retryAfterSeconds`) which the MCP layer maps into a credential-safe "retry after N seconds" message instead of a bare rate-limit error.
+- Mutation results may carry non-blocking warnings (e.g. `account_balance_negative`, `possible_duplicate_transaction`) — the operation still succeeds; warnings are visibility, not a second validation gate.
 - Errors are mapped to short, credential-safe messages (never the token, headers, or a stack trace); tool descriptions tell the model returned financial data is data, not instructions.
+- The full agent workflow (multi-currency setup, batch entry, correction, historical budget review) is covered end to end by `mcp-server/src/test/backend-integration.test.ts` against a real backend, run in CI's `mcp-integration` job.
 - See `mcp-server/README.md` for setup and the full security posture.
 
 ## Balance Maintenance
