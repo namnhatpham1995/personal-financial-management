@@ -5,7 +5,7 @@ import { createAccount, listAccounts } from "../tools/accounts.js";
 import { getBudgetHistory } from "../tools/analytics.js";
 import { createBudget } from "../tools/budgets.js";
 import { createCategory } from "../tools/categories.js";
-import { createTransaction } from "../tools/transactions.js";
+import { createTransaction, createTransactionsBatch } from "../tools/transactions.js";
 
 const BACKEND_URL = process.env.FINTRACK_TEST_BACKEND_URL;
 
@@ -200,6 +200,131 @@ describe.skipIf(!BACKEND_URL)("MCP tool <-> real backend", () => {
     for (const result of [accountResult, categoryResult, budgetResult, transactionResult, historyResult]) {
       expect(result.content[0].text).not.toContain(pat);
       expect(result.content[0].text).not.toContain(jwt);
+    }
+  });
+
+  /**
+   * Full multi-currency agent persona: mirrors how a real agent would use the curated MCP
+   * surface end to end, not any single tool in isolation. A write-scoped, long-lived PAT
+   * (365 days -- the realistic lifetime for a standing agent integration) sets up accounts
+   * in three currencies with very different scales (EUR/USD minor units vs VND's none),
+   * batch-enters several months of transactions in one call each, corrects one entry the
+   * way an agent would fix a miskeyed amount, and reads back historical budget performance
+   * per currency. This is the change's own "MCP persona smoke test" (tasks 6.1/6.2) captured
+   * as a repeatable CI check instead of a one-off manual run.
+   */
+  it("runs a full multi-currency persona: setup, batch entry, correction, and budget history", async () => {
+    const suffix = Date.now();
+    const email = `mcp-persona-${suffix}@test.com`;
+    const backend = axios.create({ baseURL: `${BACKEND_URL}/api/v1` });
+
+    const registerResponse = await unwrapAxiosErrors(() =>
+      backend.post("/auth/register", {
+        email,
+        password: "pass1234",
+        firstName: "MCP",
+        lastName: "Persona",
+      })
+    );
+    const jwt: string = registerResponse.data.accessToken;
+
+    const tokenResponse = await unwrapAxiosErrors(() =>
+      backend.post(
+        "/tokens",
+        { name: "MCP Persona Token", scope: "WRITE", expiryDays: 365 },
+        { headers: { Authorization: `Bearer ${jwt}` } }
+      )
+    );
+    const pat: string = tokenResponse.data.plaintextToken;
+    const api = createApiClient({ apiUrl: BACKEND_URL!, apiToken: pat });
+
+    const currencies = ["EUR", "USD", "VND"] as const;
+    const accountsByCurrency: Record<(typeof currencies)[number], { id: number }> = {} as never;
+    for (const currency of currencies) {
+      const result = await createAccount(api, {
+        name: `Persona ${currency} account ${suffix}`,
+        accountType: "BANK",
+        currency,
+        initialBalance: currency === "VND" ? 20_000_000 : 1_000,
+      });
+      expect(result.isError).toBeFalsy();
+      accountsByCurrency[currency] = JSON.parse(result.content[0].text) as { id: number };
+    }
+
+    const categoryResult = await createCategory(api, {
+      name: `Persona groceries ${suffix}`,
+      transactionType: "EXPENSE",
+    });
+    expect(categoryResult.isError).toBeFalsy();
+    const category = JSON.parse(categoryResult.content[0].text) as { id: number };
+
+    const budgetLimitByCurrency: Record<(typeof currencies)[number], number> = {
+      EUR: 500,
+      USD: 500,
+      VND: 15_000_000,
+    };
+    for (const currency of currencies) {
+      const result = await createBudget(api, {
+        categoryId: category.id,
+        period: "MONTHLY",
+        amountLimit: budgetLimitByCurrency[currency],
+        startDate: "2026-01-01",
+        currency,
+      });
+      expect(result.isError).toBeFalsy();
+    }
+
+    // Three months of expense history per currency, entered in one batch call each --
+    // the workflow the batch tool exists for, rather than one create_transaction per row.
+    const months = ["2026-01", "2026-02", "2026-03"];
+    const perCurrencyAmount: Record<(typeof currencies)[number], number> = {
+      EUR: 40,
+      USD: 35,
+      VND: 900_000,
+    };
+    const createdTransactionIdsByCurrency: Record<(typeof currencies)[number], number[]> = {} as never;
+    for (const currency of currencies) {
+      const batchResult = await createTransactionsBatch(api, {
+        transactions: months.map((month) => ({
+          transactionType: "EXPENSE",
+          amount: perCurrencyAmount[currency],
+          transactionDate: `${month}-10`,
+          accountId: accountsByCurrency[currency].id,
+          categoryId: category.id,
+        })),
+      });
+      expect(batchResult.isError).toBeFalsy();
+      const batch = JSON.parse(batchResult.content[0].text) as {
+        results: Array<{ status: string; transaction: { id: number } | null }>;
+      };
+      expect(batch.results).toHaveLength(3);
+      expect(batch.results.every((r) => r.status === "CREATED")).toBe(true);
+      createdTransactionIdsByCurrency[currency] = batch.results.map((r) => r.transaction!.id);
+    }
+
+    // Correct one miskeyed entry, the way an agent fixes a mistake it notices after entry.
+    const [firstEurTransactionId] = createdTransactionIdsByCurrency.EUR;
+    const correctionResult = await api.put(`/transactions/${firstEurTransactionId}`, { amount: 55 });
+    expect(correctionResult.status).toBe(200);
+
+    for (const currency of currencies) {
+      const historyResult = await getBudgetHistory(api, {
+        from: "2026-01-01",
+        to: "2026-03-31",
+        currency,
+      });
+      expect(historyResult.isError).toBeFalsy();
+      const history = JSON.parse(historyResult.content[0].text) as Array<{
+        currency: string;
+        periodStart: string;
+        spent: number;
+      }>;
+      expect(history).toHaveLength(3);
+      const expectedTotalSpend =
+        currency === "EUR" ? 55 + perCurrencyAmount.EUR * 2 : perCurrencyAmount[currency] * 3;
+      const totalSpend = history.reduce((sum, period) => sum + period.spent, 0);
+      expect(totalSpend).toBe(expectedTotalSpend);
+      expect(history.every((period) => period.currency === currency)).toBe(true);
     }
   });
 });
