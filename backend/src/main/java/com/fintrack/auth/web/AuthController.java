@@ -5,6 +5,7 @@ import com.fintrack.auth.web.dto.LoginRequest;
 import com.fintrack.auth.web.dto.RefreshRequest;
 import com.fintrack.auth.web.dto.RegisterRequest;
 import com.fintrack.auth.web.dto.TokenResponse;
+import com.fintrack.auth.web.dto.UpdateChangelogSeenRequest;
 import com.fintrack.auth.web.dto.UpdateLanguageRequest;
 import com.fintrack.common.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
@@ -66,5 +67,14 @@ public class AuthController {
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody UpdateLanguageRequest request) {
         return ResponseEntity.ok(authService.updateLanguage(principal.getUserId(), request.language()));
+    }
+
+    @PutMapping("/me/changelog-seen")
+    @Operation(summary = "Mark the authenticated user's last-seen \"What's New\" changelog version")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<TokenResponse.UserInfo> updateChangelogSeen(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody UpdateChangelogSeenRequest request) {
+        return ResponseEntity.ok(authService.updateChangelogSeen(principal.getUserId(), request.version()));
     }
 }

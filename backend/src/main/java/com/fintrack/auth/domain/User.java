@@ -34,6 +34,10 @@ public class User {
     @Column(name = "preferred_language", length = 8)
     private String preferredLanguage;
 
+    @Column(name = "last_seen_changelog_version", nullable = false)
+    @Builder.Default
+    private Integer lastSeenChangelogVersion = 0;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",

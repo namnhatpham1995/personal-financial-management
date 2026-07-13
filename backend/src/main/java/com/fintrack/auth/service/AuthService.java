@@ -102,7 +102,8 @@ public class AuthService {
                 user.getId(), user.getEmail(),
                 spaceIdx > 0 ? fullName.substring(0, spaceIdx) : fullName,
                 spaceIdx > 0 ? fullName.substring(spaceIdx + 1) : "",
-                user.getPreferredLanguage()
+                user.getPreferredLanguage(),
+                user.getLastSeenChangelogVersion()
         );
     }
 
@@ -112,6 +113,18 @@ public class AuthService {
                 .orElseThrow(() -> ResourceNotFoundException.of("User", userId));
         user.setPreferredLanguage(language);
         userRepository.save(user);
+        return getUserInfo(userId);
+    }
+
+    @Transactional
+    public TokenResponse.UserInfo updateChangelogSeen(Long userId, int version) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> ResourceNotFoundException.of("User", userId));
+        int current = user.getLastSeenChangelogVersion() != null ? user.getLastSeenChangelogVersion() : 0;
+        if (version > current) {
+            user.setLastSeenChangelogVersion(version);
+            userRepository.save(user);
+        }
         return getUserInfo(userId);
     }
 
@@ -145,7 +158,8 @@ public class AuthService {
                 user.getEmail(),
                 firstName,
                 lastName,
-                user.getPreferredLanguage()
+                user.getPreferredLanguage(),
+                user.getLastSeenChangelogVersion()
         );
     }
 
