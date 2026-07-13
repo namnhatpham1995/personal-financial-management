@@ -31,9 +31,34 @@ function flatten(tree: MessageTree, prefix = ""): Record<string, string> {
   }, {});
 }
 
+/**
+ * Extracts only top-level ICU placeholder/argument names (e.g. "count" from
+ * "{count, plural, one {# item} other {# items}}"), ignoring nested plural
+ * sub-message content — locales with no singular/plural distinction (vi, zh)
+ * legitimately collapse plural branches to a single "other" case, which a
+ * naive brace-matching regex would misreport as a placeholder mismatch.
+ */
 function icuPlaceholders(value: string): string[] {
-  const matches = value.match(/\{[^}]+\}/g) ?? [];
-  return matches.map((m) => m.slice(1, -1).split(",")[0].trim()).sort();
+  const result: string[] = [];
+  let depth = 0;
+  let current = "";
+  for (const ch of value) {
+    if (ch === "{") {
+      if (depth === 0) current = "";
+      else current += ch;
+      depth++;
+    } else if (ch === "}") {
+      depth--;
+      if (depth === 0) {
+        result.push(current.split(",")[0].trim());
+      } else {
+        current += ch;
+      }
+    } else if (depth > 0) {
+      current += ch;
+    }
+  }
+  return result.sort();
 }
 
 const availableLocales = readdirSync(messagesDir)

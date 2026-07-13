@@ -1,0 +1,428 @@
+{
+  "common": {
+    "appName": "Fintrack",
+    "loading": "加载中…",
+    "save": "保存",
+    "saving": "正在保存...",
+    "cancel": "取消",
+    "delete": "删除",
+    "edit": "编辑",
+    "close": "关闭"
+  },
+  "settings": {
+    "languageLabel": "语言",
+    "languageDescription": "选择整个应用使用的语言。"
+  },
+  "sidebar": {
+    "nav": {
+      "overview": "概览",
+      "transactions": "交易",
+      "vault": "资料库",
+      "categories": "分类",
+      "activity": "活动记录",
+      "apiTokens": "API 令牌"
+    },
+    "lightMode": "浅色模式",
+    "darkMode": "深色模式",
+    "signOut": "退出登录"
+  },
+  "auth": {
+    "signIn": {
+      "title": "登录",
+      "subtitle": "回到那本让您的资金分毫不差的账本。",
+      "submit": "登录",
+      "submitting": "正在登录...",
+      "noAccount": "还没有账户？",
+      "registerLink": "注册"
+    },
+    "register": {
+      "title": "创建您的账户",
+      "subtitle": "从私人银行般沉稳的日常资金视角开始。",
+      "submit": "创建账户",
+      "submitting": "正在创建账户...",
+      "haveAccount": "已有账户？",
+      "signInLink": "登录"
+    },
+    "fields": {
+      "firstName": "名",
+      "lastName": "姓",
+      "email": "邮箱",
+      "password": "密码",
+      "confirmPassword": "确认密码"
+    },
+    "password": {
+      "show": "显示密码",
+      "hide": "隐藏密码",
+      "showConfirm": "显示确认密码",
+      "hideConfirm": "隐藏确认密码"
+    },
+    "validation": {
+      "minLength8": "至少 8 个字符",
+      "confirmRequired": "请确认密码",
+      "passwordsDoNotMatch": "两次输入的密码不一致"
+    },
+    "errors": {
+      "credentials": "邮箱或密码不正确。",
+      "rate_limit": "尝试次数过多，请稍后再试。",
+      "connection": "无法连接到 Fintrack，请检查网络连接后重试。",
+      "validation": "无法使用这些信息创建账户。",
+      "server": "Fintrack 暂时不可用，请稍后再试。"
+    },
+    "theme": {
+      "switchToLight": "切换到浅色主题",
+      "switchToDark": "切换到深色主题",
+      "toggle": "切换配色主题"
+    }
+  },
+  "dashboard": {
+    "title": "概览",
+    "noTransactionData": "此时间段内没有交易数据。",
+    "toast": {
+      "accountCreated": "账户已创建",
+      "accountCreateFailed": "创建账户失败",
+      "accountUpdated": "账户已更新",
+      "accountUpdateFailed": "更新账户失败",
+      "accountDeleted": "账户已删除",
+      "accountDeleteFailed": "删除账户失败"
+    }
+  },
+  "overview": {
+    "total": "总计 {amount}",
+    "cashFlow": "现金流",
+    "spendingByCategory": "按分类支出",
+    "recentActivity": "近期活动",
+    "accounts": "账户",
+    "budgetProgress": "预算进度"
+  },
+  "accounts": {
+    "addAccount": "添加账户",
+    "saving": "正在保存...",
+    "editAccount": "编辑账户",
+    "editAccountHint": "更改初始余额会重新计算当前余额。更改货币只会重新标注现有金额，不会进行换算。",
+    "saveChanges": "保存更改",
+    "deleteAccount": "删除账户",
+    "deleting": "正在删除...",
+    "deleteConfirm": "删除<strong>{accountName}</strong>？",
+    "checkingConnectedTransactions": "正在检查关联交易...",
+    "noTransactions": "该账户暂无交易。",
+    "transactionsWillBeDeleted": "与此账户关联的 {count, plural, other {# 笔交易}} 也将被永久删除。",
+    "fields": {
+      "name": "名称",
+      "type": "类型",
+      "currency": "货币（ISO 代码）",
+      "initialBalance": "初始余额"
+    },
+    "accountsHeading": "账户",
+    "yourBalances": "您的账户余额。",
+    "noAccountsYet": "暂无账户",
+    "noAccountsYetBody": "添加现金、银行、储蓄或信用卡账户以开始跟踪余额。",
+    "noAccountsInCurrency": "该货币下暂无账户。",
+    "viewDetails": "查看 {accountName} 详情",
+    "editAria": "编辑 {accountName}",
+    "deleteAria": "删除 {accountName}",
+    "totalBalance": "总余额",
+    "mainCurrency": "主货币",
+    "ratesUnavailable": "部分货币暂无实时汇率——下方总额显示原始金额。",
+    "notConverted": "（未换算）",
+    "noRecentTransactions": "暂无近期交易。",
+    "recentExpenses": "近期支出",
+    "recentIncome": "近期收入",
+    "uncategorized": "未分类",
+    "detail": {
+      "closeAria": "关闭账户详情",
+      "from": "从",
+      "to": "到",
+      "expenseByCategory": "按分类支出",
+      "transactions": "交易",
+      "incomingTransfers": "转入记录",
+      "noTransactionsInPeriod": "该账户在此时间段内没有交易",
+      "noIncomingTransfers": "此时间段内没有转入记录"
+    }
+  },
+  "transactions": {
+    "title": "交易",
+    "tabs": {
+      "history": "历史记录",
+      "recurring": "定期交易"
+    },
+    "allTypes": "所有类型",
+    "add": "添加",
+    "toast": {
+      "added": "交易已添加",
+      "updated": "交易已更新",
+      "deleted": "交易已删除",
+      "createFailed": "创建交易失败",
+      "updateFailed": "更新交易失败",
+      "deleteFailed": "删除交易失败"
+    },
+    "loadError": "加载交易失败，请检查网络连接或尝试刷新。",
+    "table": {
+      "dateHeader": "日期",
+      "accountHeader": "账户",
+      "typeHeader": "类型",
+      "categoryHeader": "分类",
+      "amountHeader": "金额",
+      "noteHeader": "备注",
+      "emptyMessage": "未找到交易记录",
+      "editAria": "编辑 {date} 的交易",
+      "deleteAria": "删除 {date} 的交易",
+      "pageOf": "第 {current} / {total} 页"
+    },
+    "form": {
+      "editTitle": "编辑交易",
+      "newTitle": "新建交易",
+      "fields": {
+        "account": "账户",
+        "type": "类型",
+        "amount": "金额",
+        "date": "日期",
+        "transferToAccount": "转入账户",
+        "category": "分类",
+        "note": "备注"
+      },
+      "noCategory": "无分类",
+      "saveChanges": "保存更改"
+    },
+    "recurring": {
+      "newRule": "新建规则",
+      "newRuleTitle": "新建定期规则",
+      "fields": {
+        "account": "账户",
+        "type": "类型",
+        "amount": "金额",
+        "frequency": "频率",
+        "everyNPeriods": "每隔 N 个周期",
+        "startDate": "开始日期",
+        "note": "备注"
+      },
+      "toast": {
+        "created": "已创建",
+        "createFailed": "创建失败",
+        "paused": "已暂停",
+        "resumed": "已恢复",
+        "deleted": "已删除"
+      },
+      "empty": "暂无定期规则。",
+      "pausedBadge": "已暂停",
+      "every": "每 {intervalValue, plural, =1 {} other {# }}{frequency} · {accountName}",
+      "next": "下一次：{date}"
+    }
+  },
+  "budgets": {
+    "fields": {
+      "amount": "金额",
+      "period": "周期",
+      "currency": "货币"
+    },
+    "period": {
+      "monthly": "每月",
+      "yearly": "每年"
+    },
+    "saving": "正在保存...",
+    "validation": {
+      "enterAmount": "请输入金额",
+      "selectCurrency": "请选择货币"
+    },
+    "progressList": {
+      "empty": "尚未配置预算。使用“添加限额”来创建一个。"
+    },
+    "manager": {
+      "toast": {
+        "limitSet": "限额已设置",
+        "setFailed": "设置限额失败",
+        "limitUpdated": "限额已更新",
+        "updateFailed": "更新限额失败",
+        "limitRemoved": "限额已移除",
+        "removeFailed": "移除限额失败"
+      },
+      "editAria": "编辑 {budgetName} 限额",
+      "removeAria": "移除 {budgetName} 限额",
+      "loadingProgress": "正在加载预算进度...",
+      "activeLimits": "{count, plural, other {# 个生效限额}}",
+      "addLimit": "添加限额",
+      "allCurrencyLimitsSet": "所有支出分类均已设置 {currency} 限额。",
+      "expenseCategory": "支出分类",
+      "chooseCategory": "选择一个分类",
+      "selectCategoryHint": "选择一个支出分类以设置其 {currency} 限额。",
+      "create": "创建"
+    }
+  },
+  "categories": {
+    "title": "分类",
+    "newCategory": "新建分类",
+    "myCategories": "我的分类",
+    "defaultCategories": "默认分类",
+    "defaultCategoriesSubtitle": "只读——所有用户可用",
+    "emptyState": "暂无分类。请在上方创建一个。",
+    "income": "收入",
+    "expense": "支出",
+    "toast": {
+      "created": "分类已创建",
+      "duplicateName": "该类型下已存在同名分类",
+      "createFailed": "创建分类失败",
+      "renamed": "分类已重命名",
+      "systemNoModify": "系统分类无法修改",
+      "renameFailed": "重命名分类失败",
+      "deleted": "分类已删除——相关记录已归入未分类",
+      "systemNoDelete": "系统分类无法删除",
+      "deleteFailed": "删除分类失败"
+    },
+    "form": {
+      "fields": {
+        "name": "名称",
+        "type": "类型"
+      },
+      "namePlaceholder": "例如：健身与运动"
+    },
+    "validation": {
+      "nameRequired": "请输入名称"
+    },
+    "row": {
+      "deleteConfirm": "删除<strong>{categoryName}</strong>？相关的交易、预算和定期项目将移至<strong>未分类</strong>。",
+      "deleting": "正在删除...",
+      "saveNameAria": "保存名称",
+      "cancelRenameAria": "取消重命名",
+      "readOnlyAria": "只读",
+      "renameAria": "重命名",
+      "deleteAria": "删除"
+    }
+  },
+  "vault": {
+    "title": "资料库",
+    "tabs": {
+      "browse": "浏览",
+      "import": "导入对账单",
+      "upload": "上传收据"
+    },
+    "toast": {
+      "documentDeleted": "文档已删除",
+      "deleteFailed": "删除失败",
+      "downloadFailed": "下载失败",
+      "receiptSaved": "收据已保存"
+    },
+    "account": "账户",
+    "selectAccount": "选择账户…",
+    "emptyState": {
+      "title": "暂无文档",
+      "body": "上传收据或导入银行对账单以开始使用。"
+    },
+    "table": {
+      "type": "类型",
+      "file": "文件",
+      "date": "日期",
+      "status": "状态"
+    },
+    "receipt": "收据",
+    "statement": "对账单",
+    "download": "下载",
+    "downloadFallback": "文档",
+    "deleteConfirm": "删除此文档？",
+    "delete": "删除",
+    "downloadAria": "下载 {fileName}",
+    "deleteAria": "删除 {fileName}",
+    "prev": "上一页",
+    "next": "下一页",
+    "pageOf": "{current} / {total}",
+    "receiptIndicator": {
+      "attached": "已附加收据"
+    },
+    "uploadViewer": {
+      "receiptFallback": "收据",
+      "download": "下载",
+      "downloadAria": "下载 {fileName}",
+      "downloadFallback": "收据",
+      "toast": {
+        "uploaded": "收据已上传",
+        "uploadFailed": "上传失败"
+      },
+      "uploading": "正在上传…",
+      "dropOrClick": "拖放或点击以附加收据",
+      "previewAlt": "收据预览",
+      "removeAria": "移除收据预览"
+    },
+    "importWizard": {
+      "toast": {
+        "parseFailed": "解析文件失败",
+        "importFailed": "导入失败"
+      },
+      "imported": "{count, plural, other {已导入 # 笔交易}}",
+      "importAnother": "导入另一个文件",
+      "rowsFound": "{count, plural, other {找到 # 行}} — 选择要导入的行",
+      "selectAll": "全选",
+      "deselectAll": "取消全选",
+      "selectedOfTotal": "已选择 {selected} / {total}",
+      "importRows": "{count, plural, other {导入 # 行}}",
+      "parsingFile": "正在解析文件…",
+      "uploadPrompt": "上传银行对账单",
+      "fileTypesHint": "CSV 或 OFX/QFX 文件"
+    }
+  },
+  "apiTokens": {
+    "title": "API 令牌",
+    "newToken": "新建令牌",
+    "description": "为 API 客户端和 MCP 服务器提供的限定范围、有过期时间的令牌——绝非您的密码或会话凭证。默认仅限只读；删除、访问资料库等破坏性操作永远不被允许。",
+    "toast": {
+      "createFailed": "创建令牌失败",
+      "revoked": "令牌已吊销",
+      "revokeFailed": "吊销令牌失败"
+    },
+    "emptyState": "暂无 API 令牌。请在上方创建一个。",
+    "form": {
+      "title": "新建 API 令牌",
+      "fields": {
+        "name": "名称",
+        "scope": "权限范围",
+        "expiresIn": "有效期"
+      },
+      "namePlaceholder": "例如：Claude Desktop",
+      "scope": {
+        "readOnly": "仅只读",
+        "readWrite": "读写"
+      },
+      "expiry": {
+        "days30": "30 天",
+        "days90": "90 天",
+        "days365": "365 天"
+      },
+      "creating": "正在创建...",
+      "create": "创建"
+    },
+    "validation": {
+      "nameRequired": "请输入名称",
+      "invalidExpiry": "有效期无效"
+    },
+    "banner": {
+      "warning": "请立即复制此令牌——离开此页面后将无法再次查看。",
+      "copy": "复制",
+      "copied": "已复制",
+      "copyAria": "复制令牌",
+      "done": "完成"
+    },
+    "row": {
+      "revokeConfirm": "吊销<strong>{tokenName}</strong>？使用此令牌的所有客户端将立即失去访问权限。",
+      "revoking": "正在吊销...",
+      "revoke": "吊销",
+      "readWrite": "读写",
+      "readOnly": "仅只读",
+      "revoked": "已吊销",
+      "expired": "已过期",
+      "created": "创建于 {date}",
+      "expires": "到期于 {date}",
+      "lastUsed": "最后使用 {date}",
+      "never": "从未使用",
+      "revokeAria": "吊销 {tokenName}"
+    }
+  },
+  "activity": {
+    "title": "活动记录",
+    "description": "您工作区的近期变更和登录记录。",
+    "errorTitle": "无法加载活动记录",
+    "errorBody": "获取活动记录时出现问题。",
+    "retry": "重试",
+    "emptyTitle": "暂无活动记录",
+    "emptyBody": "账户、预算、分类和会话的变更将显示在这里。",
+    "prevAria": "上一页",
+    "nextAria": "下一页",
+    "pageOf": "{current} / {total}"
+  }
+}

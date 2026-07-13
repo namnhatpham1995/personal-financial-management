@@ -1,0 +1,428 @@
+{
+  "common": {
+    "appName": "Fintrack",
+    "loading": "Lädt…",
+    "save": "Speichern",
+    "saving": "Speichert...",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "close": "Schließen"
+  },
+  "settings": {
+    "languageLabel": "Sprache",
+    "languageDescription": "Wähle die Sprache für die gesamte App."
+  },
+  "sidebar": {
+    "nav": {
+      "overview": "Übersicht",
+      "transactions": "Transaktionen",
+      "vault": "Tresor",
+      "categories": "Kategorien",
+      "activity": "Aktivität",
+      "apiTokens": "API-Token"
+    },
+    "lightMode": "Heller Modus",
+    "darkMode": "Dunkler Modus",
+    "signOut": "Abmelden"
+  },
+  "auth": {
+    "signIn": {
+      "title": "Anmelden",
+      "subtitle": "Zurück zum Kontobuch, das dein Geld genau im Blick behält.",
+      "submit": "Anmelden",
+      "submitting": "Anmeldung läuft...",
+      "noAccount": "Noch kein Konto?",
+      "registerLink": "Registrieren"
+    },
+    "register": {
+      "title": "Konto erstellen",
+      "subtitle": "Starte mit einem ruhigen, privatbanking-artigen Überblick über dein Geld.",
+      "submit": "Konto erstellen",
+      "submitting": "Konto wird erstellt...",
+      "haveAccount": "Bereits ein Konto?",
+      "signInLink": "Anmelden"
+    },
+    "fields": {
+      "firstName": "Vorname",
+      "lastName": "Nachname",
+      "email": "E-Mail",
+      "password": "Passwort",
+      "confirmPassword": "Passwort bestätigen"
+    },
+    "password": {
+      "show": "Passwort anzeigen",
+      "hide": "Passwort verbergen",
+      "showConfirm": "Bestätigung anzeigen",
+      "hideConfirm": "Bestätigung verbergen"
+    },
+    "validation": {
+      "minLength8": "Mindestens 8 Zeichen",
+      "confirmRequired": "Bitte Passwort bestätigen",
+      "passwordsDoNotMatch": "Passwörter stimmen nicht überein"
+    },
+    "errors": {
+      "credentials": "Ungültige E-Mail-Adresse oder ungültiges Passwort.",
+      "rate_limit": "Zu viele Versuche. Bitte später erneut versuchen.",
+      "connection": "Verbindung zu Fintrack nicht möglich. Internetverbindung prüfen und erneut versuchen.",
+      "validation": "Konto konnte mit diesen Angaben nicht erstellt werden.",
+      "server": "Fintrack ist vorübergehend nicht verfügbar. Bitte später erneut versuchen."
+    },
+    "theme": {
+      "switchToLight": "Zum hellen Design wechseln",
+      "switchToDark": "Zum dunklen Design wechseln",
+      "toggle": "Farbschema umschalten"
+    }
+  },
+  "dashboard": {
+    "title": "Übersicht",
+    "noTransactionData": "Keine Transaktionsdaten für diesen Zeitraum.",
+    "toast": {
+      "accountCreated": "Konto erstellt",
+      "accountCreateFailed": "Konto konnte nicht erstellt werden",
+      "accountUpdated": "Konto aktualisiert",
+      "accountUpdateFailed": "Konto konnte nicht aktualisiert werden",
+      "accountDeleted": "Konto gelöscht",
+      "accountDeleteFailed": "Konto konnte nicht gelöscht werden"
+    }
+  },
+  "overview": {
+    "total": "Gesamt {amount}",
+    "cashFlow": "Cashflow",
+    "spendingByCategory": "Ausgaben nach Kategorie",
+    "recentActivity": "Letzte Aktivität",
+    "accounts": "Konten",
+    "budgetProgress": "Budgetfortschritt"
+  },
+  "accounts": {
+    "addAccount": "Konto hinzufügen",
+    "saving": "Speichert...",
+    "editAccount": "Konto bearbeiten",
+    "editAccountHint": "Eine Änderung des Anfangssaldos berechnet den aktuellen Saldo neu. Eine Änderung der Währung beschriftet bestehende Beträge lediglich um, ohne sie umzurechnen.",
+    "saveChanges": "Änderungen speichern",
+    "deleteAccount": "Konto löschen",
+    "deleting": "Wird gelöscht...",
+    "deleteConfirm": "<strong>{accountName}</strong> löschen?",
+    "checkingConnectedTransactions": "Verknüpfte Transaktionen werden geprüft...",
+    "noTransactions": "Dieses Konto hat keine Transaktionen.",
+    "transactionsWillBeDeleted": "{count, plural, one {# verknüpfte Transaktion wird} other {# verknüpfte Transaktionen werden}} ebenfalls dauerhaft gelöscht.",
+    "fields": {
+      "name": "Name",
+      "type": "Typ",
+      "currency": "Währung (ISO-Code)",
+      "initialBalance": "Anfangssaldo"
+    },
+    "accountsHeading": "Konten",
+    "yourBalances": "Deine Kontosalden.",
+    "noAccountsYet": "Noch keine Konten",
+    "noAccountsYetBody": "Füge ein Bar-, Bank-, Spar- oder Kreditkartenkonto hinzu, um Salden zu verfolgen.",
+    "noAccountsInCurrency": "Noch keine Konten in dieser Währung.",
+    "viewDetails": "Details zu {accountName} anzeigen",
+    "editAria": "{accountName} bearbeiten",
+    "deleteAria": "{accountName} löschen",
+    "totalBalance": "Gesamtsaldo",
+    "mainCurrency": "Hauptwährung",
+    "ratesUnavailable": "Live-Kurse für manche Währungen nicht verfügbar — Summen unten zeigen native Beträge.",
+    "notConverted": "(nicht umgerechnet)",
+    "noRecentTransactions": "Keine aktuellen Transaktionen.",
+    "recentExpenses": "Letzte Ausgaben",
+    "recentIncome": "Letzte Einnahmen",
+    "uncategorized": "Nicht kategorisiert",
+    "detail": {
+      "closeAria": "Kontodetails schließen",
+      "from": "Von",
+      "to": "Bis",
+      "expenseByCategory": "Ausgaben nach Kategorie",
+      "transactions": "Transaktionen",
+      "incomingTransfers": "Eingehende Überweisungen",
+      "noTransactionsInPeriod": "Keine Transaktionen für dieses Konto in diesem Zeitraum",
+      "noIncomingTransfers": "Keine eingehenden Überweisungen in diesem Zeitraum"
+    }
+  },
+  "transactions": {
+    "title": "Transaktionen",
+    "tabs": {
+      "history": "Verlauf",
+      "recurring": "Wiederkehrend"
+    },
+    "allTypes": "Alle Typen",
+    "add": "Hinzufügen",
+    "toast": {
+      "added": "Transaktion hinzugefügt",
+      "updated": "Transaktion aktualisiert",
+      "deleted": "Transaktion gelöscht",
+      "createFailed": "Transaktion konnte nicht erstellt werden",
+      "updateFailed": "Transaktion konnte nicht aktualisiert werden",
+      "deleteFailed": "Transaktion konnte nicht gelöscht werden"
+    },
+    "loadError": "Transaktionen konnten nicht geladen werden. Verbindung prüfen oder Seite neu laden.",
+    "table": {
+      "dateHeader": "Datum",
+      "accountHeader": "Konto",
+      "typeHeader": "Typ",
+      "categoryHeader": "Kategorie",
+      "amountHeader": "Betrag",
+      "noteHeader": "Notiz",
+      "emptyMessage": "Keine Transaktionen gefunden",
+      "editAria": "Transaktion vom {date} bearbeiten",
+      "deleteAria": "Transaktion vom {date} löschen",
+      "pageOf": "Seite {current} von {total}"
+    },
+    "form": {
+      "editTitle": "Transaktion bearbeiten",
+      "newTitle": "Neue Transaktion",
+      "fields": {
+        "account": "Konto",
+        "type": "Typ",
+        "amount": "Betrag",
+        "date": "Datum",
+        "transferToAccount": "Überweisung an Konto",
+        "category": "Kategorie",
+        "note": "Notiz"
+      },
+      "noCategory": "Keine Kategorie",
+      "saveChanges": "Änderungen speichern"
+    },
+    "recurring": {
+      "newRule": "Neue Regel",
+      "newRuleTitle": "Neue wiederkehrende Regel",
+      "fields": {
+        "account": "Konto",
+        "type": "Typ",
+        "amount": "Betrag",
+        "frequency": "Häufigkeit",
+        "everyNPeriods": "Alle N Perioden",
+        "startDate": "Startdatum",
+        "note": "Notiz"
+      },
+      "toast": {
+        "created": "Erstellt",
+        "createFailed": "Erstellen fehlgeschlagen",
+        "paused": "Pausiert",
+        "resumed": "Fortgesetzt",
+        "deleted": "Gelöscht"
+      },
+      "empty": "Noch keine wiederkehrenden Regeln.",
+      "pausedBadge": "Pausiert",
+      "every": "Alle {intervalValue, plural, =1 {} other {# }}{frequency} · {accountName}",
+      "next": "Nächste: {date}"
+    }
+  },
+  "budgets": {
+    "fields": {
+      "amount": "Betrag",
+      "period": "Zeitraum",
+      "currency": "Währung"
+    },
+    "period": {
+      "monthly": "Monatlich",
+      "yearly": "Jährlich"
+    },
+    "saving": "Speichert...",
+    "validation": {
+      "enterAmount": "Betrag eingeben",
+      "selectCurrency": "Währung auswählen"
+    },
+    "progressList": {
+      "empty": "Kein Budget eingerichtet. Über „Limit hinzufügen“ eines erstellen."
+    },
+    "manager": {
+      "toast": {
+        "limitSet": "Limit festgelegt",
+        "setFailed": "Limit konnte nicht festgelegt werden",
+        "limitUpdated": "Limit aktualisiert",
+        "updateFailed": "Limit konnte nicht aktualisiert werden",
+        "limitRemoved": "Limit entfernt",
+        "removeFailed": "Limit konnte nicht entfernt werden"
+      },
+      "editAria": "Limit für {budgetName} bearbeiten",
+      "removeAria": "Limit für {budgetName} entfernen",
+      "loadingProgress": "Budgetfortschritt wird geladen...",
+      "activeLimits": "{count, plural, one {# aktives Limit} other {# aktive Limits}}",
+      "addLimit": "Limit hinzufügen",
+      "allCurrencyLimitsSet": "Alle Ausgabenkategorien haben bereits ein {currency}-Limit.",
+      "expenseCategory": "Ausgabenkategorie",
+      "chooseCategory": "Kategorie auswählen",
+      "selectCategoryHint": "Wähle eine Ausgabenkategorie, um ihr {currency}-Limit festzulegen.",
+      "create": "Erstellen"
+    }
+  },
+  "categories": {
+    "title": "Kategorien",
+    "newCategory": "Neue Kategorie",
+    "myCategories": "Meine Kategorien",
+    "defaultCategories": "Standardkategorien",
+    "defaultCategoriesSubtitle": "Schreibgeschützt — für alle Nutzer verfügbar",
+    "emptyState": "Noch keine Kategorien. Oben eine erstellen.",
+    "income": "Einnahmen",
+    "expense": "Ausgaben",
+    "toast": {
+      "created": "Kategorie erstellt",
+      "duplicateName": "Eine Kategorie mit diesem Namen existiert für diesen Typ bereits",
+      "createFailed": "Kategorie konnte nicht erstellt werden",
+      "renamed": "Kategorie umbenannt",
+      "systemNoModify": "Systemkategorien können nicht geändert werden",
+      "renameFailed": "Kategorie konnte nicht umbenannt werden",
+      "deleted": "Kategorie gelöscht – Verwendungen wurden „Nicht kategorisiert“ zugeordnet",
+      "systemNoDelete": "Systemkategorien können nicht gelöscht werden",
+      "deleteFailed": "Kategorie konnte nicht gelöscht werden"
+    },
+    "form": {
+      "fields": {
+        "name": "Name",
+        "type": "Typ"
+      },
+      "namePlaceholder": "z. B. Fitness & Sport"
+    },
+    "validation": {
+      "nameRequired": "Name ist erforderlich"
+    },
+    "row": {
+      "deleteConfirm": "<strong>{categoryName}</strong> löschen? Transaktionen, Budgets und wiederkehrende Einträge werden zu <strong>Nicht kategorisiert</strong> verschoben.",
+      "deleting": "Wird gelöscht...",
+      "saveNameAria": "Namen speichern",
+      "cancelRenameAria": "Umbenennen abbrechen",
+      "readOnlyAria": "Schreibgeschützt",
+      "renameAria": "Umbenennen",
+      "deleteAria": "Löschen"
+    }
+  },
+  "vault": {
+    "title": "Tresor",
+    "tabs": {
+      "browse": "Durchsuchen",
+      "import": "Kontoauszug importieren",
+      "upload": "Beleg hochladen"
+    },
+    "toast": {
+      "documentDeleted": "Dokument gelöscht",
+      "deleteFailed": "Löschen fehlgeschlagen",
+      "downloadFailed": "Download fehlgeschlagen",
+      "receiptSaved": "Beleg gespeichert"
+    },
+    "account": "Konto",
+    "selectAccount": "Konto auswählen…",
+    "emptyState": {
+      "title": "Noch keine Dokumente",
+      "body": "Lade einen Beleg hoch oder importiere einen Kontoauszug, um zu starten."
+    },
+    "table": {
+      "type": "Typ",
+      "file": "Datei",
+      "date": "Datum",
+      "status": "Status"
+    },
+    "receipt": "Beleg",
+    "statement": "Kontoauszug",
+    "download": "Herunterladen",
+    "downloadFallback": "Dokument",
+    "deleteConfirm": "Dieses Dokument löschen?",
+    "delete": "Löschen",
+    "downloadAria": "{fileName} herunterladen",
+    "deleteAria": "{fileName} löschen",
+    "prev": "Zurück",
+    "next": "Weiter",
+    "pageOf": "{current} / {total}",
+    "receiptIndicator": {
+      "attached": "Beleg angehängt"
+    },
+    "uploadViewer": {
+      "receiptFallback": "Beleg",
+      "download": "Herunterladen",
+      "downloadAria": "{fileName} herunterladen",
+      "downloadFallback": "Beleg",
+      "toast": {
+        "uploaded": "Beleg hochgeladen",
+        "uploadFailed": "Hochladen fehlgeschlagen"
+      },
+      "uploading": "Wird hochgeladen…",
+      "dropOrClick": "Ablegen oder klicken, um einen Beleg anzuhängen",
+      "previewAlt": "Belegvorschau",
+      "removeAria": "Belegvorschau entfernen"
+    },
+    "importWizard": {
+      "toast": {
+        "parseFailed": "Datei konnte nicht gelesen werden",
+        "importFailed": "Import fehlgeschlagen"
+      },
+      "imported": "{count, plural, one {# Transaktion importiert} other {# Transaktionen importiert}}",
+      "importAnother": "Weitere Datei importieren",
+      "rowsFound": "{count, plural, one {# Zeile gefunden} other {# Zeilen gefunden}} — Zeilen zum Importieren auswählen",
+      "selectAll": "Alle auswählen",
+      "deselectAll": "Auswahl aufheben",
+      "selectedOfTotal": "{selected} von {total} ausgewählt",
+      "importRows": "{count, plural, one {# Zeile importieren} other {# Zeilen importieren}}",
+      "parsingFile": "Datei wird gelesen…",
+      "uploadPrompt": "Kontoauszug hochladen",
+      "fileTypesHint": "CSV- oder OFX/QFX-Dateien"
+    }
+  },
+  "apiTokens": {
+    "title": "API-Token",
+    "newToken": "Neues Token",
+    "description": "Token mit begrenztem Umfang und Ablaufdatum für API-Clients und den MCP-Server — niemals dein Passwort oder deine Sitzung. Standardmäßig nur lesend; destruktive Aktionen (Löschen, Tresorzugriff) sind nie erlaubt.",
+    "toast": {
+      "createFailed": "Token konnte nicht erstellt werden",
+      "revoked": "Token widerrufen",
+      "revokeFailed": "Token konnte nicht widerrufen werden"
+    },
+    "emptyState": "Noch keine API-Token. Oben eines erstellen.",
+    "form": {
+      "title": "Neues API-Token",
+      "fields": {
+        "name": "Name",
+        "scope": "Umfang",
+        "expiresIn": "Läuft ab in"
+      },
+      "namePlaceholder": "z. B. Claude Desktop",
+      "scope": {
+        "readOnly": "Nur lesen",
+        "readWrite": "Lesen + Schreiben"
+      },
+      "expiry": {
+        "days30": "30 Tage",
+        "days90": "90 Tage",
+        "days365": "365 Tage"
+      },
+      "creating": "Wird erstellt...",
+      "create": "Erstellen"
+    },
+    "validation": {
+      "nameRequired": "Name ist erforderlich",
+      "invalidExpiry": "Ungültige Ablaufzeit"
+    },
+    "banner": {
+      "warning": "Kopiere dieses Token jetzt — du wirst es nach Verlassen dieser Seite nicht mehr sehen können.",
+      "copy": "Kopieren",
+      "copied": "Kopiert",
+      "copyAria": "Token kopieren",
+      "done": "Fertig"
+    },
+    "row": {
+      "revokeConfirm": "<strong>{tokenName}</strong> widerrufen? Jeder Client, der dieses Token verwendet, verliert sofort den Zugriff.",
+      "revoking": "Wird widerrufen...",
+      "revoke": "Widerrufen",
+      "readWrite": "Lesen + Schreiben",
+      "readOnly": "Nur lesen",
+      "revoked": "Widerrufen",
+      "expired": "Abgelaufen",
+      "created": "Erstellt am {date}",
+      "expires": "Läuft ab am {date}",
+      "lastUsed": "Zuletzt verwendet {date}",
+      "never": "nie",
+      "revokeAria": "{tokenName} widerrufen"
+    }
+  },
+  "activity": {
+    "title": "Aktivität",
+    "description": "Letzte Änderungen und Anmeldungen für deinen Arbeitsbereich.",
+    "errorTitle": "Aktivität konnte nicht geladen werden",
+    "errorBody": "Beim Abrufen deiner Aktivität ist ein Fehler aufgetreten.",
+    "retry": "Erneut versuchen",
+    "emptyTitle": "Noch keine Aktivität",
+    "emptyBody": "Änderungen an Konten, Budgets, Kategorien und Sitzungen erscheinen hier.",
+    "prevAria": "Vorherige Seite",
+    "nextAria": "Nächste Seite",
+    "pageOf": "{current} / {total}"
+  }
+}

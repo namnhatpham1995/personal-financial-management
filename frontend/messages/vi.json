@@ -1,0 +1,428 @@
+{
+  "common": {
+    "appName": "Fintrack",
+    "loading": "Đang tải…",
+    "save": "Lưu",
+    "saving": "Đang lưu...",
+    "cancel": "Hủy",
+    "delete": "Xóa",
+    "edit": "Sửa",
+    "close": "Đóng"
+  },
+  "settings": {
+    "languageLabel": "Ngôn ngữ",
+    "languageDescription": "Chọn ngôn ngữ sử dụng trong toàn bộ ứng dụng."
+  },
+  "sidebar": {
+    "nav": {
+      "overview": "Tổng quan",
+      "transactions": "Giao dịch",
+      "vault": "Kho lưu trữ",
+      "categories": "Danh mục",
+      "activity": "Hoạt động",
+      "apiTokens": "Mã API"
+    },
+    "lightMode": "Chế độ sáng",
+    "darkMode": "Chế độ tối",
+    "signOut": "Đăng xuất"
+  },
+  "auth": {
+    "signIn": {
+      "title": "Đăng nhập",
+      "subtitle": "Quay lại sổ sách giữ tiền của bạn luôn chính xác.",
+      "submit": "Đăng nhập",
+      "submitting": "Đang đăng nhập...",
+      "noAccount": "Chưa có tài khoản?",
+      "registerLink": "Đăng ký"
+    },
+    "register": {
+      "title": "Tạo tài khoản của bạn",
+      "subtitle": "Bắt đầu với góc nhìn tài chính hàng ngày điềm tĩnh như ngân hàng riêng.",
+      "submit": "Tạo tài khoản",
+      "submitting": "Đang tạo tài khoản...",
+      "haveAccount": "Đã có tài khoản?",
+      "signInLink": "Đăng nhập"
+    },
+    "fields": {
+      "firstName": "Tên",
+      "lastName": "Họ",
+      "email": "Email",
+      "password": "Mật khẩu",
+      "confirmPassword": "Xác nhận mật khẩu"
+    },
+    "password": {
+      "show": "Hiện mật khẩu",
+      "hide": "Ẩn mật khẩu",
+      "showConfirm": "Hiện xác nhận mật khẩu",
+      "hideConfirm": "Ẩn xác nhận mật khẩu"
+    },
+    "validation": {
+      "minLength8": "Tối thiểu 8 ký tự",
+      "confirmRequired": "Vui lòng xác nhận mật khẩu",
+      "passwordsDoNotMatch": "Mật khẩu không khớp"
+    },
+    "errors": {
+      "credentials": "Email hoặc mật khẩu không đúng.",
+      "rate_limit": "Quá nhiều lần thử. Vui lòng thử lại sau.",
+      "connection": "Không thể kết nối đến Fintrack. Kiểm tra kết nối mạng và thử lại.",
+      "validation": "Không thể tạo tài khoản với thông tin này.",
+      "server": "Fintrack tạm thời không khả dụng. Vui lòng thử lại sau."
+    },
+    "theme": {
+      "switchToLight": "Chuyển sang chế độ sáng",
+      "switchToDark": "Chuyển sang chế độ tối",
+      "toggle": "Chuyển đổi giao diện màu"
+    }
+  },
+  "dashboard": {
+    "title": "Tổng quan",
+    "noTransactionData": "Không có dữ liệu giao dịch trong khoảng thời gian này.",
+    "toast": {
+      "accountCreated": "Đã tạo tài khoản",
+      "accountCreateFailed": "Tạo tài khoản thất bại",
+      "accountUpdated": "Đã cập nhật tài khoản",
+      "accountUpdateFailed": "Cập nhật tài khoản thất bại",
+      "accountDeleted": "Đã xóa tài khoản",
+      "accountDeleteFailed": "Xóa tài khoản thất bại"
+    }
+  },
+  "overview": {
+    "total": "Tổng {amount}",
+    "cashFlow": "Dòng tiền",
+    "spendingByCategory": "Chi tiêu theo danh mục",
+    "recentActivity": "Hoạt động gần đây",
+    "accounts": "Tài khoản",
+    "budgetProgress": "Tiến độ ngân sách"
+  },
+  "accounts": {
+    "addAccount": "Thêm tài khoản",
+    "saving": "Đang lưu...",
+    "editAccount": "Sửa tài khoản",
+    "editAccountHint": "Thay đổi số dư ban đầu sẽ tính lại số dư hiện tại. Thay đổi đơn vị tiền tệ chỉ đổi nhãn cho các khoản hiện có, không quy đổi giá trị.",
+    "saveChanges": "Lưu thay đổi",
+    "deleteAccount": "Xóa tài khoản",
+    "deleting": "Đang xóa...",
+    "deleteConfirm": "Xóa <strong>{accountName}</strong>?",
+    "checkingConnectedTransactions": "Đang kiểm tra các giao dịch liên quan...",
+    "noTransactions": "Tài khoản này chưa có giao dịch nào.",
+    "transactionsWillBeDeleted": "{count, plural, other {# giao dịch}} liên quan đến tài khoản này cũng sẽ bị xóa vĩnh viễn.",
+    "fields": {
+      "name": "Tên",
+      "type": "Loại",
+      "currency": "Đơn vị tiền tệ (mã ISO)",
+      "initialBalance": "Số dư ban đầu"
+    },
+    "accountsHeading": "Tài khoản",
+    "yourBalances": "Số dư các tài khoản của bạn.",
+    "noAccountsYet": "Chưa có tài khoản nào",
+    "noAccountsYetBody": "Thêm tài khoản tiền mặt, ngân hàng, tiết kiệm hoặc thẻ tín dụng để bắt đầu theo dõi số dư.",
+    "noAccountsInCurrency": "Chưa có tài khoản nào ở đơn vị tiền tệ này.",
+    "viewDetails": "Xem chi tiết {accountName}",
+    "editAria": "Sửa {accountName}",
+    "deleteAria": "Xóa {accountName}",
+    "totalBalance": "Tổng số dư",
+    "mainCurrency": "Đơn vị tiền tệ chính",
+    "ratesUnavailable": "Không có tỷ giá trực tiếp cho một số đơn vị tiền tệ — tổng bên dưới hiển thị số tiền gốc.",
+    "notConverted": "(chưa quy đổi)",
+    "noRecentTransactions": "Không có giao dịch gần đây.",
+    "recentExpenses": "Chi tiêu gần đây",
+    "recentIncome": "Thu nhập gần đây",
+    "uncategorized": "Chưa phân loại",
+    "detail": {
+      "closeAria": "Đóng chi tiết tài khoản",
+      "from": "Từ",
+      "to": "Đến",
+      "expenseByCategory": "Chi tiêu theo danh mục",
+      "transactions": "Giao dịch",
+      "incomingTransfers": "Chuyển khoản đến",
+      "noTransactionsInPeriod": "Không có giao dịch cho tài khoản này trong khoảng thời gian này",
+      "noIncomingTransfers": "Không có chuyển khoản đến trong khoảng thời gian này"
+    }
+  },
+  "transactions": {
+    "title": "Giao dịch",
+    "tabs": {
+      "history": "Lịch sử",
+      "recurring": "Định kỳ"
+    },
+    "allTypes": "Tất cả loại",
+    "add": "Thêm",
+    "toast": {
+      "added": "Đã thêm giao dịch",
+      "updated": "Đã cập nhật giao dịch",
+      "deleted": "Đã xóa giao dịch",
+      "createFailed": "Tạo giao dịch thất bại",
+      "updateFailed": "Cập nhật giao dịch thất bại",
+      "deleteFailed": "Xóa giao dịch thất bại"
+    },
+    "loadError": "Tải giao dịch thất bại. Kiểm tra kết nối mạng hoặc thử làm mới trang.",
+    "table": {
+      "dateHeader": "Ngày",
+      "accountHeader": "Tài khoản",
+      "typeHeader": "Loại",
+      "categoryHeader": "Danh mục",
+      "amountHeader": "Số tiền",
+      "noteHeader": "Ghi chú",
+      "emptyMessage": "Không tìm thấy giao dịch nào",
+      "editAria": "Sửa giao dịch ngày {date}",
+      "deleteAria": "Xóa giao dịch ngày {date}",
+      "pageOf": "Trang {current} / {total}"
+    },
+    "form": {
+      "editTitle": "Sửa giao dịch",
+      "newTitle": "Giao dịch mới",
+      "fields": {
+        "account": "Tài khoản",
+        "type": "Loại",
+        "amount": "Số tiền",
+        "date": "Ngày",
+        "transferToAccount": "Chuyển đến tài khoản",
+        "category": "Danh mục",
+        "note": "Ghi chú"
+      },
+      "noCategory": "Không có danh mục",
+      "saveChanges": "Lưu thay đổi"
+    },
+    "recurring": {
+      "newRule": "Quy tắc mới",
+      "newRuleTitle": "Quy tắc định kỳ mới",
+      "fields": {
+        "account": "Tài khoản",
+        "type": "Loại",
+        "amount": "Số tiền",
+        "frequency": "Tần suất",
+        "everyNPeriods": "Mỗi N chu kỳ",
+        "startDate": "Ngày bắt đầu",
+        "note": "Ghi chú"
+      },
+      "toast": {
+        "created": "Đã tạo",
+        "createFailed": "Tạo thất bại",
+        "paused": "Đã tạm dừng",
+        "resumed": "Đã tiếp tục",
+        "deleted": "Đã xóa"
+      },
+      "empty": "Chưa có quy tắc định kỳ nào.",
+      "pausedBadge": "Đã tạm dừng",
+      "every": "Mỗi {intervalValue, plural, =1 {} other {# }}{frequency} · {accountName}",
+      "next": "Kế tiếp: {date}"
+    }
+  },
+  "budgets": {
+    "fields": {
+      "amount": "Số tiền",
+      "period": "Kỳ hạn",
+      "currency": "Đơn vị tiền tệ"
+    },
+    "period": {
+      "monthly": "Hàng tháng",
+      "yearly": "Hàng năm"
+    },
+    "saving": "Đang lưu...",
+    "validation": {
+      "enterAmount": "Nhập số tiền",
+      "selectCurrency": "Chọn đơn vị tiền tệ"
+    },
+    "progressList": {
+      "empty": "Chưa thiết lập ngân sách nào. Dùng Thêm hạn mức để tạo mới."
+    },
+    "manager": {
+      "toast": {
+        "limitSet": "Đã thiết lập hạn mức",
+        "setFailed": "Thiết lập hạn mức thất bại",
+        "limitUpdated": "Đã cập nhật hạn mức",
+        "updateFailed": "Cập nhật hạn mức thất bại",
+        "limitRemoved": "Đã gỡ hạn mức",
+        "removeFailed": "Gỡ hạn mức thất bại"
+      },
+      "editAria": "Sửa hạn mức {budgetName}",
+      "removeAria": "Gỡ hạn mức {budgetName}",
+      "loadingProgress": "Đang tải tiến độ ngân sách...",
+      "activeLimits": "{count, plural, other {# hạn mức đang áp dụng}}",
+      "addLimit": "Thêm hạn mức",
+      "allCurrencyLimitsSet": "Tất cả danh mục chi tiêu đã có hạn mức {currency}.",
+      "expenseCategory": "Danh mục chi tiêu",
+      "chooseCategory": "Chọn một danh mục",
+      "selectCategoryHint": "Chọn một danh mục chi tiêu để thiết lập hạn mức {currency}.",
+      "create": "Tạo"
+    }
+  },
+  "categories": {
+    "title": "Danh mục",
+    "newCategory": "Danh mục mới",
+    "myCategories": "Danh mục của tôi",
+    "defaultCategories": "Danh mục mặc định",
+    "defaultCategoriesSubtitle": "Chỉ đọc — áp dụng cho mọi người dùng",
+    "emptyState": "Chưa có danh mục nào. Tạo một danh mục ở trên.",
+    "income": "Thu nhập",
+    "expense": "Chi tiêu",
+    "toast": {
+      "created": "Đã tạo danh mục",
+      "duplicateName": "Đã tồn tại danh mục cùng tên với loại này",
+      "createFailed": "Tạo danh mục thất bại",
+      "renamed": "Đã đổi tên danh mục",
+      "systemNoModify": "Không thể sửa danh mục hệ thống",
+      "renameFailed": "Đổi tên danh mục thất bại",
+      "deleted": "Đã xóa danh mục - các mục liên quan chuyển sang Chưa phân loại",
+      "systemNoDelete": "Không thể xóa danh mục hệ thống",
+      "deleteFailed": "Xóa danh mục thất bại"
+    },
+    "form": {
+      "fields": {
+        "name": "Tên",
+        "type": "Loại"
+      },
+      "namePlaceholder": "vd. Gym & Thể thao"
+    },
+    "validation": {
+      "nameRequired": "Vui lòng nhập tên"
+    },
+    "row": {
+      "deleteConfirm": "Xóa <strong>{categoryName}</strong>? Các giao dịch, ngân sách và mục định kỳ liên quan sẽ chuyển sang <strong>Chưa phân loại</strong>.",
+      "deleting": "Đang xóa...",
+      "saveNameAria": "Lưu tên",
+      "cancelRenameAria": "Hủy đổi tên",
+      "readOnlyAria": "Chỉ đọc",
+      "renameAria": "Đổi tên",
+      "deleteAria": "Xóa"
+    }
+  },
+  "vault": {
+    "title": "Kho lưu trữ",
+    "tabs": {
+      "browse": "Duyệt",
+      "import": "Nhập sao kê",
+      "upload": "Tải hóa đơn"
+    },
+    "toast": {
+      "documentDeleted": "Đã xóa tài liệu",
+      "deleteFailed": "Xóa thất bại",
+      "downloadFailed": "Tải xuống thất bại",
+      "receiptSaved": "Đã lưu hóa đơn"
+    },
+    "account": "Tài khoản",
+    "selectAccount": "Chọn tài khoản…",
+    "emptyState": {
+      "title": "Chưa có tài liệu nào",
+      "body": "Tải lên hóa đơn hoặc nhập sao kê ngân hàng để bắt đầu."
+    },
+    "table": {
+      "type": "Loại",
+      "file": "Tệp",
+      "date": "Ngày",
+      "status": "Trạng thái"
+    },
+    "receipt": "Hóa đơn",
+    "statement": "Sao kê",
+    "download": "Tải xuống",
+    "downloadFallback": "tài liệu",
+    "deleteConfirm": "Xóa tài liệu này?",
+    "delete": "Xóa",
+    "downloadAria": "Tải xuống {fileName}",
+    "deleteAria": "Xóa {fileName}",
+    "prev": "Trước",
+    "next": "Tiếp",
+    "pageOf": "{current} / {total}",
+    "receiptIndicator": {
+      "attached": "Đã đính kèm hóa đơn"
+    },
+    "uploadViewer": {
+      "receiptFallback": "Hóa đơn",
+      "download": "Tải xuống",
+      "downloadAria": "Tải xuống {fileName}",
+      "downloadFallback": "hóa đơn",
+      "toast": {
+        "uploaded": "Đã tải lên hóa đơn",
+        "uploadFailed": "Tải lên thất bại"
+      },
+      "uploading": "Đang tải lên…",
+      "dropOrClick": "Kéo thả hoặc nhấp để đính kèm hóa đơn",
+      "previewAlt": "Xem trước hóa đơn",
+      "removeAria": "Xóa ảnh xem trước hóa đơn"
+    },
+    "importWizard": {
+      "toast": {
+        "parseFailed": "Đọc tệp thất bại",
+        "importFailed": "Nhập thất bại"
+      },
+      "imported": "{count, plural, other {Đã nhập # giao dịch}}",
+      "importAnother": "Nhập tệp khác",
+      "rowsFound": "{count, plural, other {Tìm thấy # dòng}} — chọn các dòng cần nhập",
+      "selectAll": "Chọn tất cả",
+      "deselectAll": "Bỏ chọn tất cả",
+      "selectedOfTotal": "Đã chọn {selected} / {total}",
+      "importRows": "{count, plural, other {Nhập # dòng}}",
+      "parsingFile": "Đang đọc tệp…",
+      "uploadPrompt": "Tải lên sao kê ngân hàng",
+      "fileTypesHint": "Tệp CSV hoặc OFX/QFX"
+    }
+  },
+  "apiTokens": {
+    "title": "Mã API",
+    "newToken": "Mã mới",
+    "description": "Mã có phạm vi và thời hạn dành cho ứng dụng API và máy chủ MCP — không phải mật khẩu hay phiên đăng nhập của bạn. Mặc định chỉ đọc; các thao tác phá hủy (xóa, truy cập kho lưu trữ) không bao giờ được phép.",
+    "toast": {
+      "createFailed": "Tạo mã thất bại",
+      "revoked": "Đã thu hồi mã",
+      "revokeFailed": "Thu hồi mã thất bại"
+    },
+    "emptyState": "Chưa có mã API nào. Tạo một mã ở trên.",
+    "form": {
+      "title": "Mã API mới",
+      "fields": {
+        "name": "Tên",
+        "scope": "Phạm vi",
+        "expiresIn": "Hết hạn sau"
+      },
+      "namePlaceholder": "vd. Claude Desktop",
+      "scope": {
+        "readOnly": "Chỉ đọc",
+        "readWrite": "Đọc + Ghi"
+      },
+      "expiry": {
+        "days30": "30 ngày",
+        "days90": "90 ngày",
+        "days365": "365 ngày"
+      },
+      "creating": "Đang tạo...",
+      "create": "Tạo"
+    },
+    "validation": {
+      "nameRequired": "Vui lòng nhập tên",
+      "invalidExpiry": "Thời hạn không hợp lệ"
+    },
+    "banner": {
+      "warning": "Sao chép mã này ngay — bạn sẽ không thể xem lại sau khi rời khỏi trang này.",
+      "copy": "Sao chép",
+      "copied": "Đã sao chép",
+      "copyAria": "Sao chép mã",
+      "done": "Xong"
+    },
+    "row": {
+      "revokeConfirm": "Thu hồi <strong>{tokenName}</strong>? Mọi ứng dụng đang dùng mã này sẽ mất quyền truy cập ngay lập tức.",
+      "revoking": "Đang thu hồi...",
+      "revoke": "Thu hồi",
+      "readWrite": "Đọc + Ghi",
+      "readOnly": "Chỉ đọc",
+      "revoked": "Đã thu hồi",
+      "expired": "Đã hết hạn",
+      "created": "Tạo lúc {date}",
+      "expires": "Hết hạn {date}",
+      "lastUsed": "Dùng lần cuối {date}",
+      "never": "chưa từng",
+      "revokeAria": "Thu hồi {tokenName}"
+    }
+  },
+  "activity": {
+    "title": "Hoạt động",
+    "description": "Các thay đổi và lượt đăng nhập gần đây trong không gian làm việc của bạn.",
+    "errorTitle": "Không thể tải hoạt động",
+    "errorBody": "Đã có lỗi xảy ra khi tải hoạt động của bạn.",
+    "retry": "Thử lại",
+    "emptyTitle": "Chưa có hoạt động nào",
+    "emptyBody": "Các thay đổi về tài khoản, ngân sách, danh mục và phiên đăng nhập sẽ xuất hiện ở đây.",
+    "prevAria": "Trang trước",
+    "nextAria": "Trang sau",
+    "pageOf": "{current} / {total}"
+  }
+}
