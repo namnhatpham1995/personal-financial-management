@@ -1,0 +1,15 @@
+{
+  "common": {
+    "appName": "Fintrack",
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close"
+  },
+  "settings": {
+    "languageLabel": "Language",
+    "languageDescription": "Choose the language used throughout the app."
+  }
+}
