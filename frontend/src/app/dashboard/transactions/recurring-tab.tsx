@@ -9,6 +9,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import { useLocale, useTranslations } from "next-intl";
 import { Plus, Trash2, Pause, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +33,9 @@ const inputCls =
 
 export function RecurringTab() {
   const qc = useQueryClient();
+  const t = useTranslations("transactions.recurring");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
   const [showForm, setShowForm] = useState(false);
 
   const { data: items = [], isLoading } = useQuery({
@@ -46,23 +50,23 @@ export function RecurringTab() {
 
   const createMutation = useMutation({
     mutationFn: (data: CreateRecurringPayload) => recurringService.create(data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["recurring"] }); setShowForm(false); toast.success("Created"); },
-    onError: () => toast.error("Failed to create"),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["recurring"] }); setShowForm(false); toast.success(t("toast.created")); },
+    onError: () => toast.error(t("toast.createFailed")),
   });
 
   const pauseMutation = useMutation({
     mutationFn: (id: number) => recurringService.pause(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["recurring"] }); toast.success("Paused"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["recurring"] }); toast.success(t("toast.paused")); },
   });
 
   const resumeMutation = useMutation({
     mutationFn: (id: number) => recurringService.resume(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["recurring"] }); toast.success("Resumed"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["recurring"] }); toast.success(t("toast.resumed")); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => recurringService.delete(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["recurring"] }); toast.success("Deleted"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["recurring"] }); toast.success(t("toast.deleted")); },
   });
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } =
@@ -72,50 +76,50 @@ export function RecurringTab() {
     <div className="space-y-6">
       <div className="flex justify-end">
         <Button onClick={() => { setShowForm(!showForm); reset(); }}>
-          <Plus className="h-4 w-4" /> New Rule
+          <Plus className="h-4 w-4" /> {t("newRule")}
         </Button>
       </div>
 
       {showForm && (
         <Card className="p-5">
-          <h2 className="mb-4 font-semibold tracking-tight text-foreground">New Recurring Rule</h2>
+          <h2 className="mb-4 font-semibold tracking-tight text-foreground">{t("newRuleTitle")}</h2>
           <form
             onSubmit={handleSubmit((v) => createMutation.mutate(v))}
             className="grid grid-cols-1 gap-4 sm:grid-cols-2"
           >
-            <Field label="Account" error={errors.accountId?.message}>
+            <Field label={t("fields.account")} error={errors.accountId?.message}>
               <select {...register("accountId")} className={inputCls}>
                 {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
               </select>
             </Field>
-            <Field label="Type" error={errors.transactionType?.message}>
+            <Field label={t("fields.type")} error={errors.transactionType?.message}>
               <select {...register("transactionType")} className={inputCls}>
-                {["INCOME", "EXPENSE", "TRANSFER"].map((t) => <option key={t}>{t}</option>)}
+                {["INCOME", "EXPENSE", "TRANSFER"].map((type) => <option key={type}>{type}</option>)}
               </select>
             </Field>
-            <Field label="Amount" error={errors.amount?.message}>
+            <Field label={t("fields.amount")} error={errors.amount?.message}>
               <input type="number" step="0.01" {...register("amount")} className={inputCls} />
             </Field>
-            <Field label="Frequency" error={errors.frequency?.message}>
+            <Field label={t("fields.frequency")} error={errors.frequency?.message}>
               <select {...register("frequency")} className={inputCls}>
                 {["DAILY", "WEEKLY", "MONTHLY", "YEARLY"].map((f) => <option key={f}>{f}</option>)}
               </select>
             </Field>
-            <Field label="Every N periods" error={errors.intervalValue?.message}>
+            <Field label={t("fields.everyNPeriods")} error={errors.intervalValue?.message}>
               <input type="number" defaultValue={1} {...register("intervalValue")} className={inputCls} />
             </Field>
-            <Field label="Start Date" error={errors.startDate?.message}>
+            <Field label={t("fields.startDate")} error={errors.startDate?.message}>
               <input type="date" {...register("startDate")} className={inputCls} />
             </Field>
-            <Field label="Note" error={errors.note?.message}>
+            <Field label={t("fields.note")} error={errors.note?.message}>
               <input {...register("note")} className={inputCls} />
             </Field>
             <div className="flex gap-2 sm:col-span-2">
               <Button type="submit" disabled={isSubmitting}>
-                Save
+                {tCommon("save")}
               </Button>
               <Button type="button" variant="secondary" onClick={() => setShowForm(false)}>
-                Cancel
+                {tCommon("cancel")}
               </Button>
             </div>
           </form>
@@ -123,11 +127,11 @@ export function RecurringTab() {
       )}
 
       {isLoading ? (
-        <p className="text-muted-foreground">Loading…</p>
+        <p className="text-muted-foreground">{tCommon("loading")}</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {items.length === 0 ? (
-            <p className="text-sm text-muted-foreground sm:col-span-2">No recurring rules yet.</p>
+            <p className="text-sm text-muted-foreground sm:col-span-2">{t("empty")}</p>
           ) : (
             items.map((item) => (
               <Card
@@ -140,17 +144,20 @@ export function RecurringTab() {
                       <Badge variant={item.transactionType === "INCOME" ? "income" : item.transactionType === "EXPENSE" ? "expense" : "transfer"}>
                         {item.transactionType}
                       </Badge>
-                      {!item.active && <Badge variant="neutral">Paused</Badge>}
+                      {!item.active && <Badge variant="neutral">{t("pausedBadge")}</Badge>}
                     </div>
                     <p className="mt-2 font-mono tabular-nums text-lg font-bold text-foreground">
-                      {formatAmount(item.amount)}
+                      {formatAmount(item.amount, locale)}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      Every {item.intervalValue > 1 ? `${item.intervalValue} ` : ""}
-                      {item.frequency.toLowerCase()} · {item.accountName}
+                      {t("every", {
+                        intervalValue: item.intervalValue,
+                        frequency: item.frequency.toLowerCase(),
+                        accountName: item.accountName,
+                      })}
                     </p>
                     <p className="mt-1 font-mono tabular-nums text-xs text-muted-foreground">
-                      Next: {formatDate(item.nextRunDate)}
+                      {t("next", { date: formatDate(item.nextRunDate, locale) })}
                     </p>
                   </div>
                   <div className="flex items-center gap-1">

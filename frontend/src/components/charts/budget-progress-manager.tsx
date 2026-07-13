@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import {
   BudgetLimitForm,
   type BudgetLimitPayload,
@@ -23,6 +24,7 @@ interface BudgetProgressManagerProps {
 }
 
 export function BudgetProgressManager({ currency }: BudgetProgressManagerProps) {
+  const t = useTranslations("budgets.manager");
   const queryClient = useQueryClient();
   const [editingBudgetId, setEditingBudgetId] = useState<number | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -84,9 +86,9 @@ export function BudgetProgressManager({ currency }: BudgetProgressManagerProps) 
       invalidateBudgets();
       setShowAddForm(false);
       setSelectedCategoryId("");
-      toast.success("Limit set");
+      toast.success(t("toast.limitSet"));
     },
-    onError: () => toast.error("Failed to set limit"),
+    onError: () => toast.error(t("toast.setFailed")),
   });
 
   const updateMutation = useMutation({
@@ -95,9 +97,9 @@ export function BudgetProgressManager({ currency }: BudgetProgressManagerProps) 
     onSuccess: () => {
       invalidateBudgets();
       setEditingBudgetId(null);
-      toast.success("Limit updated");
+      toast.success(t("toast.limitUpdated"));
     },
-    onError: () => toast.error("Failed to update limit"),
+    onError: () => toast.error(t("toast.updateFailed")),
   });
 
   const removeMutation = useMutation({
@@ -105,9 +107,9 @@ export function BudgetProgressManager({ currency }: BudgetProgressManagerProps) 
     onSuccess: () => {
       invalidateBudgets();
       setEditingBudgetId(null);
-      toast.success("Limit removed");
+      toast.success(t("toast.limitRemoved"));
     },
-    onError: () => toast.error("Failed to remove limit"),
+    onError: () => toast.error(t("toast.removeFailed")),
   });
 
   const pending =
@@ -128,7 +130,7 @@ export function BudgetProgressManager({ currency }: BudgetProgressManagerProps) 
           type="button"
           onClick={() => setEditingBudgetId(budget.id)}
           className="inline-flex min-h-11 min-w-11 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
-          aria-label={`Edit ${item.budgetName} limit`}
+          aria-label={t("editAria", { budgetName: item.budgetName })}
         >
           <Pencil className="h-3.5 w-3.5" />
         </button>
@@ -137,7 +139,7 @@ export function BudgetProgressManager({ currency }: BudgetProgressManagerProps) 
           onClick={() => removeMutation.mutate(budget.id)}
           disabled={pending}
           className="inline-flex min-h-11 min-w-11 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-50 transition-colors"
-          aria-label={`Remove ${item.budgetName} limit`}
+          aria-label={t("removeAria", { budgetName: item.budgetName })}
         >
           <Trash2 className="h-3.5 w-3.5" />
         </button>
@@ -167,7 +169,7 @@ export function BudgetProgressManager({ currency }: BudgetProgressManagerProps) 
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
-          {isLoading ? "Loading budget progress..." : `${progress.length} active limits`}
+          {isLoading ? t("loadingProgress") : t("activeLimits", { count: progress.length })}
         </p>
         <Button
           type="button"
@@ -175,7 +177,7 @@ export function BudgetProgressManager({ currency }: BudgetProgressManagerProps) 
           onClick={() => setShowAddForm((current) => !current)}
           disabled={isLoading}
         >
-          <Plus className="h-3.5 w-3.5" /> Add limit
+          <Plus className="h-3.5 w-3.5" /> {t("addLimit")}
         </Button>
       </div>
 
@@ -183,13 +185,13 @@ export function BudgetProgressManager({ currency }: BudgetProgressManagerProps) 
         <div className="rounded-xl border border-border bg-card p-4">
           {availableCategoriesToAdd.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              All expense categories already have {currency} limits.
+              {t("allCurrencyLimitsSet", { currency })}
             </p>
           ) : (
             <div className="space-y-3">
               <div>
                 <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Expense category
+                  {t("expenseCategory")}
                 </label>
                 <select
                   value={selectedCategoryId}
@@ -200,7 +202,7 @@ export function BudgetProgressManager({ currency }: BudgetProgressManagerProps) 
                   }
                   className={inputCls}
                 >
-                  <option value="">Choose a category</option>
+                  <option value="">{t("chooseCategory")}</option>
                   {availableCategoriesToAdd.map((category) => (
                     <option key={category.id} value={category.id}>
                       {category.name}
@@ -219,11 +221,11 @@ export function BudgetProgressManager({ currency }: BudgetProgressManagerProps) 
                     setSelectedCategoryId("");
                   }}
                   isPending={pending}
-                  submitLabel="Create"
+                  submitLabel={t("create")}
                 />
               ) : (
                 <p className="text-xs text-muted-foreground/60">
-                  Select an expense category to set its {currency} limit.
+                  {t("selectCategoryHint", { currency })}
                 </p>
               )}
             </div>

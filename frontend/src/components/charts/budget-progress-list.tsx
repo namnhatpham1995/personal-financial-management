@@ -1,6 +1,9 @@
+"use client";
+
 import { BudgetProgress } from "@/services/analytics-service";
 import { AlertCircle } from "lucide-react";
 import { type ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import { formatCurrency } from "@/lib/utils";
 
 const WARN_THRESHOLD = 70;
@@ -21,9 +24,10 @@ interface Props {
 }
 
 export function BudgetProgressList({ budgets, renderActions, renderDetails, renderCurrencyBadge }: Props) {
+  const t = useTranslations("budgets.progressList");
   if (budgets.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">No budgets configured. Use Add limit to create one.</p>
+      <p className="text-sm text-muted-foreground">{t("empty")}</p>
     );
   }
 

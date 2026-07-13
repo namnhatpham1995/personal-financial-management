@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { vaultService, VaultDocument } from "@/services/vault-service";
 import { toast } from "sonner";
 import { Upload, X, Download, Receipt } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export function ReceiptUploadViewer({ transactionId, documentId, onLinked }: Props) {
+  const t = useTranslations("vault.uploadViewer");
   const qc = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -28,7 +30,7 @@ export function ReceiptUploadViewer({ transactionId, documentId, onLinked }: Pro
   const upload = useMutation({
     mutationFn: (file: File) => vaultService.upload("RECEIPT", file),
     onSuccess: async (doc) => {
-      toast.success("Receipt uploaded");
+      toast.success(t("toast.uploaded"));
       if (transactionId) {
         const linked = await vaultService.linkToTransaction(doc.id, transactionId);
         onLinked?.(linked);
@@ -37,7 +39,7 @@ export function ReceiptUploadViewer({ transactionId, documentId, onLinked }: Pro
       }
       qc.invalidateQueries({ queryKey: ["vault"] });
     },
-    onError: () => toast.error("Upload failed"),
+    onError: () => toast.error(t("toast.uploadFailed")),
   });
 
   const handleFile = (file: File) => {
@@ -65,7 +67,7 @@ export function ReceiptUploadViewer({ transactionId, documentId, onLinked }: Pro
           <Receipt className="h-5 w-5 shrink-0 text-success" />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium text-foreground">
-              {doc.originalFilename ?? "Receipt"}
+              {doc.originalFilename ?? t("receiptFallback")}
             </p>
             <p className="text-xs text-muted-foreground">
               {new Date(doc.capturedAt).toLocaleDateString()}
@@ -75,8 +77,8 @@ export function ReceiptUploadViewer({ transactionId, documentId, onLinked }: Pro
             <button
               onClick={openDownload}
               className="inline-flex min-h-11 min-w-11 items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-              title="Download"
-              aria-label={`Download ${doc.originalFilename ?? "receipt"}`}
+              title={t("download")}
+              aria-label={t("downloadAria", { fileName: doc.originalFilename ?? t("downloadFallback") })}
             >
               <Download className="h-4 w-4" />
             </button>
@@ -99,7 +101,7 @@ export function ReceiptUploadViewer({ transactionId, documentId, onLinked }: Pro
         >
           <Upload className="h-6 w-6 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
-            {upload.isPending ? "Uploading…" : "Drop or click to attach receipt"}
+            {upload.isPending ? t("uploading") : t("dropOrClick")}
           </p>
           <input
             ref={inputRef}
@@ -119,13 +121,13 @@ export function ReceiptUploadViewer({ transactionId, documentId, onLinked }: Pro
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={previewUrl}
-            alt="Receipt preview"
+            alt={t("previewAlt")}
             className="max-h-48 w-full rounded-lg object-contain border border-border"
           />
           <button
             onClick={() => setPreviewUrl(null)}
             className="absolute right-1 top-1 inline-flex min-h-9 min-w-9 items-center justify-center rounded-full bg-background/80 text-muted-foreground hover:text-foreground"
-            aria-label="Remove receipt preview"
+            aria-label={t("removeAria")}
           >
             <X className="h-3 w-3" />
           </button>

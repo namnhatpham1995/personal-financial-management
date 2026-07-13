@@ -1,14 +1,18 @@
 "use client";
 
+import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Check, Lock, Pencil, Trash2, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Category } from "@/services/category-service";
 import { Button } from "@/components/ui/button";
 
-const renameSchema = z.object({ name: z.string().min(1, "Name is required").max(100) });
-type RenameValues = z.infer<typeof renameSchema>;
+function createRenameSchema(t: (key: string) => string) {
+  return z.object({ name: z.string().min(1, t("validation.nameRequired")).max(100) });
+}
+type RenameValues = z.infer<ReturnType<typeof createRenameSchema>>;
 
 export interface CategoryRowProps {
   category: Category;
@@ -42,6 +46,9 @@ export function CategoryRow({
   isDeletePending,
   readonly = false,
 }: CategoryRowProps) {
+  const t = useTranslations("categories");
+  const tCommon = useTranslations("common");
+  const renameSchema = useMemo(() => createRenameSchema(t), [t]);
   const renameForm = useForm<RenameValues>({
     resolver: zodResolver(renameSchema),
     defaultValues: { name: category.name },
@@ -60,7 +67,7 @@ export function CategoryRow({
               {renameForm.formState.errors.name.message}
             </span>
           )}
-          <Button type="submit" size="sm" className="px-2.5" disabled={isRenamePending} aria-label="Save name">
+          <Button type="submit" size="sm" className="px-2.5" disabled={isRenamePending} aria-label={t("row.saveNameAria")}>
             <Check className="h-3.5 w-3.5" />
           </Button>
           <Button
@@ -68,7 +75,7 @@ export function CategoryRow({
             variant="secondary"
             size="sm"
             className="px-2.5"
-            aria-label="Cancel rename"
+            aria-label={t("row.cancelRenameAria")}
             onClick={() => {
               renameForm.reset();
               onEditCancel();
@@ -86,16 +93,17 @@ export function CategoryRow({
       <div className="px-4 py-3">
         <div className="flex items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            Delete <span className="font-medium text-foreground">{category.name}</span>? Transactions,
-            budgets, and recurring items will move to{" "}
-            <span className="font-medium text-foreground">Uncategorized</span>.
+            {t.rich("row.deleteConfirm", {
+              categoryName: category.name,
+              strong: (chunks) => <span className="font-medium text-foreground">{chunks}</span>,
+            })}
           </p>
           <div className="flex shrink-0 gap-2">
             <Button variant="destructive" size="sm" onClick={onDeleteConfirm} disabled={isDeletePending}>
-              {isDeletePending ? "Deleting..." : "Delete"}
+              {isDeletePending ? t("row.deleting") : tCommon("delete")}
             </Button>
             <Button variant="secondary" size="sm" onClick={onDeleteCancel}>
-              Cancel
+              {tCommon("cancel")}
             </Button>
           </div>
         </div>
@@ -110,7 +118,7 @@ export function CategoryRow({
 
         <div className="flex shrink-0 items-center gap-2">
           {readonly ? (
-            <Lock className="h-3.5 w-3.5 text-muted-foreground/40" aria-label="Read-only" />
+            <Lock className="h-3.5 w-3.5 text-muted-foreground/40" aria-label={t("row.readOnlyAria")} />
           ) : (
             <div className="flex gap-1">
               <button
@@ -119,14 +127,14 @@ export function CategoryRow({
                   onEditStart();
                 }}
                 className="inline-flex min-h-11 min-w-11 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
-                aria-label="Rename"
+                aria-label={t("row.renameAria")}
               >
                 <Pencil className="h-3.5 w-3.5" />
               </button>
               <button
                 onClick={onDeleteRequest}
                 className="inline-flex min-h-11 min-w-11 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-                aria-label="Delete"
+                aria-label={t("row.deleteAria")}
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </button>

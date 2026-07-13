@@ -8,6 +8,7 @@ import { StatementImportWizard } from "@/components/vault/statement-import-wizar
 import { ReceiptUploadViewer } from "@/components/vault/receipt-upload-viewer";
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
+import { useLocale, useTranslations } from "next-intl";
 import { Receipt, FileText, Download, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +22,9 @@ export default function VaultPage() {
 
 function VaultContent() {
   const qc = useQueryClient();
+  const t = useTranslations("vault");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
   const [page, setPage] = useState(0);
   const [activeTab, setActiveTab] = useState<"browse" | "import" | "upload">("browse");
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(null);
@@ -38,10 +42,10 @@ function VaultContent() {
   const deleteMut = useMutation({
     mutationFn: (id: string) => vaultService.deleteById(id),
     onSuccess: () => {
-      toast.success("Document deleted");
+      toast.success(t("toast.documentDeleted"));
       qc.invalidateQueries({ queryKey: ["vault"] });
     },
-    onError: () => toast.error("Delete failed"),
+    onError: () => toast.error(t("toast.deleteFailed")),
   });
 
   const openDownload = async (doc: VaultDocument) => {
@@ -53,7 +57,7 @@ function VaultContent() {
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 10_000);
     } catch {
-      toast.error("Download failed");
+      toast.error(t("toast.downloadFailed"));
     }
   };
 
@@ -62,7 +66,7 @@ function VaultContent() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Vault</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">{t("title")}</h1>
       </div>
 
       <div className="flex gap-1 border-b border-border">
@@ -71,13 +75,13 @@ function VaultContent() {
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={cn(
-              "px-4 py-2 text-sm font-medium capitalize transition-colors",
+              "px-4 py-2 text-sm font-medium transition-colors",
               activeTab === tab
                 ? "border-b-2 border-primary text-primary"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            {tab === "import" ? "Import Statement" : tab === "upload" ? "Upload Receipt" : "Browse"}
+            {t(`tabs.${tab}`)}
           </button>
         ))}
       </div>
@@ -85,13 +89,13 @@ function VaultContent() {
       {activeTab === "import" && (
         <div className="max-w-lg space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Account</label>
+            <label className="text-sm font-medium text-foreground">{t("account")}</label>
             <select
               className="w-full rounded-md border border-border bg-card px-3.5 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
               value={selectedAccountId ?? ""}
               onChange={(e) => setSelectedAccountId(Number(e.target.value) || null)}
             >
-              <option value="">Select account…</option>
+              <option value="">{t("selectAccount")}</option>
               {(accounts ?? []).map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.name}
@@ -112,7 +116,7 @@ function VaultContent() {
         <div className="max-w-md">
           <ReceiptUploadViewer
             onLinked={() => {
-              toast.success("Receipt saved");
+              toast.success(t("toast.receiptSaved"));
               qc.invalidateQueries({ queryKey: ["vault"] });
               setActiveTab("browse");
             }}
@@ -123,15 +127,15 @@ function VaultContent() {
       {activeTab === "browse" && (
         <>
           {isLoading && (
-            <p className="text-sm text-muted-foreground">Loading…</p>
+            <p className="text-sm text-muted-foreground">{tCommon("loading")}</p>
           )}
 
           {!isLoading && (!vaultPage?.content?.length) && (
             <div className="flex flex-col items-center gap-3 py-12 text-center">
               <FileText className="h-10 w-10 text-muted-foreground/40" />
-              <p className="text-sm text-muted-foreground">No documents yet</p>
+              <p className="text-sm text-muted-foreground">{t("emptyState.title")}</p>
               <p className="text-xs text-muted-foreground">
-                Upload a receipt or import a bank statement to get started.
+                {t("emptyState.body")}
               </p>
             </div>
           )}
@@ -141,10 +145,10 @@ function VaultContent() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border bg-muted/30">
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Type</th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">File</th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Date</th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("table.type")}</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("table.file")}</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("table.date")}</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("table.status")}</th>
                     <th className="px-4 py-3" />
                   </tr>
                 </thead>
@@ -154,11 +158,11 @@ function VaultContent() {
                       <td className="px-4 py-3">
                         {doc.type === "RECEIPT" ? (
                           <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
-                            <Receipt className="h-4 w-4" /> Receipt
+                            <Receipt className="h-4 w-4" /> {t("receipt")}
                           </span>
                         ) : (
                           <span className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
-                            <FileText className="h-4 w-4" /> Statement
+                            <FileText className="h-4 w-4" /> {t("statement")}
                           </span>
                         )}
                       </td>
@@ -166,7 +170,7 @@ function VaultContent() {
                         {doc.originalFilename ?? doc.id}
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">
-                        {formatDate(doc.capturedAt.split("T")[0])}
+                        {formatDate(doc.capturedAt.split("T")[0], locale)}
                       </td>
                       <td className="px-4 py-3">
                         <span className={cn(
@@ -184,21 +188,21 @@ function VaultContent() {
                             <button
                               onClick={() => openDownload(doc)}
                               className="inline-flex min-h-10 min-w-10 items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                              title="Download"
-                              aria-label={`Download ${doc.originalFilename ?? "document"}`}
+                              title={t("download")}
+                              aria-label={t("downloadAria", { fileName: doc.originalFilename ?? t("downloadFallback") })}
                             >
                               <Download className="h-4 w-4" />
                             </button>
                           )}
                           <button
                             onClick={() => {
-                              if (confirm("Delete this document?")) {
+                              if (confirm(t("deleteConfirm"))) {
                                 deleteMut.mutate(doc.id);
                               }
                             }}
                             className="inline-flex min-h-10 min-w-10 items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
-                            title="Delete"
-                            aria-label={`Delete ${doc.originalFilename ?? "document"}`}
+                            title={t("delete")}
+                            aria-label={t("deleteAria", { fileName: doc.originalFilename ?? t("downloadFallback") })}
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -218,17 +222,17 @@ function VaultContent() {
                 onClick={() => setPage((p) => p - 1)}
                 className="flex min-h-11 items-center gap-1 text-sm text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors"
               >
-                <ChevronLeft className="h-4 w-4" /> Prev
+                <ChevronLeft className="h-4 w-4" /> {t("prev")}
               </button>
               <span className="text-sm text-muted-foreground">
-                {page + 1} / {totalPages}
+                {t("pageOf", { current: page + 1, total: totalPages })}
               </span>
               <button
                 disabled={page + 1 >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
                 className="flex min-h-11 items-center gap-1 text-sm text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors"
               >
-                Next <ChevronRight className="h-4 w-4" />
+                {t("next")} <ChevronRight className="h-4 w-4" />
               </button>
             </div>
           )}

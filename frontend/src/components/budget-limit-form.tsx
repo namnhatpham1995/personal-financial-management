@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -11,13 +12,15 @@ export type BudgetPeriod = "MONTHLY" | "YEARLY";
 
 const CURRENCY_FALLBACK = ["USD", "VND", "EUR"];
 
-const limitSchema = z.object({
-  amount: z.string().min(1, "Enter an amount"),
-  period: z.enum(["MONTHLY", "YEARLY"]),
-  currency: z.string().regex(/^[A-Z]{3}$/, "Select a currency"),
-});
+function createLimitSchema(t: (key: string) => string) {
+  return z.object({
+    amount: z.string().min(1, t("validation.enterAmount")),
+    period: z.enum(["MONTHLY", "YEARLY"]),
+    currency: z.string().regex(/^[A-Z]{3}$/, t("validation.selectCurrency")),
+  });
+}
 
-type LimitValues = z.infer<typeof limitSchema>;
+type LimitValues = z.infer<ReturnType<typeof createLimitSchema>>;
 
 export interface BudgetLimitPayload {
   amountLimit: string;
@@ -62,10 +65,13 @@ export function BudgetLimitForm({
   onSubmit,
   onCancel,
   isPending,
-  submitLabel = "Save",
+  submitLabel,
   className,
 }: BudgetLimitFormProps) {
+  const t = useTranslations("budgets");
+  const tCommon = useTranslations("common");
   const currencies = availableCurrencies?.length ? availableCurrencies : CURRENCY_FALLBACK;
+  const limitSchema = useMemo(() => createLimitSchema(t), [t]);
 
   const form = useForm<LimitValues>({
     resolver: zodResolver(limitSchema),
@@ -88,24 +94,24 @@ export function BudgetLimitForm({
   return (
     <form onSubmit={form.handleSubmit(handleSubmit)} className={cn("flex flex-wrap items-end gap-2 pt-1", className)}>
       <div>
-        <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-muted-foreground">Amount</label>
+        <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("fields.amount")}</label>
         <input type="number" step="0.01" {...form.register("amount")} className={`w-28 ${inputCls}`} />
         {form.formState.errors.amount && (
           <p className="mt-0.5 text-xs text-rose-600 dark:text-rose-400">{form.formState.errors.amount.message}</p>
         )}
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-muted-foreground">Period</label>
+        <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("fields.period")}</label>
         <select {...form.register("period")} className={inputCls}>
-          <option value="MONTHLY">Monthly</option>
-          <option value="YEARLY">Yearly</option>
+          <option value="MONTHLY">{t("period.monthly")}</option>
+          <option value="YEARLY">{t("period.yearly")}</option>
         </select>
       </div>
       {lockCurrency ? (
         <input type="hidden" {...form.register("currency")} />
       ) : (
         <div>
-          <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-muted-foreground">Currency</label>
+          <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("fields.currency")}</label>
           <select {...form.register("currency")} className={inputCls}>
             {currencies.map((c) => (
               <option key={c} value={c}>{c}</option>
@@ -118,10 +124,10 @@ export function BudgetLimitForm({
       )}
       <div className="flex gap-1">
         <Button type="submit" size="sm" className="py-1" disabled={isPending}>
-          {isPending ? "Saving..." : submitLabel}
+          {isPending ? t("saving") : submitLabel ?? tCommon("save")}
         </Button>
         <Button type="button" variant="secondary" size="sm" className="py-1" onClick={onCancel}>
-          Cancel
+          {tCommon("cancel")}
         </Button>
       </div>
     </form>

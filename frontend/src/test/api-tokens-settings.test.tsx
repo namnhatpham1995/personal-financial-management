@@ -1,9 +1,10 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CreatedTokenBanner } from "@/app/dashboard/settings/api-tokens/created-token-banner";
 import { TokenRow } from "@/app/dashboard/settings/api-tokens/token-row";
 import type { ApiToken } from "@/services/api-token-service";
+import { renderWithIntl as render } from "@/test/test-utils";
 
 const token: ApiToken = {
   id: 1,
