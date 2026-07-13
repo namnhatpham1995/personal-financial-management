@@ -18,7 +18,7 @@ export interface ActivityPage {
 
 export const activityService = {
   list: async (page = 0, size = 20): Promise<ActivityPage> => {
-    const { data } = await apiClient.get<ActivityPage>("/api/v1/activity", {
+    const { data } = await apiClient.get<ActivityPage>("/activity", {
       params: { page, size },
     });
     return data;
