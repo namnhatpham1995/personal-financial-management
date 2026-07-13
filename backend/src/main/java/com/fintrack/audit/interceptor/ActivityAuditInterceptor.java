@@ -37,10 +37,14 @@ public class ActivityAuditInterceptor implements HandlerInterceptor {
 
         if (!MUTATION_METHODS.contains(request.getMethod())) return;
         if (response.getStatus() < 200 || response.getStatus() >= 300) return;
-        // Auth endpoints create/validate credentials; the principal isn't the acting user
         String uri = request.getRequestURI();
         if (uri == null) return;
-        if (uri.startsWith("/api/v1/auth/")) return;
+        // Auth endpoints mostly create/validate credentials, where the principal isn't the
+        // acting user (register has none yet; login/refresh/logout act on tokens, not profile
+        // data) — excluded from the audit trail. /auth/me/language is a genuine authenticated
+        // profile mutation by the acting user, same shape as any other audited write, so it's
+        // exempted from the exclusion.
+        if (uri.startsWith("/api/v1/auth/") && !uri.equals("/api/v1/auth/me/language")) return;
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !(auth.getPrincipal() instanceof UserPrincipal principal)) return;

@@ -89,4 +89,27 @@ class ActivityAuditInterceptorTest {
 
         verifyNoInteractions(auditLogWriter);
     }
+
+    @Test
+    void afterCompletion_authRegister_doesNotWrite() throws Exception {
+        when(request.getMethod()).thenReturn("POST");
+        when(request.getRequestURI()).thenReturn("/api/v1/auth/register");
+        when(response.getStatus()).thenReturn(201);
+
+        interceptor.afterCompletion(request, response, null, null);
+
+        verifyNoInteractions(auditLogWriter);
+    }
+
+    @Test
+    void afterCompletion_updateLanguage_writesAuditEntry() throws Exception {
+        authenticateAs(9L);
+        when(request.getMethod()).thenReturn("PUT");
+        when(request.getRequestURI()).thenReturn("/api/v1/auth/me/language");
+        when(response.getStatus()).thenReturn(200);
+
+        interceptor.afterCompletion(request, response, null, null);
+
+        verify(auditLogWriter).write(eq(9L), eq("auth.updated"), any(), any());
+    }
 }
