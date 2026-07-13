@@ -1,6 +1,7 @@
 package com.fintrack.auth.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fintrack.audit.domain.AuditLogRepository;
 import com.fintrack.auth.web.dto.TokenResponse;
 import com.fintrack.support.HttpTestHelper;
 import org.junit.jupiter.api.Test;
@@ -54,6 +55,21 @@ class AuthLanguagePreferenceIntegrationTest {
 
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
+    @Autowired AuditLogRepository auditLogRepository;
+
+    @Test
+    void updateLanguage_writesAuditLogEntry() throws Exception {
+        TokenResponse tokens = HttpTestHelper.registerAndLoginFull(mockMvc, objectMapper, "lang.audit@test.com");
+        long before = auditLogRepository.count();
+
+        mockMvc.perform(put("/api/v1/auth/me/language")
+                        .header("Authorization", "Bearer " + tokens.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("language", "vi"))))
+                .andExpect(status().isOk());
+
+        org.assertj.core.api.Assertions.assertThat(auditLogRepository.count()).isEqualTo(before + 1);
+    }
 
     @Test
     void updateLanguage_persistsAndEchoesInMe() throws Exception {
