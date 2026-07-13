@@ -135,6 +135,50 @@ class AuthServiceTest {
     }
 
     @Test
+    void updateChangelogSeen_higherVersion_persists() {
+        User user = User.builder().id(5L).email("c@b.com").fullName("Cara Lee").lastSeenChangelogVersion(1).build();
+        when(userRepository.findById(5L)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenReturn(user);
+
+        TokenResponse.UserInfo result = authService.updateChangelogSeen(5L, 3);
+
+        assertThat(result.lastSeenChangelogVersion()).isEqualTo(3);
+        assertThat(user.getLastSeenChangelogVersion()).isEqualTo(3);
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void updateChangelogSeen_equalVersion_doesNotSave() {
+        User user = User.builder().id(6L).email("d@b.com").fullName("Dan Roe").lastSeenChangelogVersion(3).build();
+        when(userRepository.findById(6L)).thenReturn(Optional.of(user));
+
+        TokenResponse.UserInfo result = authService.updateChangelogSeen(6L, 3);
+
+        assertThat(result.lastSeenChangelogVersion()).isEqualTo(3);
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void updateChangelogSeen_lowerVersion_doesNotRegress() {
+        User user = User.builder().id(7L).email("e@b.com").fullName("Eve Fox").lastSeenChangelogVersion(5).build();
+        when(userRepository.findById(7L)).thenReturn(Optional.of(user));
+
+        TokenResponse.UserInfo result = authService.updateChangelogSeen(7L, 2);
+
+        assertThat(result.lastSeenChangelogVersion()).isEqualTo(5);
+        assertThat(user.getLastSeenChangelogVersion()).isEqualTo(5);
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void updateChangelogSeen_unknownUser_throwsNotFound() {
+        when(userRepository.findById(404L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.updateChangelogSeen(404L, 1))
+                .isInstanceOf(com.fintrack.common.exception.ResourceNotFoundException.class);
+    }
+
+    @Test
     void refresh_revokedToken_revokesAllAndThrows() {
         RefreshToken expired = RefreshToken.builder()
                 .tokenHash("somehash")
