@@ -13,8 +13,8 @@
     "title": "Cài đặt",
     "languageLabel": "Ngôn ngữ",
     "languageDescription": "Chọn ngôn ngữ sử dụng trong toàn bộ ứng dụng.",
-    "apiTokensLink": "Mã API",
-    "apiTokensLinkDescription": "Quản lý mã dành cho ứng dụng API và máy chủ MCP."
+    "apiTokensLink": "Token API",
+    "apiTokensLinkDescription": "Quản lý token dành cho ứng dụng API và máy chủ MCP."
   },
   "sidebar": {
     "nav": {
@@ -23,7 +23,7 @@
       "vault": "Kho lưu trữ",
       "categories": "Danh mục",
       "activity": "Hoạt động",
-      "apiTokens": "Mã API",
+      "apiTokens": "Token API",
       "settings": "Cài đặt"
     },
     "lightMode": "Chế độ sáng",
@@ -33,7 +33,7 @@
   "auth": {
     "signIn": {
       "title": "Đăng nhập",
-      "subtitle": "Quay lại sổ sách giữ tiền của bạn luôn chính xác.",
+      "subtitle": "Quay lại sổ sách luôn giữ tiền của bạn chính xác.",
       "submit": "Đăng nhập",
       "submitting": "Đang đăng nhập...",
       "noAccount": "Chưa có tài khoản?",
@@ -41,7 +41,7 @@
     },
     "register": {
       "title": "Tạo tài khoản của bạn",
-      "subtitle": "Bắt đầu với góc nhìn tài chính hàng ngày điềm tĩnh như ngân hàng riêng.",
+      "subtitle": "Bắt đầu với góc nhìn tài chính hàng ngày điềm tĩnh, phong cách ngân hàng riêng tư.",
       "submit": "Tạo tài khoản",
       "submitting": "Đang tạo tài khoản...",
       "haveAccount": "Đã có tài khoản?",
@@ -208,7 +208,7 @@
       },
       "empty": "Chưa có quy tắc định kỳ nào.",
       "pausedBadge": "Đã tạm dừng",
-      "every": "Mỗi {intervalValue, plural, =1 {} other {# }}{frequency} · {accountName}",
+      "every": "Mỗi {intervalValue, plural, =1 {{frequency, select, daily {ngày} weekly {tuần} monthly {tháng} yearly {năm} other {kỳ}}} other {# {frequency, select, daily {ngày} weekly {tuần} monthly {tháng} yearly {năm} other {kỳ}}}} · {accountName}",
       "next": "Kế tiếp: {date}"
     }
   },
@@ -228,7 +228,7 @@
       "selectCurrency": "Chọn đơn vị tiền tệ"
     },
     "progressList": {
-      "empty": "Chưa thiết lập ngân sách nào. Dùng Thêm hạn mức để tạo mới."
+      "empty": "Chưa thiết lập ngân sách nào. Nhấn \"Thêm hạn mức\" để tạo mới."
     },
     "manager": {
       "toast": {
@@ -362,17 +362,17 @@
     }
   },
   "apiTokens": {
-    "title": "Mã API",
-    "newToken": "Mã mới",
-    "description": "Mã có phạm vi và thời hạn dành cho ứng dụng API và máy chủ MCP — không phải mật khẩu hay phiên đăng nhập của bạn. Mặc định chỉ đọc; các thao tác phá hủy (xóa, truy cập kho lưu trữ) không bao giờ được phép.",
+    "title": "Token API",
+    "newToken": "Token mới",
+    "description": "Token có phạm vi và thời hạn dành cho ứng dụng API và máy chủ MCP — không phải mật khẩu hay phiên đăng nhập của bạn. Mặc định chỉ đọc; các thao tác phá hủy (xóa, truy cập kho lưu trữ) không bao giờ được phép.",
     "toast": {
-      "createFailed": "Tạo mã thất bại",
-      "revoked": "Đã thu hồi mã",
-      "revokeFailed": "Thu hồi mã thất bại"
+      "createFailed": "Tạo token thất bại",
+      "revoked": "Đã thu hồi token",
+      "revokeFailed": "Thu hồi token thất bại"
     },
-    "emptyState": "Chưa có mã API nào. Tạo một mã ở trên.",
+    "emptyState": "Chưa có token API nào. Tạo một token ở trên.",
     "form": {
-      "title": "Mã API mới",
+      "title": "Token API mới",
       "fields": {
         "name": "Tên",
         "scope": "Phạm vi",
@@ -396,14 +396,14 @@
       "invalidExpiry": "Thời hạn không hợp lệ"
     },
     "banner": {
-      "warning": "Sao chép mã này ngay — bạn sẽ không thể xem lại sau khi rời khỏi trang này.",
+      "warning": "Sao chép token này ngay — bạn sẽ không thể xem lại sau khi rời khỏi trang này.",
       "copy": "Sao chép",
       "copied": "Đã sao chép",
-      "copyAria": "Sao chép mã",
+      "copyAria": "Sao chép token",
       "done": "Xong"
     },
     "row": {
-      "revokeConfirm": "Thu hồi <strong>{tokenName}</strong>? Mọi ứng dụng đang dùng mã này sẽ mất quyền truy cập ngay lập tức.",
+      "revokeConfirm": "Thu hồi <strong>{tokenName}</strong>? Mọi ứng dụng đang dùng token này sẽ mất quyền truy cập ngay lập tức.",
       "revoking": "Đang thu hồi...",
       "revoke": "Thu hồi",
       "readWrite": "Đọc + Ghi",

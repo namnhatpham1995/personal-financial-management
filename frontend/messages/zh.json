@@ -33,7 +33,7 @@
   "auth": {
     "signIn": {
       "title": "登录",
-      "subtitle": "回到那本让您的资金分毫不差的账本。",
+      "subtitle": "回到这本让您的资金分毫不差的账本。",
       "submit": "登录",
       "submitting": "正在登录...",
       "noAccount": "还没有账户？",
@@ -208,7 +208,7 @@
       },
       "empty": "暂无定期规则。",
       "pausedBadge": "已暂停",
-      "every": "每 {intervalValue, plural, =1 {} other {# }}{frequency} · {accountName}",
+      "every": "每{intervalValue, plural, =1 {{frequency, select, daily {天} weekly {周} monthly {月} yearly {年} other {期}}} other {#{frequency, select, daily {天} weekly {周} monthly {月} yearly {年} other {期}}}} · {accountName}",
       "next": "下一次：{date}"
     }
   },

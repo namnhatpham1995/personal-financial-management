@@ -41,7 +41,7 @@
     },
     "register": {
       "title": "Konto erstellen",
-      "subtitle": "Starte mit einem ruhigen, privatbanking-artigen Überblick über dein Geld.",
+      "subtitle": "Starte mit einem ruhigen Überblick über dein Geld im Stil des Private Banking.",
       "submit": "Konto erstellen",
       "submitting": "Konto wird erstellt...",
       "haveAccount": "Bereits ein Konto?",
@@ -208,7 +208,7 @@
       },
       "empty": "Noch keine wiederkehrenden Regeln.",
       "pausedBadge": "Pausiert",
-      "every": "Alle {intervalValue, plural, =1 {} other {# }}{frequency} · {accountName}",
+      "every": "{intervalValue, plural, =1 {{frequency, select, daily {Täglich} weekly {Wöchentlich} monthly {Monatlich} yearly {Jährlich} other {Periodisch}}} other {Alle # {frequency, select, daily {Tage} weekly {Wochen} monthly {Monate} yearly {Jahre} other {Perioden}}}} · {accountName}",
       "next": "Nächste: {date}"
     }
   },
