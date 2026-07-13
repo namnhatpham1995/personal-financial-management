@@ -23,6 +23,7 @@
       "vault": "Kho lưu trữ",
       "categories": "Danh mục",
       "activity": "Hoạt động",
+      "whatsNew": "Có gì mới",
       "apiTokens": "Token API",
       "settings": "Cài đặt"
     },
@@ -428,5 +429,35 @@
     "prevAria": "Trang trước",
     "nextAria": "Trang sau",
     "pageOf": "{current} / {total}"
+  },
+  "changelog": {
+    "sidebarLabel": "Có gì mới",
+    "page": {
+      "title": "Có gì mới",
+      "description": "Nhật ký cập nhật của Fintrack."
+    },
+    "modal": {
+      "title": "Có gì mới",
+      "gotIt": "Đã hiểu",
+      "viewAll": "Xem tất cả cập nhật"
+    },
+    "tags": {
+      "new": "Mới",
+      "improved": "Cải tiến"
+    },
+    "entries": {
+      "1": {
+        "title": "Ngân sách đa tiền tệ",
+        "body": "Đặt ngân sách bằng bất kỳ loại tiền tệ nào và xem nó được tự động quy đổi trên tổng quan bảng điều khiển, cùng với các ngân sách khác của bạn."
+      },
+      "2": {
+        "title": "Kho lưu trữ Hóa đơn & Sao kê",
+        "body": "Tải lên hóa đơn và sao kê ngân hàng, tự động trích xuất các dòng chi tiết, và liên kết trực tiếp với giao dịch của bạn."
+      },
+      "3": {
+        "title": "Giao diện đa ngôn ngữ",
+        "body": "Fintrack hiện có sẵn bằng tiếng Anh, tiếng Việt, tiếng Đức và tiếng Trung (giản thể). Ứng dụng tự động khớp với ngôn ngữ trình duyệt của bạn theo mặc định, và lựa chọn của bạn sẽ được đồng bộ trên mọi thiết bị sau khi bạn chọn."
+      }
+    }
   }
 }

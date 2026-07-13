@@ -23,6 +23,7 @@
       "vault": "资料库",
       "categories": "分类",
       "activity": "活动记录",
+      "whatsNew": "更新日志",
       "apiTokens": "API 令牌",
       "settings": "设置"
     },
@@ -428,5 +429,35 @@
     "prevAria": "上一页",
     "nextAria": "下一页",
     "pageOf": "{current} / {total}"
+  },
+  "changelog": {
+    "sidebarLabel": "更新日志",
+    "page": {
+      "title": "更新日志",
+      "description": "Fintrack 的持续更新记录。"
+    },
+    "modal": {
+      "title": "更新日志",
+      "gotIt": "知道了",
+      "viewAll": "查看所有更新"
+    },
+    "tags": {
+      "new": "新功能",
+      "improved": "改进"
+    },
+    "entries": {
+      "1": {
+        "title": "多币种预算",
+        "body": "使用任意货币设置预算，系统会在仪表盘概览中自动换算，并与您的其他预算一并显示。"
+      },
+      "2": {
+        "title": "票据与对账单保险库",
+        "body": "上传收据和银行对账单，自动提取明细行项目，并直接关联到您的交易记录。"
+      },
+      "3": {
+        "title": "多语言界面",
+        "body": "Fintrack 现已支持英语、越南语、德语和简体中文。默认会根据浏览器语言自动匹配，选择语言后会在所有设备间同步。"
+      }
+    }
   }
 }

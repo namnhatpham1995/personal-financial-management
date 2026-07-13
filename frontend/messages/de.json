@@ -23,6 +23,7 @@
       "vault": "Tresor",
       "categories": "Kategorien",
       "activity": "Aktivität",
+      "whatsNew": "Neuigkeiten",
       "apiTokens": "API-Token",
       "settings": "Einstellungen"
     },
@@ -428,5 +429,35 @@
     "prevAria": "Vorherige Seite",
     "nextAria": "Nächste Seite",
     "pageOf": "{current} / {total}"
+  },
+  "changelog": {
+    "sidebarLabel": "Neuigkeiten",
+    "page": {
+      "title": "Neuigkeiten",
+      "description": "Ein fortlaufendes Protokoll der Updates von Fintrack."
+    },
+    "modal": {
+      "title": "Neuigkeiten",
+      "gotIt": "Verstanden",
+      "viewAll": "Alle Updates ansehen"
+    },
+    "tags": {
+      "new": "Neu",
+      "improved": "Verbessert"
+    },
+    "entries": {
+      "1": {
+        "title": "Budgets in mehreren Währungen",
+        "body": "Legen Sie ein Budget in jeder Währung fest und sehen Sie es automatisch umgerechnet in Ihrer Dashboard-Übersicht, zusammen mit Ihren anderen Budgets."
+      },
+      "2": {
+        "title": "Beleg- und Kontoauszug-Archiv",
+        "body": "Laden Sie Belege und Kontoauszüge hoch, extrahieren Sie automatisch Positionen und verknüpfen Sie diese direkt mit Ihren Transaktionen."
+      },
+      "3": {
+        "title": "Mehrsprachige Benutzeroberfläche",
+        "body": "Fintrack ist jetzt auf Englisch, Vietnamesisch, Deutsch und Chinesisch (vereinfacht) verfügbar. Die Sprache wird standardmäßig an Ihre Browsersprache angepasst, und Ihre Auswahl folgt Ihnen geräteübergreifend, sobald Sie eine getroffen haben."
+      }
+    }
   }
 }
