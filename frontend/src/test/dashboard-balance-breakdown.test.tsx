@@ -1,8 +1,9 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { BalanceBreakdown } from "@/components/accounts/balance-breakdown";
+import { renderWithIntl as render } from "@/test/test-utils";
 
 function renderBreakdown(overrides: Partial<ComponentProps<typeof BalanceBreakdown>> = {}) {
   const props: ComponentProps<typeof BalanceBreakdown> = {

@@ -9,54 +9,35 @@ export type AuthFailureKind =
 
 export interface AuthFailure {
   kind: AuthFailureKind;
-  message: string;
 }
 
 type AuthFlow = "login" | "register";
 
-const FAILURES: Record<AuthFailureKind, AuthFailure> = {
-  credentials: {
-    kind: "credentials",
-    message: "Invalid email or password.",
-  },
-  rate_limit: {
-    kind: "rate_limit",
-    message: "Too many attempts. Please try again later.",
-  },
-  connection: {
-    kind: "connection",
-    message: "Unable to connect to Fintrack. Check your connection and try again.",
-  },
-  validation: {
-    kind: "validation",
-    message: "Unable to create an account with these details.",
-  },
-  server: {
-    kind: "server",
-    message: "Fintrack is temporarily unavailable. Please try again later.",
-  },
-};
-
+/**
+ * Classifies an auth request failure into a kind. This module can't call
+ * useTranslations (not a component) — call sites resolve the display message
+ * via t(`errors.${kind}`) in the "auth" namespace.
+ */
 export function classifyAuthError(error: unknown, flow: AuthFlow): AuthFailure {
   if (!isAxiosError(error)) {
-    return FAILURES.server;
+    return { kind: "server" };
   }
 
   const status = error.response?.status;
   if (status === 429) {
-    return FAILURES.rate_limit;
+    return { kind: "rate_limit" };
   }
   if (status === undefined) {
-    return FAILURES.connection;
+    return { kind: "connection" };
   }
   if (status >= 500) {
-    return FAILURES.server;
+    return { kind: "server" };
   }
   if (flow === "login") {
-    return FAILURES.credentials;
+    return { kind: "credentials" };
   }
   if (status === 400 || status === 409 || status === 422) {
-    return FAILURES.validation;
+    return { kind: "validation" };
   }
-  return FAILURES.server;
+  return { kind: "server" };
 }

@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo, useEffect } from "react";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { analyticsService } from "@/services/analytics-service";
 import {
   accountService,
@@ -40,6 +41,7 @@ function readStoredMainCurrency(): string | null {
 
 export default function DashboardPage() {
   const qc = useQueryClient();
+  const t = useTranslations("dashboard");
   const [months, setMonths] = useState(6);
   const [mainCurrencyOverride, setMainCurrencyOverride] = useState<string | null>(() =>
     readStoredMainCurrency()
@@ -133,9 +135,9 @@ export default function DashboardPage() {
     onSuccess: () => {
       invalidateAccountViews();
       setShowCreateForm(false);
-      toast.success("Account created");
+      toast.success(t("toast.accountCreated"));
     },
-    onError: () => toast.error("Failed to create account"),
+    onError: () => toast.error(t("toast.accountCreateFailed")),
   });
 
   const editMutation = useMutation({
@@ -144,9 +146,9 @@ export default function DashboardPage() {
     onSuccess: () => {
       invalidateAccountViews();
       setEditingAccount(null);
-      toast.success("Account updated");
+      toast.success(t("toast.accountUpdated"));
     },
-    onError: () => toast.error("Failed to update account"),
+    onError: () => toast.error(t("toast.accountUpdateFailed")),
   });
 
   const deleteMutation = useMutation({
@@ -154,16 +156,16 @@ export default function DashboardPage() {
     onSuccess: () => {
       invalidateAccountViews();
       setDeleteTarget(null);
-      toast.success("Account deleted");
+      toast.success(t("toast.accountDeleted"));
     },
-    onError: () => toast.error("Failed to delete account"),
+    onError: () => toast.error(t("toast.accountDeleteFailed")),
   });
 
   return (
     <div className="space-y-6">
       {/* Header: title + range selector */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Overview</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">{t("title")}</h1>
 
         <div className="flex rounded-full border border-border bg-card p-0.5">
           {RANGE_OPTIONS.map(({ label, months: m }) => (
@@ -205,7 +207,7 @@ export default function DashboardPage() {
       />
 
       {currencies.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No transaction data for this period.</p>
+        <p className="text-sm text-muted-foreground">{t("noTransactionData")}</p>
       ) : (
         currencies.map((currency) => (
           <CurrencySection

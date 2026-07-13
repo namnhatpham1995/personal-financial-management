@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { useTheme } from "next-themes";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 import {
@@ -19,15 +20,15 @@ import {
 } from "lucide-react";
 
 const primaryNavItems = [
-  { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
-  { href: "/dashboard/transactions", label: "Transactions", icon: ArrowLeftRight },
-  { href: "/dashboard/vault", label: "Vault", icon: Archive },
+  { href: "/dashboard", labelKey: "overview" as const, icon: LayoutDashboard },
+  { href: "/dashboard/transactions", labelKey: "transactions" as const, icon: ArrowLeftRight },
+  { href: "/dashboard/vault", labelKey: "vault" as const, icon: Archive },
 ];
 
 const secondaryNavItems = [
-  { href: "/dashboard/categories", label: "Categories", icon: Tag },
-  { href: "/dashboard/activity", label: "Activity", icon: Activity },
-  { href: "/dashboard/settings/api-tokens", label: "API Tokens", icon: KeyRound },
+  { href: "/dashboard/categories", labelKey: "categories" as const, icon: Tag },
+  { href: "/dashboard/activity", labelKey: "activity" as const, icon: Activity },
+  { href: "/dashboard/settings/api-tokens", labelKey: "apiTokens" as const, icon: KeyRound },
 ];
 
 interface SidebarProps {
@@ -73,6 +74,7 @@ function SidebarContent({
   onClose?: () => void;
 }) {
   const { theme, setTheme } = useTheme();
+  const t = useTranslations("sidebar");
 
   return (
     <>
@@ -83,14 +85,14 @@ function SidebarContent({
       </div>
 
       <nav className="flex-1 space-y-1">
-        {primaryNavItems.map(({ href, label, icon: Icon }) => (
-          <NavLink key={href} href={href} label={label} Icon={Icon} active={pathname === href} onClose={onClose} />
+        {primaryNavItems.map(({ href, labelKey, icon: Icon }) => (
+          <NavLink key={href} href={href} label={t(`nav.${labelKey}`)} Icon={Icon} active={pathname === href} onClose={onClose} />
         ))}
 
         <div className="my-3 border-t border-border" />
 
-        {secondaryNavItems.map(({ href, label, icon: Icon }) => (
-          <NavLink key={href} href={href} label={label} Icon={Icon} active={pathname === href} onClose={onClose} />
+        {secondaryNavItems.map(({ href, labelKey, icon: Icon }) => (
+          <NavLink key={href} href={href} label={t(`nav.${labelKey}`)} Icon={Icon} active={pathname === href} onClose={onClose} />
         ))}
       </nav>
 
@@ -102,7 +104,7 @@ function SidebarContent({
           className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          {theme === "dark" ? "Light mode" : "Dark mode"}
+          {theme === "dark" ? t("lightMode") : t("darkMode")}
         </button>
 
         <button
@@ -110,7 +112,7 @@ function SidebarContent({
           className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           <LogOut className="h-4 w-4" />
-          Sign out
+          {t("signOut")}
         </button>
       </div>
     </>

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -13,20 +14,22 @@ import { AuthThemeToggle } from "@/components/auth-theme-toggle";
 import { Button } from "@/components/ui/button";
 import { classifyAuthError } from "@/lib/auth-error";
 
-const schema = z
-  .object({
-    firstName: z.string().min(1),
-    lastName: z.string().min(1),
-    email: z.string().email(),
-    password: z.string().min(8, "At least 8 characters"),
-    confirmPassword: z.string().min(1, "Confirm your password"),
-  })
-  .refine((values) => values.password === values.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
+function createSchema(t: (key: string) => string) {
+  return z
+    .object({
+      firstName: z.string().min(1),
+      lastName: z.string().min(1),
+      email: z.string().email(),
+      password: z.string().min(8, t("validation.minLength8")),
+      confirmPassword: z.string().min(1, t("validation.confirmRequired")),
+    })
+    .refine((values) => values.password === values.confirmPassword, {
+      message: t("validation.passwordsDoNotMatch"),
+      path: ["confirmPassword"],
+    });
+}
 
-type FormValues = z.infer<typeof schema>;
+type FormValues = z.infer<ReturnType<typeof createSchema>>;
 
 const inputCls =
   "w-full rounded-md border border-input bg-card px-3.5 py-2.5 text-base text-foreground placeholder:text-muted-foreground/80 transition-colors focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/40";
@@ -41,6 +44,8 @@ const errorCls =
 export default function RegisterPage() {
   const { register: registerUser } = useAuth();
   const router = useRouter();
+  const t = useTranslations("auth");
+  const schema = useMemo(() => createSchema(t), [t]);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const {
@@ -57,7 +62,7 @@ export default function RegisterPage() {
       await registerUser(payload);
       router.push("/dashboard");
     } catch (error: unknown) {
-      toast.error(classifyAuthError(error, "register").message);
+      toast.error(t(`errors.${classifyAuthError(error, "register").kind}`));
     }
   };
 
@@ -77,10 +82,10 @@ export default function RegisterPage() {
           </div>
           <div className="mt-9 border-t border-gold/40 pt-6">
             <h1 className="font-display text-3xl font-medium tracking-normal text-ivory">
-              Create your account
+              {t("register.title")}
             </h1>
             <p className="mt-2 text-sm leading-6 text-ivory/80">
-              Start with a private-banking calm view of everyday money.
+              {t("register.subtitle")}
             </p>
           </div>
         </header>
@@ -90,7 +95,7 @@ export default function RegisterPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label htmlFor="firstName" className={labelCls}>
-                  First name
+                  {t("fields.firstName")}
                 </label>
                 <input
                   id="firstName"
@@ -104,7 +109,7 @@ export default function RegisterPage() {
               </div>
               <div>
                 <label htmlFor="lastName" className={labelCls}>
-                  Last name
+                  {t("fields.lastName")}
                 </label>
                 <input
                   id="lastName"
@@ -119,7 +124,7 @@ export default function RegisterPage() {
             </div>
             <div>
               <label htmlFor="email" className={labelCls}>
-                Email
+                {t("fields.email")}
               </label>
               <input
                 id="email"
@@ -132,7 +137,7 @@ export default function RegisterPage() {
             </div>
             <div>
               <label htmlFor="password" className={labelCls}>
-                Password
+                {t("fields.password")}
               </label>
               <div className="relative">
                 <input
@@ -144,7 +149,7 @@ export default function RegisterPage() {
                 />
                 <button
                   type="button"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? t("password.hide") : t("password.show")}
                   className={passwordToggleCls}
                   onClick={() => setShowPassword((current) => !current)}
                 >
@@ -161,7 +166,7 @@ export default function RegisterPage() {
             </div>
             <div>
               <label htmlFor="confirmPassword" className={labelCls}>
-                Confirm password
+                {t("fields.confirmPassword")}
               </label>
               <div className="relative">
                 <input
@@ -175,8 +180,8 @@ export default function RegisterPage() {
                   type="button"
                   aria-label={
                     showConfirmPassword
-                      ? "Hide confirm password"
-                      : "Show confirm password"
+                      ? t("password.hideConfirm")
+                      : t("password.showConfirm")
                   }
                   className={passwordToggleCls}
                   onClick={() => setShowConfirmPassword((current) => !current)}
@@ -198,16 +203,16 @@ export default function RegisterPage() {
               className="w-full rounded-full border-primary bg-primary text-primary-foreground hover:bg-primary/90"
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Creating account..." : "Create account"}
+              {isSubmitting ? t("register.submitting") : t("register.submit")}
             </Button>
           </form>
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Already have an account?{" "}
+            {t("register.haveAccount")}{" "}
             <Link
               href="/login"
               className="font-medium text-primary transition-colors hover:text-primary/80 hover:underline"
             >
-              Sign in
+              {t("register.signInLink")}
             </Link>
           </p>
         </div>

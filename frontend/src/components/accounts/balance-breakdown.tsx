@@ -1,6 +1,7 @@
 "use client";
 
 import { Pencil, Plus, Trash2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type { Account, CreateAccountPayload } from "@/services/account-service";
 import { formatCurrency } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
@@ -31,15 +32,17 @@ export function BalanceBreakdown({
   onCreate: (values: CreateAccountPayload) => void;
   onCancelCreate: () => void;
 }) {
+  const t = useTranslations("accounts");
+
   return (
     <section className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight text-foreground">Accounts</h2>
-          <p className="mt-0.5 text-sm text-muted-foreground">Your account balances.</p>
+          <h2 className="text-lg font-semibold tracking-tight text-foreground">{t("accountsHeading")}</h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">{t("yourBalances")}</p>
         </div>
         <Button size="sm" onClick={onAdd}>
-          <Plus className="h-4 w-4" /> Add account
+          <Plus className="h-4 w-4" /> {t("addAccount")}
         </Button>
       </div>
 
@@ -54,13 +57,13 @@ export function BalanceBreakdown({
       {!hasAccounts && !showCreateForm && (
         <Card className="flex flex-col items-start gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="font-medium text-foreground">No accounts yet</p>
+            <p className="font-medium text-foreground">{t("noAccountsYet")}</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Add a cash, bank, savings, or credit account to start tracking balances.
+              {t("noAccountsYetBody")}
             </p>
           </div>
           <Button size="sm" onClick={onAdd}>
-            Add account
+            {t("addAccount")}
           </Button>
         </Card>
       )}
@@ -80,8 +83,10 @@ export function AccountsGroup({
   onDelete: (account: Account) => void;
   onOpenDetail: (account: Account) => void;
 }) {
+  const t = useTranslations("accounts");
+
   if (accounts.length === 0) {
-    return <p className="text-sm text-muted-foreground">No accounts in this currency yet.</p>;
+    return <p className="text-sm text-muted-foreground">{t("noAccountsInCurrency")}</p>;
   }
 
   return (
@@ -112,6 +117,9 @@ function AccountBox({
   onDelete: (account: Account) => void;
   onOpenDetail: (account: Account) => void;
 }) {
+  const t = useTranslations("accounts");
+  const viewDetailsLabel = t("viewDetails", { accountName: account.name });
+
   return (
     <Card
       role="button"
@@ -124,8 +132,8 @@ function AccountBox({
         }
       }}
       className="cursor-pointer p-5 transition-colors hover:bg-secondary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-      title={`View ${account.name} details`}
-      aria-label={`View ${account.name} details`}
+      title={viewDetailsLabel}
+      aria-label={viewDetailsLabel}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -143,8 +151,8 @@ function AccountBox({
               onEdit(account);
             }}
             className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-            title="Edit account"
-            aria-label={`Edit ${account.name}`}
+            title={t("editAccount")}
+            aria-label={t("editAria", { accountName: account.name })}
           >
             <Pencil className="h-4 w-4" />
           </button>
@@ -154,8 +162,8 @@ function AccountBox({
               onDelete(account);
             }}
             className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-            title="Delete account"
-            aria-label={`Delete ${account.name}`}
+            title={t("deleteAccount")}
+            aria-label={t("deleteAria", { accountName: account.name })}
           >
             <Trash2 className="h-4 w-4" />
           </button>

@@ -1,3 +1,6 @@
+"use client";
+
+import { useLocale, useTranslations } from "next-intl";
 import type { Account } from "@/services/account-service";
 import type { IncomeExpenseTrend, SpendingByCategory } from "@/services/analytics-service";
 import { CashFlowChart } from "@/components/charts/cash-flow-chart";
@@ -32,35 +35,38 @@ export function CurrencySection({
   onDeleteAccount,
   onOpenAccountDetail,
 }: CurrencySectionProps) {
+  const t = useTranslations("overview");
+  const locale = useLocale();
+
   return (
     <section className="space-y-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border pb-2">
         <h2 className="text-lg font-semibold tracking-tight text-foreground">{currency}</h2>
         {nativeTotal !== undefined && (
           <p className="font-mono text-sm tabular-nums text-muted-foreground">
-            Total {formatCurrency(nativeTotal, currency)}
+            {t("total", { amount: formatCurrency(nativeTotal, currency, locale) })}
           </p>
         )}
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="p-5">
-          <h3 className="mb-4 font-semibold tracking-tight text-foreground">Cash Flow</h3>
+          <h3 className="mb-4 font-semibold tracking-tight text-foreground">{t("cashFlow")}</h3>
           <CashFlowChart data={trend} currency={currency} orientation="horizontal" />
         </Card>
         <Card className="p-5">
-          <h3 className="mb-4 font-semibold tracking-tight text-foreground">Spending by Category</h3>
+          <h3 className="mb-4 font-semibold tracking-tight text-foreground">{t("spendingByCategory")}</h3>
           <SpendingDonutChart data={spending} currency={currency} />
         </Card>
         <Card className="p-5">
-          <h3 className="mb-4 font-semibold tracking-tight text-foreground">Recent Activity</h3>
+          <h3 className="mb-4 font-semibold tracking-tight text-foreground">{t("recentActivity")}</h3>
           <RecentTransactionsList currency={currency} />
         </Card>
       </div>
 
       <div>
         <h3 className="mb-2 text-sm font-semibold tracking-wide uppercase text-muted-foreground">
-          Accounts
+          {t("accounts")}
         </h3>
         <AccountsGroup
           accounts={accounts}
@@ -71,7 +77,7 @@ export function CurrencySection({
       </div>
 
       <Card className="p-5">
-        <h3 className="mb-4 font-semibold tracking-tight text-foreground">Budget Progress</h3>
+        <h3 className="mb-4 font-semibold tracking-tight text-foreground">{t("budgetProgress")}</h3>
         <BudgetProgressManager currency={currency} />
       </Card>
     </section>

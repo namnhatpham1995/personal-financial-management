@@ -3,6 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useTranslations } from "next-intl";
 import type {
   Account,
   CreateAccountPayload,
@@ -52,18 +53,20 @@ export function CreateAccountForm({
     handleSubmit,
     formState: { errors },
   } = useForm<CreateAccountFormValues>({ resolver: zodResolver(createSchema) });
+  const t = useTranslations("accounts");
+  const tCommon = useTranslations("common");
 
   const form = (
     <>
-      <h2 className="mb-4 font-semibold tracking-tight text-foreground">Add account</h2>
+      <h2 className="mb-4 font-semibold tracking-tight text-foreground">{t("addAccount")}</h2>
       <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <AccountFields register={register} errors={errors} includeDefaults />
         <div className="flex gap-2 sm:col-span-2">
           <Button type="submit" disabled={isPending}>
-            {isPending ? "Saving..." : "Save"}
+            {isPending ? t("saving") : tCommon("save")}
           </Button>
           <Button type="button" variant="secondary" onClick={onCancel}>
-            Cancel
+            {tCommon("cancel")}
           </Button>
         </div>
       </form>
@@ -97,22 +100,24 @@ export function EditAccountDialog({
       initialBalance: account.initialBalance,
     },
   });
+  const t = useTranslations("accounts");
+  const tCommon = useTranslations("common");
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
       <div className="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-card">
-        <h2 className="mb-4 text-lg font-semibold tracking-tight text-foreground">Edit account</h2>
+        <h2 className="mb-4 text-lg font-semibold tracking-tight text-foreground">{t("editAccount")}</h2>
         <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <AccountFields register={register} errors={errors} />
           <p className="text-xs text-muted-foreground sm:col-span-2">
-            Changing the initial balance recomputes the current balance. Changing currency relabels existing amounts without converting them.
+            {t("editAccountHint")}
           </p>
           <div className="flex gap-2 sm:col-span-2">
             <Button type="submit" disabled={isPending}>
-              {isPending ? "Saving..." : "Save changes"}
+              {isPending ? t("saving") : t("saveChanges")}
             </Button>
             <Button type="button" variant="secondary" onClick={onCancel}>
-              Cancel
+              {tCommon("cancel")}
             </Button>
           </div>
         </form>
@@ -134,25 +139,28 @@ export function DeleteAccountDialog({
   onCancel: () => void;
   isPending: boolean;
 }) {
+  const t = useTranslations("accounts");
+  const tCommon = useTranslations("common");
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
       <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6 shadow-card">
         <h2 className="mb-2 text-lg font-semibold tracking-tight text-destructive">
-          Delete account
+          {t("deleteAccount")}
         </h2>
         <p className="text-sm text-muted-foreground">
-          Delete <strong className="text-foreground">{account.name}</strong>?
+          {t.rich("deleteConfirm", {
+            accountName: account.name,
+            strong: (chunks) => <strong className="text-foreground">{chunks}</strong>,
+          })}
         </p>
         {transactionCount === null ? (
-          <p className="mt-2 text-sm text-muted-foreground">Checking connected transactions...</p>
+          <p className="mt-2 text-sm text-muted-foreground">{t("checkingConnectedTransactions")}</p>
         ) : transactionCount === 0 ? (
-          <p className="mt-2 text-sm text-muted-foreground">This account has no transactions.</p>
+          <p className="mt-2 text-sm text-muted-foreground">{t("noTransactions")}</p>
         ) : (
           <p className="mt-2 rounded-md border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
-            <strong>
-              {transactionCount} transaction{transactionCount !== 1 ? "s" : ""}
-            </strong>{" "}
-            connected to this account will also be permanently deleted.
+            {t("transactionsWillBeDeleted", { count: transactionCount })}
           </p>
         )}
         <div className="mt-4 flex gap-2">
@@ -161,10 +169,10 @@ export function DeleteAccountDialog({
             onClick={onConfirm}
             disabled={isPending || transactionCount === null}
           >
-            {isPending ? "Deleting..." : "Delete account"}
+            {isPending ? t("deleting") : t("deleteAccount")}
           </Button>
           <Button variant="secondary" onClick={onCancel}>
-            Cancel
+            {tCommon("cancel")}
           </Button>
         </div>
       </div>
@@ -185,19 +193,20 @@ function AccountFields({
   errors: Partial<Record<keyof CreateAccountFormValues, { message?: string }>>;
   includeDefaults?: boolean;
 }) {
+  const t = useTranslations("accounts.fields");
   return (
     <>
-      <Field label="Name" error={errors.name?.message}>
+      <Field label={t("name")} error={errors.name?.message}>
         <input {...register("name")} className={inputCls} />
       </Field>
-      <Field label="Type" error={errors.accountType?.message}>
+      <Field label={t("type")} error={errors.accountType?.message}>
         <select {...register("accountType")} className={inputCls}>
-          {ACCOUNT_TYPES.map((t) => (
-            <option key={t}>{t}</option>
+          {ACCOUNT_TYPES.map((type) => (
+            <option key={type}>{type}</option>
           ))}
         </select>
       </Field>
-      <Field label="Currency (ISO code)" error={errors.currency?.message}>
+      <Field label={t("currency")} error={errors.currency?.message}>
         <input
           {...register("currency")}
           defaultValue={includeDefaults ? "USD" : undefined}
@@ -205,7 +214,7 @@ function AccountFields({
           className={inputCls}
         />
       </Field>
-      <Field label="Initial balance" error={errors.initialBalance?.message}>
+      <Field label={t("initialBalance")} error={errors.initialBalance?.message}>
         <input
           {...register("initialBalance", { valueAsNumber: true })}
           defaultValue={includeDefaults ? 0 : undefined}

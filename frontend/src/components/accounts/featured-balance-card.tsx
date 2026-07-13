@@ -1,3 +1,6 @@
+"use client";
+
+import { useTranslations } from "next-intl";
 import type { BalancesSummary, CurrencyBalance } from "@/services/analytics-service";
 import { formatCurrency } from "@/lib/utils";
 
@@ -23,6 +26,7 @@ export function FeaturedBalanceCard({
   summary,
   isSummaryLoading,
 }: FeaturedBalanceCardProps) {
+  const t = useTranslations("accounts");
   if (balances.length === 0) return null;
 
   const isMultiCurrency = balances.length > 1;
@@ -36,7 +40,7 @@ export function FeaturedBalanceCard({
     const [only] = balances;
     return (
       <div className="rounded-lg bg-reserve p-6 text-ivory shadow-card">
-        <p className="text-sm font-medium text-ivory/70">Total balance</p>
+        <p className="text-sm font-medium text-ivory/70">{t("totalBalance")}</p>
         <p className="mt-2 font-mono text-3xl font-bold tabular-nums sm:text-4xl">
           {formatCurrency(only.totalBalance, only.currency)}
         </p>
@@ -47,12 +51,12 @@ export function FeaturedBalanceCard({
   return (
     <div className="rounded-lg bg-reserve p-6 text-ivory shadow-card">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm font-medium text-ivory/70">Total balance</p>
+        <p className="text-sm font-medium text-ivory/70">{t("totalBalance")}</p>
         <select
           value={mainCurrency ?? ""}
           onChange={(e) => onMainCurrencyChange(e.target.value)}
           className="rounded-md border border-ivory/20 bg-reserve-deep/50 px-2 py-1 text-sm text-ivory focus:outline-none focus:ring-2 focus:ring-ivory/40 transition-colors"
-          aria-label="Main currency"
+          aria-label={t("mainCurrency")}
         >
           {sortedBalances.map((b) => (
             <option key={b.currency} value={b.currency} className="text-foreground">
@@ -74,7 +78,7 @@ export function FeaturedBalanceCard({
 
       {summary?.ratesUnavailable && (
         <p className="mt-2 text-xs text-ivory/70">
-          Live rates unavailable for some currencies — totals below show native amounts.
+          {t("ratesUnavailable")}
         </p>
       )}
 
@@ -85,7 +89,7 @@ export function FeaturedBalanceCard({
               {formatCurrency(bucket.totalBalance, bucket.currency)}
             </span>
             {excludedCurrencyCodes.has(bucket.currency) && (
-              <span className="ml-1 text-ivory/50">(not converted)</span>
+              <span className="ml-1 text-ivory/50">{t("notConverted")}</span>
             )}
           </p>
         ))}

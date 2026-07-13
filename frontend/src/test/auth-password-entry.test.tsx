@@ -1,8 +1,9 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import LoginPage from "@/app/login/page";
 import RegisterPage from "@/app/register/page";
+import { renderWithIntl as render } from "@/test/test-utils";
 
 const mocks = vi.hoisted(() => ({
   login: vi.fn(),

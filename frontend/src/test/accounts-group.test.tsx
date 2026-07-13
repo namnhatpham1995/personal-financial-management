@@ -1,9 +1,10 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { AccountsGroup } from "@/components/accounts/balance-breakdown";
 import type { Account } from "@/services/account-service";
+import { renderWithIntl as render } from "@/test/test-utils";
 
 const accounts: Account[] = [
   {

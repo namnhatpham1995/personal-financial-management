@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -33,6 +34,7 @@ const errorCls =
 export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
+  const t = useTranslations("auth");
   const [showPassword, setShowPassword] = useState(false);
   const {
     register,
@@ -45,7 +47,7 @@ export default function LoginPage() {
       await login(values.email, values.password);
       router.push("/dashboard");
     } catch (error: unknown) {
-      toast.error(classifyAuthError(error, "login").message);
+      toast.error(t(`errors.${classifyAuthError(error, "login").kind}`));
     }
   };
 
@@ -65,10 +67,10 @@ export default function LoginPage() {
           </div>
           <div className="mt-9 border-t border-gold/40 pt-6">
             <h1 className="font-display text-3xl font-medium tracking-normal text-ivory">
-              Sign in
+              {t("signIn.title")}
             </h1>
             <p className="mt-2 text-sm leading-6 text-ivory/80">
-              Return to the ledger that keeps your money exact.
+              {t("signIn.subtitle")}
             </p>
           </div>
         </header>
@@ -77,7 +79,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div>
               <label htmlFor="email" className={labelCls}>
-                Email
+                {t("fields.email")}
               </label>
               <input
                 id="email"
@@ -90,7 +92,7 @@ export default function LoginPage() {
             </div>
             <div>
               <label htmlFor="password" className={labelCls}>
-                Password
+                {t("fields.password")}
               </label>
               <div className="relative">
                 <input
@@ -102,7 +104,7 @@ export default function LoginPage() {
                 />
                 <button
                   type="button"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? t("password.hide") : t("password.show")}
                   className={passwordToggleCls}
                   onClick={() => setShowPassword((current) => !current)}
                 >
@@ -123,16 +125,16 @@ export default function LoginPage() {
               className="w-full rounded-full border-primary bg-primary text-primary-foreground hover:bg-primary/90"
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Signing in..." : "Sign in"}
+              {isSubmitting ? t("signIn.submitting") : t("signIn.submit")}
             </Button>
           </form>
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            No account?{" "}
+            {t("signIn.noAccount")}{" "}
             <Link
               href="/register"
               className="font-medium text-primary transition-colors hover:text-primary/80 hover:underline"
             >
-              Register
+              {t("signIn.registerLink")}
             </Link>
           </p>
         </div>
