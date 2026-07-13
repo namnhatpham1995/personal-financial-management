@@ -23,6 +23,7 @@
       "vault": "Vault",
       "categories": "Categories",
       "activity": "Activity",
+      "whatsNew": "What's New",
       "apiTokens": "API Tokens",
       "settings": "Settings"
     },
@@ -428,5 +429,35 @@
     "prevAria": "Previous page",
     "nextAria": "Next page",
     "pageOf": "{current} / {total}"
+  },
+  "changelog": {
+    "sidebarLabel": "What's New",
+    "page": {
+      "title": "What's New",
+      "description": "A running log of updates to Fintrack."
+    },
+    "modal": {
+      "title": "What's New",
+      "gotIt": "Got it",
+      "viewAll": "View all updates"
+    },
+    "tags": {
+      "new": "New",
+      "improved": "Improved"
+    },
+    "entries": {
+      "1": {
+        "title": "Multi-currency budgets",
+        "body": "Set a budget in any currency and see it converted automatically on your dashboard overview, alongside your other budgets."
+      },
+      "2": {
+        "title": "Receipt & Statement Vault",
+        "body": "Upload receipts and bank statements, extract line items automatically, and link them straight to your transactions."
+      },
+      "3": {
+        "title": "Multi-language interface",
+        "body": "Fintrack is now available in English, Vietnamese, German, and Chinese (Simplified). It matches your browser language by default, and your choice follows you across devices once you pick one."
+      }
+    }
   }
 }

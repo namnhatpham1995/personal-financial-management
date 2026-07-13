@@ -5,7 +5,8 @@ import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { useTheme } from "next-themes";
 import { useTranslations } from "next-intl";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth, type AuthUser } from "@/lib/auth-context";
+import { latestChangelogVersion } from "@/changelog/changelog-entries";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -18,6 +19,7 @@ import {
   LogOut,
   Sun,
   Moon,
+  Megaphone,
 } from "lucide-react";
 
 const primaryNavItems = [
@@ -71,12 +73,13 @@ function SidebarContent({
   onClose,
 }: {
   pathname: string;
-  user: { email?: string } | null;
+  user: Pick<AuthUser, "email" | "lastSeenChangelogVersion"> | null;
   logout: () => void;
   onClose?: () => void;
 }) {
   const { theme, setTheme } = useTheme();
   const t = useTranslations("sidebar");
+  const hasUnseenChangelog = !!user && user.lastSeenChangelogVersion < latestChangelogVersion;
 
   return (
     <>
@@ -92,6 +95,15 @@ function SidebarContent({
         ))}
 
         <div className="my-3 border-t border-border" />
+
+        <NavLink
+          href="/dashboard/whats-new"
+          label={t("nav.whatsNew")}
+          Icon={Megaphone}
+          active={pathname === "/dashboard/whats-new"}
+          onClose={onClose}
+          showDot={hasUnseenChangelog}
+        />
 
         {secondaryNavItems.map(({ href, labelKey, icon: Icon }) => (
           <NavLink key={href} href={href} label={t(`nav.${labelKey}`)} Icon={Icon} active={pathname === href} onClose={onClose} />
@@ -127,12 +139,14 @@ function NavLink({
   Icon,
   active,
   onClose,
+  showDot = false,
 }: {
   href: string;
   label: string;
   Icon: React.ComponentType<{ className?: string }>;
   active: boolean;
   onClose?: () => void;
+  showDot?: boolean;
 }) {
   return (
     <Link
@@ -145,7 +159,15 @@ function NavLink({
           : "text-muted-foreground hover:bg-secondary hover:text-foreground"
       )}
     >
-      <Icon className="h-4 w-4 flex-shrink-0" />
+      <span className="relative flex-shrink-0">
+        <Icon className="h-4 w-4" />
+        {showDot && (
+          <span
+            aria-hidden="true"
+            className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-primary"
+          />
+        )}
+      </span>
       {label}
     </Link>
   );

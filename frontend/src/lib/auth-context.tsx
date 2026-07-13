@@ -6,12 +6,13 @@ import { apiClient, clearTokens, setTokens } from "./api-client";
 import { getLocaleCookie, setLocaleCookie } from "./locale-preference";
 import { isSupportedLocale } from "@/i18n/config";
 
-interface AuthUser {
+export interface AuthUser {
   id: number;
   email: string;
   firstName: string;
   lastName: string;
   preferredLanguage: string | null;
+  lastSeenChangelogVersion: number;
 }
 
 interface AuthContextValue {
@@ -20,6 +21,8 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
   logout: () => Promise<void>;
+  /** Optimistic local update — never regresses. Call after syncing to the backend. */
+  setLastSeenChangelogVersion: (version: number) => void;
 }
 
 interface RegisterPayload {
@@ -95,8 +98,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const setLastSeenChangelogVersion = (version: number) => {
+    setUser((prev) => {
+      if (!prev || version <= prev.lastSeenChangelogVersion) return prev;
+      return { ...prev, lastSeenChangelogVersion: version };
+    });
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
+    <AuthContext.Provider
+      value={{ user, isLoading, login, register, logout, setLastSeenChangelogVersion }}
+    >
       {children}
     </AuthContext.Provider>
   );
