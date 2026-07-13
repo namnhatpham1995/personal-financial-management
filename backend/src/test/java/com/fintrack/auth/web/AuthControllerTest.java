@@ -43,7 +43,7 @@ class AuthControllerTest {
 
     @Test
     void register_validRequest_returns201WithTokens() throws Exception {
-        TokenResponse.UserInfo userInfo = new TokenResponse.UserInfo(1L, "a@b.com", "Alice", "Smith");
+        TokenResponse.UserInfo userInfo = new TokenResponse.UserInfo(1L, "a@b.com", "Alice", "Smith", null);
         TokenResponse response = new TokenResponse("access", "refresh", "Bearer", 900L, userInfo);
 
         when(authService.register(any())).thenReturn(response);
@@ -81,4 +81,5 @@ class AuthControllerTest {
                         .content("{}"))
                 .andExpect(status().isBadRequest());
     }
+
 }

@@ -7,13 +7,13 @@ public record TokenResponse(
         long expiresIn,
         UserInfo user
 ) {
-    public record UserInfo(Long id, String email, String firstName, String lastName) {}
+    public record UserInfo(Long id, String email, String firstName, String lastName, String preferredLanguage) {}
 
     public static TokenResponse of(
             String accessToken, String refreshToken, long expiresInMs,
-            Long userId, String email, String firstName, String lastName) {
+            Long userId, String email, String firstName, String lastName, String preferredLanguage) {
         return new TokenResponse(
                 accessToken, refreshToken, "Bearer", expiresInMs / 1000,
-                new UserInfo(userId, email, firstName, lastName));
+                new UserInfo(userId, email, firstName, lastName, preferredLanguage));
     }
 }
