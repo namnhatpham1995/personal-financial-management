@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Newsreader, Inter, Spline_Sans_Mono } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale } from "next-intl/server";
 import "./globals.css";
 import { Providers } from "./providers";
 
@@ -9,7 +11,13 @@ const newsreader = Newsreader({
   style: ["normal", "italic"],
   variable: "--font-display",
 });
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const inter = Inter({
+  subsets: ["latin", "vietnamese"],
+  variable: "--font-sans",
+  // Inter has no CJK glyphs — explicit system-font fallback for Chinese text
+  // instead of shipping a multi-MB CJK webfont.
+  fallback: ["ui-sans-serif", "system-ui", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", "sans-serif"],
+});
 const splineSansMono = Spline_Sans_Mono({
   subsets: ["latin"],
   weight: ["500", "600", "700"],
@@ -21,15 +29,19 @@ export const metadata: Metadata = {
   description: "Track your income, expenses, budgets, and financial goals.",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocale();
+
   return (
     <html
-      lang="en"
+      lang={locale}
       suppressHydrationWarning
       className={`${newsreader.variable} ${inter.variable} ${splineSansMono.variable}`}
     >
       <body className={inter.className}>
-        <Providers>{children}</Providers>
+        <NextIntlClientProvider>
+          <Providers>{children}</Providers>
+        </NextIntlClientProvider>
       </body>
     </html>
   );
