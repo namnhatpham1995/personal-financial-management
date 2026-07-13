@@ -5,6 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { vaultService, StagedRow } from "@/services/vault-service";
 import { toast } from "sonner";
 import { Upload, CheckSquare, Square, Loader2 } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { cn, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -16,6 +17,8 @@ interface Props {
 type Step = "upload" | "review" | "done";
 
 export function StatementImportWizard({ accountId, onComplete }: Props) {
+  const t = useTranslations("vault.importWizard");
+  const locale = useLocale();
   const fileRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<Step>("upload");
   const [documentId, setDocumentId] = useState<string | null>(null);
@@ -32,7 +35,7 @@ export function StatementImportWizard({ accountId, onComplete }: Props) {
       setSelected(new Set(staged.map((r) => r.dedupKey)));
       setStep("review");
     },
-    onError: () => toast.error("Failed to parse file"),
+    onError: () => toast.error(t("toast.parseFailed")),
   });
 
   const confirmMut = useMutation({
@@ -41,10 +44,10 @@ export function StatementImportWizard({ accountId, onComplete }: Props) {
     onSuccess: (n) => {
       setCreatedCount(n);
       setStep("done");
-      toast.success(`${n} transaction${n !== 1 ? "s" : ""} imported`);
+      toast.success(t("imported", { count: n }));
       onComplete?.(n);
     },
-    onError: () => toast.error("Import failed"),
+    onError: () => toast.error(t("toast.importFailed")),
   });
 
   const toggleAll = () => {
@@ -70,7 +73,7 @@ export function StatementImportWizard({ accountId, onComplete }: Props) {
           <CheckSquare className="h-6 w-6 text-primary" />
         </div>
         <p className="text-sm font-medium text-foreground">
-          {createdCount} transaction{createdCount !== 1 ? "s" : ""} imported
+          {t("imported", { count: createdCount })}
         </p>
         <button
           onClick={() => {
@@ -81,7 +84,7 @@ export function StatementImportWizard({ accountId, onComplete }: Props) {
           }}
           className="text-xs text-muted-foreground hover:text-foreground underline transition-colors"
         >
-          Import another file
+          {t("importAnother")}
         </button>
       </div>
     );
@@ -92,13 +95,13 @@ export function StatementImportWizard({ accountId, onComplete }: Props) {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium text-foreground">
-            {rows.length} rows found — select rows to import
+            {t("rowsFound", { count: rows.length })}
           </p>
           <button
             onClick={toggleAll}
             className="text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
-            {selected.size === rows.length ? "Deselect all" : "Select all"}
+            {selected.size === rows.length ? t("deselectAll") : t("selectAll")}
           </button>
         </div>
 
@@ -119,7 +122,7 @@ export function StatementImportWizard({ accountId, onComplete }: Props) {
                 <Square className="h-4 w-4 shrink-0 text-muted-foreground" />
               )}
               <span className="w-24 shrink-0 text-xs text-muted-foreground">
-                {formatDate(row.date)}
+                {formatDate(row.date, locale)}
               </span>
               <span className="flex-1 truncate text-sm text-foreground">
                 {row.description}
@@ -139,14 +142,14 @@ export function StatementImportWizard({ accountId, onComplete }: Props) {
 
         <div className="flex items-center justify-between">
           <p className="text-xs text-muted-foreground">
-            {selected.size} of {rows.length} selected
+            {t("selectedOfTotal", { selected: selected.size, total: rows.length })}
           </p>
           <Button
             disabled={selected.size === 0 || confirmMut.isPending}
             onClick={() => confirmMut.mutate()}
           >
             {confirmMut.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
-            Import {selected.size} rows
+            {t("importRows", { count: selected.size })}
           </Button>
         </div>
       </div>
@@ -175,9 +178,9 @@ export function StatementImportWizard({ accountId, onComplete }: Props) {
       )}
       <div className="text-center">
         <p className="text-sm font-medium text-foreground">
-          {uploadMut.isPending ? "Parsing file…" : "Upload bank statement"}
+          {uploadMut.isPending ? t("parsingFile") : t("uploadPrompt")}
         </p>
-        <p className="text-xs text-muted-foreground mt-1">CSV or OFX/QFX files</p>
+        <p className="text-xs text-muted-foreground mt-1">{t("fileTypesHint")}</p>
       </div>
       <input
         ref={fileRef}

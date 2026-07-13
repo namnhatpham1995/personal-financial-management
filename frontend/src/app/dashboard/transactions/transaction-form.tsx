@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import type { Transaction } from "@/services/transaction-service";
@@ -39,6 +40,8 @@ const inputCls =
 
 export function TransactionForm({ editingTx, accounts, categories, isPending, onCancel, onSubmit }: Props) {
   const isEditing = editingTx !== null;
+  const t = useTranslations("transactions.form");
+  const tCommon = useTranslations("common");
 
   const { register, handleSubmit, watch, reset, setValue, formState: { errors } } = useForm<TransactionFormValues>({
     resolver: zodResolver(schema),
@@ -77,47 +80,47 @@ export function TransactionForm({ editingTx, accounts, categories, isPending, on
   return (
     <div className="rounded-xl border border-border bg-card p-5">
       <h2 className="mb-4 font-semibold tracking-tight text-foreground">
-        {isEditing ? "Edit Transaction" : "New Transaction"}
+        {isEditing ? t("editTitle") : t("newTitle")}
       </h2>
       <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label="Account" error={errors.accountId?.message}>
+        <Field label={t("fields.account")} error={errors.accountId?.message}>
           <select {...register("accountId")} disabled={isEditing} className={cn(inputCls, isEditing && "cursor-not-allowed opacity-50")}>
             {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
           </select>
         </Field>
-        <Field label="Type" error={errors.transactionType?.message}>
+        <Field label={t("fields.type")} error={errors.transactionType?.message}>
           <select {...register("transactionType")} disabled={isEditing} className={cn(inputCls, isEditing && "cursor-not-allowed opacity-50")}>
-            {["INCOME", "EXPENSE", "TRANSFER"].map((t) => <option key={t}>{t}</option>)}
+            {["INCOME", "EXPENSE", "TRANSFER"].map((type) => <option key={type}>{type}</option>)}
           </select>
         </Field>
-        <Field label="Amount" error={errors.amount?.message}>
+        <Field label={t("fields.amount")} error={errors.amount?.message}>
           <input type="number" step="0.01" {...register("amount")} className={inputCls} />
         </Field>
-        <Field label="Date" error={errors.transactionDate?.message}>
+        <Field label={t("fields.date")} error={errors.transactionDate?.message}>
           <input type="date" {...register("transactionDate")} className={inputCls} />
         </Field>
         {txType === "TRANSFER" && (
-          <Field label="Transfer to Account" error={errors.transferAccountId?.message}>
+          <Field label={t("fields.transferToAccount")} error={errors.transferAccountId?.message}>
             <select {...register("transferAccountId")} disabled={isEditing} className={cn(inputCls, isEditing && "cursor-not-allowed opacity-50")}>
               {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
           </Field>
         )}
-        <Field label="Category" error={errors.categoryId?.message}>
+        <Field label={t("fields.category")} error={errors.categoryId?.message}>
           <select {...register("categoryId")} className={inputCls}>
-            <option value="">No category</option>
+            <option value="">{t("noCategory")}</option>
             {relevantCategories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </Field>
-        <Field label="Note" error={errors.note?.message}>
+        <Field label={t("fields.note")} error={errors.note?.message}>
           <input {...register("note")} className={inputCls} />
         </Field>
         <div className="sm:col-span-2 flex gap-2">
           <Button type="submit" disabled={isPending}>
-            {isEditing ? "Save Changes" : "Save"}
+            {isEditing ? t("saveChanges") : tCommon("save")}
           </Button>
           <Button type="button" variant="secondary" onClick={onCancel}>
-            Cancel
+            {tCommon("cancel")}
           </Button>
         </div>
       </form>

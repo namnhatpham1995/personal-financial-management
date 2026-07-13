@@ -1,9 +1,10 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import ActivityPage from "@/app/dashboard/activity/page";
 import { activityService } from "@/services/activity-service";
+import { renderWithIntl as render } from "@/test/test-utils";
 
 vi.mock("@/services/activity-service", () => ({
   activityService: { list: vi.fn() },

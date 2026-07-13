@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { transactionService, TransactionFilters, Transaction } from "@/services/transaction-service";
 import type { UpdateTransactionPayload } from "@/services/transaction-service";
 import { accountService } from "@/services/account-service";
@@ -32,11 +33,12 @@ function TransactionsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const activeTab = searchParams.get("tab") ?? "history";
+  const t = useTranslations("transactions");
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Transactions</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">{t("title")}</h1>
       </div>
 
       <div className="flex gap-1 border-b border-border">
@@ -52,13 +54,13 @@ function TransactionsContent() {
               )
             }
             className={cn(
-              "px-4 py-2 text-sm font-medium capitalize transition-colors",
+              "px-4 py-2 text-sm font-medium transition-colors",
               activeTab === tab
                 ? "border-b-2 border-primary text-primary"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            {tab}
+            {t(`tabs.${tab}`)}
           </button>
         ))}
       </div>
@@ -70,6 +72,8 @@ function TransactionsContent() {
 
 function HistoryTab() {
   const qc = useQueryClient();
+  const t = useTranslations("transactions");
+  const tCommon = useTranslations("common");
   const [showForm, setShowForm] = useState(false);
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [filters, setFilters] = useState<TransactionFilters>({ page: 0, size: 20 });
@@ -97,15 +101,15 @@ function HistoryTab() {
 
   const createMutation = useMutation({
     mutationFn: (data: TransactionFormValues) => transactionService.create(data),
-    onSuccess: () => { invalidateAfterMutation(); closeForm(); toast.success("Transaction added"); },
-    onError: () => toast.error("Failed to create transaction"),
+    onSuccess: () => { invalidateAfterMutation(); closeForm(); toast.success(t("toast.added")); },
+    onError: () => toast.error(t("toast.createFailed")),
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: UpdateTransactionPayload }) =>
       transactionService.update(id, data),
-    onSuccess: () => { invalidateAfterMutation(); closeForm(); toast.success("Transaction updated"); },
-    onError: () => toast.error("Failed to update transaction"),
+    onSuccess: () => { invalidateAfterMutation(); closeForm(); toast.success(t("toast.updated")); },
+    onError: () => toast.error(t("toast.updateFailed")),
   });
 
   const deleteMutation = useMutation({
@@ -113,9 +117,9 @@ function HistoryTab() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: ["accounts"] });
-      toast.success("Transaction deleted");
+      toast.success(t("toast.deleted"));
     },
-    onError: () => toast.error("Failed to delete transaction"),
+    onError: () => toast.error(t("toast.deleteFailed")),
   });
 
   const closeForm = () => { setShowForm(false); setEditingTx(null); };
@@ -144,8 +148,8 @@ function HistoryTab() {
           className={inputCls + " max-w-xs"}
           onChange={(e) => setFilters((f) => ({ ...f, type: e.target.value || undefined, page: 0 }))}
         >
-          <option value="">All types</option>
-          {["INCOME", "EXPENSE", "TRANSFER"].map((t) => <option key={t}>{t}</option>)}
+          <option value="">{t("allTypes")}</option>
+          {["INCOME", "EXPENSE", "TRANSFER"].map((type) => <option key={type}>{type}</option>)}
         </select>
         <input
           type="date"
@@ -159,7 +163,7 @@ function HistoryTab() {
         />
         <div className="ml-auto">
           <Button onClick={handleAddClick}>
-            <Plus className="h-4 w-4" /> Add
+            <Plus className="h-4 w-4" /> {t("add")}
           </Button>
         </div>
       </div>
@@ -176,9 +180,9 @@ function HistoryTab() {
       )}
 
       {isLoading ? (
-        <p className="text-muted-foreground">Loading…</p>
+        <p className="text-muted-foreground">{tCommon("loading")}</p>
       ) : isError ? (
-        <p className="text-destructive">Failed to load transactions. Check your connection or try refreshing.</p>
+        <p className="text-destructive">{t("loadError")}</p>
       ) : (
         <TransactionTable
           transactions={transactions}

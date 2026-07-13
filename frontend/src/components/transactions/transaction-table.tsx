@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, Pencil, Trash2 } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import type { Transaction } from "@/services/transaction-service";
 import { formatDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -39,17 +40,19 @@ export function TransactionTable({
   onEdit,
   onDelete,
   deletingId,
-  emptyMessage = "No transactions found",
+  emptyMessage,
   pagination,
 }: TransactionTableProps) {
+  const t = useTranslations("transactions.table");
+  const locale = useLocale();
   const showActions = Boolean(onEdit || onDelete);
   const headers = [
-    "Date",
-    ...(showAccountColumn ? ["Account"] : []),
-    "Type",
-    "Category",
-    "Amount",
-    "Note",
+    t("dateHeader"),
+    ...(showAccountColumn ? [t("accountHeader")] : []),
+    t("typeHeader"),
+    t("categoryHeader"),
+    t("amountHeader"),
+    t("noteHeader"),
     ...(showActions ? [""] : []),
   ];
 
@@ -73,14 +76,14 @@ export function TransactionTable({
             {transactions.length === 0 ? (
               <tr>
                 <td colSpan={headers.length} className="px-4 py-8 text-center text-muted-foreground">
-                  {emptyMessage}
+                  {emptyMessage ?? t("emptyMessage")}
                 </td>
               </tr>
             ) : (
               transactions.map((tx) => (
                 <tr key={tx.id} className="transition-colors hover:bg-hover-surface">
                   <td className="px-4 py-3 font-mono tabular-nums text-xs text-muted-foreground">
-                    {formatDate(tx.transactionDate)}
+                    {formatDate(tx.transactionDate, locale)}
                   </td>
                   {showAccountColumn && (
                     <td className="px-4 py-3 text-foreground">
@@ -122,8 +125,8 @@ export function TransactionTable({
                         {onEdit && (
                           <button
                             onClick={() => onEdit(tx)}
-                            title="Edit transaction"
-                            aria-label={`Edit transaction from ${formatDate(tx.transactionDate)}`}
+                            title={t("editAria", { date: formatDate(tx.transactionDate, locale) })}
+                            aria-label={t("editAria", { date: formatDate(tx.transactionDate, locale) })}
                             className="inline-flex min-h-10 min-w-10 items-center justify-center rounded text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors"
                           >
                             <Pencil className="h-4 w-4" />
@@ -133,8 +136,8 @@ export function TransactionTable({
                           <button
                             onClick={() => onDelete(tx)}
                             disabled={deletingId === tx.id}
-                            title="Delete transaction"
-                            aria-label={`Delete transaction from ${formatDate(tx.transactionDate)}`}
+                            title={t("deleteAria", { date: formatDate(tx.transactionDate, locale) })}
+                            aria-label={t("deleteAria", { date: formatDate(tx.transactionDate, locale) })}
                             className="inline-flex min-h-10 min-w-10 items-center justify-center rounded text-muted-foreground hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-40 transition-colors"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -153,7 +156,7 @@ export function TransactionTable({
       {pagination && (
         <div className="flex items-center justify-between">
           <p className="font-mono tabular-nums text-xs text-muted-foreground">
-            Page {pagination.currentPage + 1} of {pagination.totalPages}
+            {t("pageOf", { current: pagination.currentPage + 1, total: pagination.totalPages })}
           </p>
           <div className="flex gap-2">
             <button

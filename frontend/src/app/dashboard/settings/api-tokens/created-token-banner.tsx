@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Check, Copy, TriangleAlert } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 
 export interface CreatedTokenBannerProps {
@@ -11,6 +12,7 @@ export interface CreatedTokenBannerProps {
 
 /** Shown exactly once, right after token creation — the plaintext is never retrievable again. */
 export function CreatedTokenBanner({ plaintextToken, onDismiss }: CreatedTokenBannerProps) {
+  const t = useTranslations("apiTokens.banner");
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -24,7 +26,7 @@ export function CreatedTokenBanner({ plaintextToken, onDismiss }: CreatedTokenBa
       <div className="mb-3 flex items-start gap-2">
         <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
         <p className="text-sm text-foreground">
-          Copy this token now — you won&apos;t be able to see it again after you leave this page.
+          {t("warning")}
         </p>
       </div>
 
@@ -37,16 +39,16 @@ export function CreatedTokenBanner({ plaintextToken, onDismiss }: CreatedTokenBa
           size="sm"
           variant="secondary"
           onClick={handleCopy}
-          aria-label="Copy token"
+          aria-label={t("copyAria")}
         >
           {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-          {copied ? "Copied" : "Copy"}
+          {copied ? t("copied") : t("copy")}
         </Button>
       </div>
 
       <div className="mt-4 flex justify-end">
         <Button type="button" size="sm" variant="ghost" onClick={onDismiss}>
-          Done
+          {t("done")}
         </Button>
       </div>
     </div>

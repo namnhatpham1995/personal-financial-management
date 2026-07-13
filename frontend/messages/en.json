@@ -3,6 +3,7 @@
     "appName": "Fintrack",
     "loading": "Loading…",
     "save": "Save",
+    "saving": "Saving...",
     "cancel": "Cancel",
     "delete": "Delete",
     "edit": "Edit",
@@ -137,5 +138,291 @@
       "noTransactionsInPeriod": "No transactions for this account in this period",
       "noIncomingTransfers": "No incoming transfers in this period"
     }
+  },
+  "transactions": {
+    "title": "Transactions",
+    "tabs": {
+      "history": "History",
+      "recurring": "Recurring"
+    },
+    "allTypes": "All types",
+    "add": "Add",
+    "toast": {
+      "added": "Transaction added",
+      "updated": "Transaction updated",
+      "deleted": "Transaction deleted",
+      "createFailed": "Failed to create transaction",
+      "updateFailed": "Failed to update transaction",
+      "deleteFailed": "Failed to delete transaction"
+    },
+    "loadError": "Failed to load transactions. Check your connection or try refreshing.",
+    "table": {
+      "dateHeader": "Date",
+      "accountHeader": "Account",
+      "typeHeader": "Type",
+      "categoryHeader": "Category",
+      "amountHeader": "Amount",
+      "noteHeader": "Note",
+      "emptyMessage": "No transactions found",
+      "editAria": "Edit transaction from {date}",
+      "deleteAria": "Delete transaction from {date}",
+      "pageOf": "Page {current} of {total}"
+    },
+    "form": {
+      "editTitle": "Edit Transaction",
+      "newTitle": "New Transaction",
+      "fields": {
+        "account": "Account",
+        "type": "Type",
+        "amount": "Amount",
+        "date": "Date",
+        "transferToAccount": "Transfer to Account",
+        "category": "Category",
+        "note": "Note"
+      },
+      "noCategory": "No category",
+      "saveChanges": "Save Changes"
+    },
+    "recurring": {
+      "newRule": "New Rule",
+      "newRuleTitle": "New Recurring Rule",
+      "fields": {
+        "account": "Account",
+        "type": "Type",
+        "amount": "Amount",
+        "frequency": "Frequency",
+        "everyNPeriods": "Every N periods",
+        "startDate": "Start Date",
+        "note": "Note"
+      },
+      "toast": {
+        "created": "Created",
+        "createFailed": "Failed to create",
+        "paused": "Paused",
+        "resumed": "Resumed",
+        "deleted": "Deleted"
+      },
+      "empty": "No recurring rules yet.",
+      "pausedBadge": "Paused",
+      "every": "Every {intervalValue, plural, =1 {} other {# }}{frequency} · {accountName}",
+      "next": "Next: {date}"
+    }
+  },
+  "budgets": {
+    "fields": {
+      "amount": "Amount",
+      "period": "Period",
+      "currency": "Currency"
+    },
+    "period": {
+      "monthly": "Monthly",
+      "yearly": "Yearly"
+    },
+    "saving": "Saving...",
+    "validation": {
+      "enterAmount": "Enter an amount",
+      "selectCurrency": "Select a currency"
+    },
+    "progressList": {
+      "empty": "No budgets configured. Use Add limit to create one."
+    },
+    "manager": {
+      "toast": {
+        "limitSet": "Limit set",
+        "setFailed": "Failed to set limit",
+        "limitUpdated": "Limit updated",
+        "updateFailed": "Failed to update limit",
+        "limitRemoved": "Limit removed",
+        "removeFailed": "Failed to remove limit"
+      },
+      "editAria": "Edit {budgetName} limit",
+      "removeAria": "Remove {budgetName} limit",
+      "loadingProgress": "Loading budget progress...",
+      "activeLimits": "{count, plural, one {# active limit} other {# active limits}}",
+      "addLimit": "Add limit",
+      "allCurrencyLimitsSet": "All expense categories already have {currency} limits.",
+      "expenseCategory": "Expense category",
+      "chooseCategory": "Choose a category",
+      "selectCategoryHint": "Select an expense category to set its {currency} limit.",
+      "create": "Create"
+    }
+  },
+  "categories": {
+    "title": "Categories",
+    "newCategory": "New Category",
+    "myCategories": "My Categories",
+    "defaultCategories": "Default Categories",
+    "defaultCategoriesSubtitle": "Read-only — available to all users",
+    "emptyState": "No categories yet. Create one above.",
+    "income": "Income",
+    "expense": "Expense",
+    "toast": {
+      "created": "Category created",
+      "duplicateName": "A category with that name already exists for this type",
+      "createFailed": "Failed to create category",
+      "renamed": "Category renamed",
+      "systemNoModify": "System categories cannot be modified",
+      "renameFailed": "Failed to rename category",
+      "deleted": "Category deleted - usages reassigned to Uncategorized",
+      "systemNoDelete": "System categories cannot be deleted",
+      "deleteFailed": "Failed to delete category"
+    },
+    "form": {
+      "fields": {
+        "name": "Name",
+        "type": "Type"
+      },
+      "namePlaceholder": "e.g. Gym & Fitness"
+    },
+    "validation": {
+      "nameRequired": "Name is required"
+    },
+    "row": {
+      "deleteConfirm": "Delete <strong>{categoryName}</strong>? Transactions, budgets, and recurring items will move to <strong>Uncategorized</strong>.",
+      "deleting": "Deleting...",
+      "saveNameAria": "Save name",
+      "cancelRenameAria": "Cancel rename",
+      "readOnlyAria": "Read-only",
+      "renameAria": "Rename",
+      "deleteAria": "Delete"
+    }
+  },
+  "vault": {
+    "title": "Vault",
+    "tabs": {
+      "browse": "Browse",
+      "import": "Import Statement",
+      "upload": "Upload Receipt"
+    },
+    "toast": {
+      "documentDeleted": "Document deleted",
+      "deleteFailed": "Delete failed",
+      "downloadFailed": "Download failed",
+      "receiptSaved": "Receipt saved"
+    },
+    "account": "Account",
+    "selectAccount": "Select account…",
+    "emptyState": {
+      "title": "No documents yet",
+      "body": "Upload a receipt or import a bank statement to get started."
+    },
+    "table": {
+      "type": "Type",
+      "file": "File",
+      "date": "Date",
+      "status": "Status"
+    },
+    "receipt": "Receipt",
+    "statement": "Statement",
+    "download": "Download",
+    "downloadFallback": "document",
+    "deleteConfirm": "Delete this document?",
+    "delete": "Delete",
+    "downloadAria": "Download {fileName}",
+    "deleteAria": "Delete {fileName}",
+    "prev": "Prev",
+    "next": "Next",
+    "pageOf": "{current} / {total}",
+    "receiptIndicator": {
+      "attached": "Receipt attached"
+    },
+    "uploadViewer": {
+      "receiptFallback": "Receipt",
+      "download": "Download",
+      "downloadAria": "Download {fileName}",
+      "downloadFallback": "receipt",
+      "toast": {
+        "uploaded": "Receipt uploaded",
+        "uploadFailed": "Upload failed"
+      },
+      "uploading": "Uploading…",
+      "dropOrClick": "Drop or click to attach receipt",
+      "previewAlt": "Receipt preview",
+      "removeAria": "Remove receipt preview"
+    },
+    "importWizard": {
+      "toast": {
+        "parseFailed": "Failed to parse file",
+        "importFailed": "Import failed"
+      },
+      "imported": "{count, plural, one {# transaction imported} other {# transactions imported}}",
+      "importAnother": "Import another file",
+      "rowsFound": "{count, plural, one {# row found} other {# rows found}} — select rows to import",
+      "selectAll": "Select all",
+      "deselectAll": "Deselect all",
+      "selectedOfTotal": "{selected} of {total} selected",
+      "importRows": "{count, plural, one {Import # row} other {Import # rows}}",
+      "parsingFile": "Parsing file…",
+      "uploadPrompt": "Upload bank statement",
+      "fileTypesHint": "CSV or OFX/QFX files"
+    }
+  },
+  "apiTokens": {
+    "title": "API Tokens",
+    "newToken": "New Token",
+    "description": "Scoped, expiring tokens for API clients and the MCP server — never your password or session. Read-only by default; destructive actions (delete, vault access) are never permitted.",
+    "toast": {
+      "createFailed": "Failed to create token",
+      "revoked": "Token revoked",
+      "revokeFailed": "Failed to revoke token"
+    },
+    "emptyState": "No API tokens yet. Create one above.",
+    "form": {
+      "title": "New API Token",
+      "fields": {
+        "name": "Name",
+        "scope": "Scope",
+        "expiresIn": "Expires in"
+      },
+      "namePlaceholder": "e.g. Claude Desktop",
+      "scope": {
+        "readOnly": "Read only",
+        "readWrite": "Read + Write"
+      },
+      "expiry": {
+        "days30": "30 days",
+        "days90": "90 days",
+        "days365": "365 days"
+      },
+      "creating": "Creating...",
+      "create": "Create"
+    },
+    "validation": {
+      "nameRequired": "Name is required",
+      "invalidExpiry": "Invalid expiry"
+    },
+    "banner": {
+      "warning": "Copy this token now — you won't be able to see it again after you leave this page.",
+      "copy": "Copy",
+      "copied": "Copied",
+      "copyAria": "Copy token",
+      "done": "Done"
+    },
+    "row": {
+      "revokeConfirm": "Revoke <strong>{tokenName}</strong>? Any client using this token will immediately lose access.",
+      "revoking": "Revoking...",
+      "revoke": "Revoke",
+      "readWrite": "Read + Write",
+      "readOnly": "Read only",
+      "revoked": "Revoked",
+      "expired": "Expired",
+      "created": "Created {date}",
+      "expires": "Expires {date}",
+      "lastUsed": "Last used {date}",
+      "never": "never",
+      "revokeAria": "Revoke {tokenName}"
+    }
+  },
+  "activity": {
+    "title": "Activity",
+    "description": "Recent changes and sign-ins for your workspace.",
+    "errorTitle": "Couldn't load activity",
+    "errorBody": "Something went wrong while fetching your activity.",
+    "retry": "Retry",
+    "emptyTitle": "No activity yet",
+    "emptyBody": "Changes to accounts, budgets, categories, and sessions will appear here.",
+    "prevAria": "Previous page",
+    "nextAria": "Next page",
+    "pageOf": "{current} / {total}"
   }
 }

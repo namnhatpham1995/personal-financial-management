@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Activity, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { activityService, ActivityEvent } from "@/services/activity-service";
 import { Card } from "@/components/ui/card";
 
@@ -38,6 +39,7 @@ function EventRow({ event }: { event: ActivityEvent }) {
 }
 
 export default function ActivityPage() {
+  const t = useTranslations("activity");
   const [page, setPage] = useState(0);
 
   const { data, isLoading, isError, refetch } = useQuery({
@@ -48,9 +50,9 @@ export default function ActivityPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Activity</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">{t("title")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Recent changes and sign-ins for your workspace.
+          {t("description")}
         </p>
       </div>
 
@@ -72,24 +74,24 @@ export default function ActivityPage() {
         {!isLoading && isError && (
           <div className="py-12 text-center text-sm">
             <AlertCircle className="mx-auto h-6 w-6 text-destructive" />
-            <p className="mt-2 font-medium text-foreground">Couldn&apos;t load activity</p>
+            <p className="mt-2 font-medium text-foreground">{t("errorTitle")}</p>
             <p className="mt-1 text-muted-foreground">
-              Something went wrong while fetching your activity.
+              {t("errorBody")}
             </p>
             <button
               onClick={() => refetch()}
               className="mt-4 inline-flex min-h-11 items-center justify-center rounded-sm border border-border px-4 text-sm font-medium text-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
-              Retry
+              {t("retry")}
             </button>
           </div>
         )}
 
         {!isLoading && !isError && !data?.content?.length && (
           <div className="py-12 text-center text-sm">
-            <p className="font-medium text-foreground">No activity yet</p>
+            <p className="font-medium text-foreground">{t("emptyTitle")}</p>
             <p className="mt-1 text-muted-foreground">
-              Changes to accounts, budgets, categories, and sessions will appear here.
+              {t("emptyBody")}
             </p>
           </div>
         )}
@@ -106,18 +108,18 @@ export default function ActivityPage() {
             onClick={() => setPage((p) => Math.max(0, p - 1))}
             disabled={page === 0}
             className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-sm border border-border text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-            aria-label="Previous page"
+            aria-label={t("prevAria")}
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
           <span className="font-mono text-sm tabular-nums text-muted-foreground">
-            {page + 1} / {data.totalPages}
+            {t("pageOf", { current: page + 1, total: data.totalPages })}
           </span>
           <button
             onClick={() => setPage((p) => Math.min(data.totalPages - 1, p + 1))}
             disabled={page >= data.totalPages - 1}
             className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-sm border border-border text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-            aria-label="Next page"
+            aria-label={t("nextAria")}
           >
             <ChevronRight className="h-4 w-4" />
           </button>
