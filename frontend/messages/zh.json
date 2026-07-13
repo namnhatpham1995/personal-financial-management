@@ -10,8 +10,11 @@
     "close": "关闭"
   },
   "settings": {
+    "title": "设置",
     "languageLabel": "语言",
-    "languageDescription": "选择整个应用使用的语言。"
+    "languageDescription": "选择整个应用使用的语言。",
+    "apiTokensLink": "API 令牌",
+    "apiTokensLinkDescription": "管理用于 API 客户端和 MCP 服务器的令牌。"
   },
   "sidebar": {
     "nav": {
@@ -20,7 +23,8 @@
       "vault": "资料库",
       "categories": "分类",
       "activity": "活动记录",
-      "apiTokens": "API 令牌"
+      "apiTokens": "API 令牌",
+      "settings": "设置"
     },
     "lightMode": "浅色模式",
     "darkMode": "深色模式",

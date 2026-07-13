@@ -1,13 +1,17 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { apiClient, clearTokens, setTokens } from "./api-client";
+import { getLocaleCookie, setLocaleCookie } from "./locale-preference";
+import { isSupportedLocale } from "@/i18n/config";
 
 interface AuthUser {
   id: number;
   email: string;
   firstName: string;
   lastName: string;
+  preferredLanguage: string | null;
 }
 
 interface AuthContextValue {
@@ -30,6 +34,16 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+
+  // A non-null server-side preference that differs from the local cookie wins —
+  // it means the user set their language on another device.
+  const reconcileLocale = (preferredLanguage: string | null) => {
+    if (!isSupportedLocale(preferredLanguage)) return;
+    if (getLocaleCookie() === preferredLanguage) return;
+    setLocaleCookie(preferredLanguage);
+    router.refresh();
+  };
 
   // Restore session from stored tokens on mount
   useEffect(() => {
@@ -39,10 +53,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     apiClient
-      .get<{ id: number; email: string; firstName: string; lastName: string }>("/auth/me")
-      .then((r) => setUser(r.data))
+      .get<AuthUser>("/auth/me")
+      .then((r) => {
+        setUser(r.data);
+        reconcileLocale(r.data.preferredLanguage);
+      })
       .catch(() => clearTokens())
       .finally(() => setIsLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -53,6 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }>("/auth/login", { email, password });
     setTokens(data.accessToken, data.refreshToken);
     setUser(data.user);
+    reconcileLocale(data.user.preferredLanguage);
   };
 
   const register = async (payload: RegisterPayload) => {
@@ -63,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }>("/auth/register", payload);
     setTokens(data.accessToken, data.refreshToken);
     setUser(data.user);
+    reconcileLocale(data.user.preferredLanguage);
   };
 
   const logout = async () => {

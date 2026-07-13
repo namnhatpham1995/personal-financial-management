@@ -10,8 +10,11 @@
     "close": "Đóng"
   },
   "settings": {
+    "title": "Cài đặt",
     "languageLabel": "Ngôn ngữ",
-    "languageDescription": "Chọn ngôn ngữ sử dụng trong toàn bộ ứng dụng."
+    "languageDescription": "Chọn ngôn ngữ sử dụng trong toàn bộ ứng dụng.",
+    "apiTokensLink": "Mã API",
+    "apiTokensLinkDescription": "Quản lý mã dành cho ứng dụng API và máy chủ MCP."
   },
   "sidebar": {
     "nav": {
@@ -20,7 +23,8 @@
       "vault": "Kho lưu trữ",
       "categories": "Danh mục",
       "activity": "Hoạt động",
-      "apiTokens": "Mã API"
+      "apiTokens": "Mã API",
+      "settings": "Cài đặt"
     },
     "lightMode": "Chế độ sáng",
     "darkMode": "Chế độ tối",

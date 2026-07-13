@@ -11,6 +11,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
 import { AuthThemeToggle } from "@/components/auth-theme-toggle";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { Button } from "@/components/ui/button";
 import { classifyAuthError } from "@/lib/auth-error";
 
@@ -78,7 +79,10 @@ export default function RegisterPage() {
               Fintrack
               <span className="h-1.5 w-1.5 rounded-full bg-gold" aria-hidden="true" />
             </Link>
-            <AuthThemeToggle className="border-ivory/20 bg-ivory/10 text-ivory shadow-none hover:bg-ivory/20 hover:text-ivory focus:ring-gold/70" />
+            <div className="flex items-center gap-2">
+              <LanguageSwitcher className="rounded-full border border-ivory/20 bg-ivory/10 px-2.5 py-1.5 text-xs text-ivory focus:outline-none focus:ring-2 focus:ring-gold/70" />
+              <AuthThemeToggle className="border-ivory/20 bg-ivory/10 text-ivory shadow-none hover:bg-ivory/20 hover:text-ivory focus:ring-gold/70" />
+            </div>
           </div>
           <div className="mt-9 border-t border-gold/40 pt-6">
             <h1 className="font-display text-3xl font-medium tracking-normal text-ivory">

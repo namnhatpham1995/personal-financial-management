@@ -24,6 +24,7 @@ A full-stack personal finance management application.
 - **Rate limiting** — Bucket4j per-IP limit on all `/auth/**` endpoints
 - **Structured logging** — Logstash JSON encoder in prod/test; correlation ID on every request
 - **Durable audit log** — every authenticated mutation written to `audit_log` (PostgreSQL) in a dedicated `REQUIRES_NEW` transaction; committed immediately after the business write, never rolled back with it
+- **Multi-language UI** — English, Vietnamese, German, Chinese (Simplified); browser-language default, remembered once changed, synced across devices for signed-in users. See [`docs/system-architecture.md`](docs/system-architecture.md#internationalization-i18n) for how it works and how to add a language.
 
 ## Why Two Databases
 

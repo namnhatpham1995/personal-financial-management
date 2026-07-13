@@ -14,6 +14,7 @@ import {
   Activity,
   Archive,
   KeyRound,
+  Settings,
   LogOut,
   Sun,
   Moon,
@@ -29,6 +30,7 @@ const secondaryNavItems = [
   { href: "/dashboard/categories", labelKey: "categories" as const, icon: Tag },
   { href: "/dashboard/activity", labelKey: "activity" as const, icon: Activity },
   { href: "/dashboard/settings/api-tokens", labelKey: "apiTokens" as const, icon: KeyRound },
+  { href: "/dashboard/settings", labelKey: "settings" as const, icon: Settings },
 ];
 
 interface SidebarProps {
