@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Activity, ChevronLeft, ChevronRight } from "lucide-react";
+import { Activity, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { activityService, ActivityEvent } from "@/services/activity-service";
 import { Card } from "@/components/ui/card";
 
@@ -40,7 +40,7 @@ function EventRow({ event }: { event: ActivityEvent }) {
 export default function ActivityPage() {
   const [page, setPage] = useState(0);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["activity", page],
     queryFn: () => activityService.list(page, 20),
   });
@@ -69,7 +69,23 @@ export default function ActivityPage() {
           </div>
         )}
 
-        {!isLoading && !data?.content?.length && (
+        {!isLoading && isError && (
+          <div className="py-12 text-center text-sm">
+            <AlertCircle className="mx-auto h-6 w-6 text-destructive" />
+            <p className="mt-2 font-medium text-foreground">Couldn&apos;t load activity</p>
+            <p className="mt-1 text-muted-foreground">
+              Something went wrong while fetching your activity.
+            </p>
+            <button
+              onClick={() => refetch()}
+              className="mt-4 inline-flex min-h-11 items-center justify-center rounded-sm border border-border px-4 text-sm font-medium text-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {!isLoading && !isError && !data?.content?.length && (
           <div className="py-12 text-center text-sm">
             <p className="font-medium text-foreground">No activity yet</p>
             <p className="mt-1 text-muted-foreground">
@@ -78,9 +94,10 @@ export default function ActivityPage() {
           </div>
         )}
 
-        {data?.content?.map((event) => (
-          <EventRow key={event.id} event={event} />
-        ))}
+        {!isError &&
+          data?.content?.map((event) => (
+            <EventRow key={event.id} event={event} />
+          ))}
       </Card>
 
       {data && data.totalPages > 1 && (
