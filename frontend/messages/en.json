@@ -208,7 +208,7 @@
       },
       "empty": "No recurring rules yet.",
       "pausedBadge": "Paused",
-      "every": "Every {intervalValue, plural, =1 {} other {# }}{frequency} · {accountName}",
+      "every": "Every {intervalValue, plural, =1 {{frequency, select, daily {day} weekly {week} monthly {month} yearly {year} other {period}}} other {# {frequency, select, daily {days} weekly {weeks} monthly {months} yearly {years} other {periods}}}} · {accountName}",
       "next": "Next: {date}"
     }
   },
