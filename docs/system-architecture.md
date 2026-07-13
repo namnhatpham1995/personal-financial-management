@@ -208,3 +208,46 @@ ExchangeRateRefreshScheduler  @Scheduled(01:30 UTC) + @SchedulerLock("exchangeRa
 - Per-currency endpoints (`/analytics/spending-by-category`, `/analytics/income-vs-expense`, `/analytics/budget-progress`, `/analytics/balances`) remain the default source for the Overview sections.
 
 The Overview frontend is currency-centric: `frontend/src/app/dashboard/page.tsx` builds one section per currency found in balances, trend rows, spending rows, or budget progress. Each section contains horizontal cash flow, spending donut, recent transactions, account boxes, and budget limits in that native currency. Recent transaction lists call `GET /api/v1/transactions` with `currency`, `type`, pagination, and date sorting so filtering happens before pagination instead of client-side.
+
+## Internationalization (i18n)
+
+Supported UI languages: English (`en`, fallback), Vietnamese (`vi`), German (`de`), Chinese Simplified (`zh`). Built on [next-intl](https://next-intl.dev), without locale-prefixed routing — URLs never change per language.
+
+```
+First visit (no NEXT_LOCALE cookie)
+  → src/i18n/request.ts negotiates the UI locale from the browser's Accept-Language
+    header against the 4 supported locales, falling back to en. Detection never
+    writes the cookie — only an explicit user choice does.
+
+User picks a language (LanguageSwitcher, in Settings or on login/register)
+  → sets the NEXT_LOCALE cookie (1 year) and calls router.refresh()
+    — a Next.js soft refresh: re-runs server components (including the root
+    layout, which reads the cookie) and pushes new RSC output to the client,
+    no full page navigation.
+  → if authenticated, also fires PUT /api/v1/auth/me/language (best-effort,
+    non-blocking — the local language change applies regardless of the
+    backend call's outcome).
+
+Authenticated app load / login / register response
+  → the user's preferredLanguage (from GET /api/v1/auth/me or the
+    login/register response body) is compared against the local cookie.
+    A non-null server value that differs from the cookie wins — it means the
+    user set their language on a different device — and updates the cookie
+    + triggers router.refresh(). See reconcileLocale() in
+    frontend/src/lib/auth-context.tsx.
+```
+
+- **Backend**: `users.preferred_language` (nullable `VARCHAR(8)`, migration `V11`) — `NULL` means the user has never explicitly chosen a language. `PUT /api/v1/auth/me/language` validates against the 4 supported codes (400 on unknown) and persists the choice; `GET /api/v1/auth/me` and the login/register response both echo it back as `preferredLanguage`.
+- **Frontend message files**: `frontend/messages/{en,vi,de,zh}.json`, one JSON per locale with feature namespaces (`common`, `auth`, `dashboard`, `accounts`, `transactions`, `budgets`, `categories`, `vault`, `apiTokens`, `activity`, `sidebar`, `settings`). Components call `useTranslations("namespace")` (client) — no server-component usage currently, since ~90% of the app is client-rendered.
+- **Locale-aware formatting**: `formatAmount`/`formatCurrency`/`formatDate`/`formatRate` in `frontend/src/lib/utils.ts` take an optional `locale` parameter (default `en`, so untouched call sites keep prior behavior); `useLocaleFormatters()` binds them to the active locale via `useLocale()`. `MoneyText` and other number-rendering components read the active locale directly.
+- **Resilience**: if a locale's message file is ever missing at runtime, `request.ts` falls back to English messages while keeping the negotiated locale for `Intl` date/number formatting — the UI never crashes on a missing translation file.
+- **Fonts**: Inter loads the `vietnamese` subset plus an explicit CJK system-font fallback chain (`next/font`'s `fallback` option) — no CJK webfont is shipped.
+- **CI gate**: `frontend/src/test/i18n-messages.test.ts` runs under `npm test` and fails the build if any locale is missing a key present in `en.json`, has an extra key, has an empty value, or has mismatched ICU placeholders/plural arguments. It adapts to however many `messages/*.json` files exist, so it doesn't block partial rollout of a new locale.
+
+### Adding a new language
+
+1. Add the locale code to `locales` in `frontend/src/i18n/config.ts` and a native-name entry in `localeNames`.
+2. Create `frontend/messages/<code>.json` with the same key structure as `en.json` (the CI gate will catch any drift).
+3. If the language needs distinct plural handling, use ICU plural syntax (`{count, plural, one {...} other {...}}`); languages with no singular/plural distinction (like `vi`/`zh`) can use a single `other` branch.
+4. Add the language to the backend's supported-code validation in `UpdateLanguageRequest` (`backend/src/main/java/com/fintrack/auth/web/dto/UpdateLanguageRequest.java`).
+5. Run `npm test` — the completeness gate confirms the new file has full key parity before merge.

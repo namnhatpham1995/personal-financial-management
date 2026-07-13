@@ -10,8 +10,11 @@
     "close": "Close"
   },
   "settings": {
+    "title": "Settings",
     "languageLabel": "Language",
-    "languageDescription": "Choose the language used throughout the app."
+    "languageDescription": "Choose the language used throughout the app.",
+    "apiTokensLink": "API Tokens",
+    "apiTokensLinkDescription": "Manage tokens for API clients and the MCP server."
   },
   "sidebar": {
     "nav": {
@@ -20,7 +23,8 @@
       "vault": "Vault",
       "categories": "Categories",
       "activity": "Activity",
-      "apiTokens": "API Tokens"
+      "apiTokens": "API Tokens",
+      "settings": "Settings"
     },
     "lightMode": "Light mode",
     "darkMode": "Dark mode",

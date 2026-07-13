@@ -21,7 +21,7 @@
 
 | Module | Entry | Notes |
 |---|---|---|
-| auth | `AuthController` → `AuthService` | JWT issue, rotation, SHA-256 refresh token hashing |
+| auth | `AuthController` → `AuthService` | JWT issue, rotation, SHA-256 refresh token hashing; `PUT /auth/me/language` persists `preferredLanguage` for cross-device UI language sync |
 | account | `AccountController` → `AccountService` | `adjustBalance()` + `recomputeBalance()` |
 | category | `CategoryController` → `CategoryService` | System categories read-only; delete **removes budgets** + reassigns transactions/recurring to "Uncategorized"; type is editable (INCOME/EXPENSE only — TRANSFER rejected) |
 | transaction | `TransactionController` → `TransactionService` | Paginated + filtered list, including account-currency filtering; balance delta on CRUD |
@@ -53,6 +53,12 @@
 | `src/components/charts/budget-progress-manager.tsx` | Inline budget limit management, scoped by currency on Overview |
 | `src/app/dashboard/categories/page.tsx` | "Categories & Limit" — categories + inline spending-limit management |
 | `src/app/dashboard/categories/category-row.tsx` | CategoryRow: type dropdown (INCOME/EXPENSE), inline limit form, LimitBar |
+| `src/i18n/config.ts` | Supported locale registry (`en`/`vi`/`de`/`zh`), default locale, cookie name, native names |
+| `src/i18n/request.ts` | next-intl server config: cookie → Accept-Language negotiation → en fallback; falls back to English messages if a locale file is missing |
+| `src/components/language-switcher.tsx` | Language `<select>`; sets the locale cookie + `router.refresh()`, optionally syncs to `PUT /auth/me/language` |
+| `src/lib/locale-preference.ts` | Read/write the `NEXT_LOCALE` cookie client-side |
+| `src/app/dashboard/settings/page.tsx` | Settings landing page: language switcher (backend-synced) + link to API Tokens |
+| `messages/{en,vi,de,zh}.json` | Translation message files, one per locale, namespaced by feature |
 
 ## Test Coverage
 
