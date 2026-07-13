@@ -31,6 +31,9 @@ public class User {
     @Column(name = "full_name", nullable = false, length = 255)
     private String fullName;
 
+    @Column(name = "preferred_language", length = 8)
+    private String preferredLanguage;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",

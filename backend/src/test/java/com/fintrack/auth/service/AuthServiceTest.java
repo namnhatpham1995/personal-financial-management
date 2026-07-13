@@ -114,6 +114,27 @@ class AuthServiceTest {
     }
 
     @Test
+    void updateLanguage_validCode_persistsAndReturnsUserInfo() {
+        User user = User.builder().id(3L).email("z@b.com").fullName("Zoe Kim").build();
+        when(userRepository.findById(3L)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenReturn(user);
+
+        TokenResponse.UserInfo result = authService.updateLanguage(3L, "vi");
+
+        assertThat(result.preferredLanguage()).isEqualTo("vi");
+        assertThat(user.getPreferredLanguage()).isEqualTo("vi");
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void updateLanguage_unknownUser_throwsNotFound() {
+        when(userRepository.findById(404L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.updateLanguage(404L, "en"))
+                .isInstanceOf(com.fintrack.common.exception.ResourceNotFoundException.class);
+    }
+
+    @Test
     void refresh_revokedToken_revokesAllAndThrows() {
         RefreshToken expired = RefreshToken.builder()
                 .tokenHash("somehash")

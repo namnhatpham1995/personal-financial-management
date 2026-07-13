@@ -101,8 +101,18 @@ public class AuthService {
         return new TokenResponse.UserInfo(
                 user.getId(), user.getEmail(),
                 spaceIdx > 0 ? fullName.substring(0, spaceIdx) : fullName,
-                spaceIdx > 0 ? fullName.substring(spaceIdx + 1) : ""
+                spaceIdx > 0 ? fullName.substring(spaceIdx + 1) : "",
+                user.getPreferredLanguage()
         );
+    }
+
+    @Transactional
+    public TokenResponse.UserInfo updateLanguage(Long userId, String language) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> ResourceNotFoundException.of("User", userId));
+        user.setPreferredLanguage(language);
+        userRepository.save(user);
+        return getUserInfo(userId);
     }
 
     @Transactional
@@ -134,7 +144,8 @@ public class AuthService {
                 user.getId(),
                 user.getEmail(),
                 firstName,
-                lastName
+                lastName,
+                user.getPreferredLanguage()
         );
     }
 

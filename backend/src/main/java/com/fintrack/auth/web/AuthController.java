@@ -5,6 +5,7 @@ import com.fintrack.auth.web.dto.LoginRequest;
 import com.fintrack.auth.web.dto.RefreshRequest;
 import com.fintrack.auth.web.dto.RegisterRequest;
 import com.fintrack.auth.web.dto.TokenResponse;
+import com.fintrack.auth.web.dto.UpdateLanguageRequest;
 import com.fintrack.common.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -56,5 +57,14 @@ public class AuthController {
     @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<TokenResponse.UserInfo> me(@AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(authService.getUserInfo(principal.getUserId()));
+    }
+
+    @PutMapping("/me/language")
+    @Operation(summary = "Update the authenticated user's preferred UI language")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<TokenResponse.UserInfo> updateLanguage(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody UpdateLanguageRequest request) {
+        return ResponseEntity.ok(authService.updateLanguage(principal.getUserId(), request.language()));
     }
 }
