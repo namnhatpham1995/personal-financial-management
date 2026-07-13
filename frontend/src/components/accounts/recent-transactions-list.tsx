@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useLocale, useTranslations } from "next-intl";
 import { transactionService, type Transaction } from "@/services/transaction-service";
 import { MoneyText } from "@/components/ui/money-text";
 import { formatDate } from "@/lib/utils";
@@ -13,6 +14,8 @@ interface RecentTransactionsListProps {
 
 /** Compact recent expense/income lists for one currency section on Overview. */
 export function RecentTransactionsList({ currency }: RecentTransactionsListProps) {
+  const t = useTranslations("accounts");
+  const tCommon = useTranslations("common");
   const { data: expensePage, isLoading: expensesLoading } = useQuery({
     queryKey: ["recentTransactions", currency, "EXPENSE"],
     queryFn: () =>
@@ -37,7 +40,7 @@ export function RecentTransactionsList({ currency }: RecentTransactionsListProps
   });
 
   if (expensesLoading || incomeLoading) {
-    return <p className="py-8 text-center text-sm text-muted-foreground animate-pulse">Loading…</p>;
+    return <p className="py-8 text-center text-sm text-muted-foreground animate-pulse">{tCommon("loading")}</p>;
   }
 
   const expenses = expensePage?.content ?? [];
@@ -45,7 +48,7 @@ export function RecentTransactionsList({ currency }: RecentTransactionsListProps
 
   if (expenses.length === 0 && incomes.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-muted-foreground">No recent transactions.</p>
+      <p className="py-8 text-center text-sm text-muted-foreground">{t("noRecentTransactions")}</p>
     );
   }
 
@@ -54,7 +57,7 @@ export function RecentTransactionsList({ currency }: RecentTransactionsListProps
       {expenses.length > 0 && (
         <div>
           <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Recent expenses
+            {t("recentExpenses")}
           </h3>
           <ul className="space-y-1.5">
             {expenses.map((tx) => (
@@ -66,7 +69,7 @@ export function RecentTransactionsList({ currency }: RecentTransactionsListProps
       {incomes.length > 0 && (
         <div>
           <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Recent income
+            {t("recentIncome")}
           </h3>
           <ul className="space-y-1.5">
             {incomes.map((tx) => (
@@ -80,13 +83,15 @@ export function RecentTransactionsList({ currency }: RecentTransactionsListProps
 }
 
 function TransactionRow({ transaction }: { transaction: Transaction }) {
+  const t = useTranslations("accounts");
+  const locale = useLocale();
   return (
     <li className="flex items-center justify-between gap-3 text-sm">
       <div className="min-w-0">
         <p className="truncate text-foreground" title={transaction.categoryName ?? transaction.note ?? undefined}>
-          {transaction.categoryName ?? transaction.note ?? "Uncategorized"}
+          {transaction.categoryName ?? transaction.note ?? t("uncategorized")}
         </p>
-        <p className="text-xs text-muted-foreground">{formatDate(transaction.transactionDate)}</p>
+        <p className="text-xs text-muted-foreground">{formatDate(transaction.transactionDate, locale)}</p>
       </div>
       <MoneyText
         amount={Number(transaction.amount)}

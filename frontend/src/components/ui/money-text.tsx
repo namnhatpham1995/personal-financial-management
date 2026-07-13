@@ -1,3 +1,6 @@
+"use client";
+
+import { useLocale } from "next-intl";
 import { cn } from "@/lib/utils";
 
 type TransactionType = "INCOME" | "EXPENSE" | "TRANSFER";
@@ -24,6 +27,7 @@ const typeSign: Record<TransactionType, string> = {
 };
 
 export function MoneyText({ amount, type, signed = false, currency, className }: MoneyTextProps) {
+  const locale = useLocale();
   const colorClass = type
     ? typeStyles[type]
     : signed && amount >= 0
@@ -40,7 +44,7 @@ export function MoneyText({ amount, type, signed = false, currency, className }:
   return (
     <span className={cn("font-mono tabular-nums", colorClass, className)}>
       {sign}
-      {Math.abs(amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      {Math.abs(amount).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
       {currency ? ` ${currency}` : ""}
     </span>
   );

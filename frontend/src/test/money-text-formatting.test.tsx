@@ -4,8 +4,9 @@
  * and transaction-type color/sign decoration.
  */
 import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { MoneyText } from "@/components/ui/money-text";
+import { renderWithIntl as render } from "@/test/test-utils";
 
 describe("MoneyText", () => {
   it("renders a positive amount with 2 decimal places", () => {

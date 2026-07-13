@@ -11,5 +11,131 @@
   "settings": {
     "languageLabel": "Language",
     "languageDescription": "Choose the language used throughout the app."
+  },
+  "sidebar": {
+    "nav": {
+      "overview": "Overview",
+      "transactions": "Transactions",
+      "vault": "Vault",
+      "categories": "Categories",
+      "activity": "Activity",
+      "apiTokens": "API Tokens"
+    },
+    "lightMode": "Light mode",
+    "darkMode": "Dark mode",
+    "signOut": "Sign out"
+  },
+  "auth": {
+    "signIn": {
+      "title": "Sign in",
+      "subtitle": "Return to the ledger that keeps your money exact.",
+      "submit": "Sign in",
+      "submitting": "Signing in...",
+      "noAccount": "No account?",
+      "registerLink": "Register"
+    },
+    "register": {
+      "title": "Create your account",
+      "subtitle": "Start with a private-banking calm view of everyday money.",
+      "submit": "Create account",
+      "submitting": "Creating account...",
+      "haveAccount": "Already have an account?",
+      "signInLink": "Sign in"
+    },
+    "fields": {
+      "firstName": "First name",
+      "lastName": "Last name",
+      "email": "Email",
+      "password": "Password",
+      "confirmPassword": "Confirm password"
+    },
+    "password": {
+      "show": "Show password",
+      "hide": "Hide password",
+      "showConfirm": "Show confirm password",
+      "hideConfirm": "Hide confirm password"
+    },
+    "validation": {
+      "minLength8": "At least 8 characters",
+      "confirmRequired": "Confirm your password",
+      "passwordsDoNotMatch": "Passwords do not match"
+    },
+    "errors": {
+      "credentials": "Invalid email or password.",
+      "rate_limit": "Too many attempts. Please try again later.",
+      "connection": "Unable to connect to Fintrack. Check your connection and try again.",
+      "validation": "Unable to create an account with these details.",
+      "server": "Fintrack is temporarily unavailable. Please try again later."
+    },
+    "theme": {
+      "switchToLight": "Switch to light theme",
+      "switchToDark": "Switch to dark theme",
+      "toggle": "Toggle color theme"
+    }
+  },
+  "dashboard": {
+    "title": "Overview",
+    "noTransactionData": "No transaction data for this period.",
+    "toast": {
+      "accountCreated": "Account created",
+      "accountCreateFailed": "Failed to create account",
+      "accountUpdated": "Account updated",
+      "accountUpdateFailed": "Failed to update account",
+      "accountDeleted": "Account deleted",
+      "accountDeleteFailed": "Failed to delete account"
+    }
+  },
+  "overview": {
+    "total": "Total {amount}",
+    "cashFlow": "Cash Flow",
+    "spendingByCategory": "Spending by Category",
+    "recentActivity": "Recent Activity",
+    "accounts": "Accounts",
+    "budgetProgress": "Budget Progress"
+  },
+  "accounts": {
+    "addAccount": "Add account",
+    "saving": "Saving...",
+    "editAccount": "Edit account",
+    "editAccountHint": "Changing the initial balance recomputes the current balance. Changing currency relabels existing amounts without converting them.",
+    "saveChanges": "Save changes",
+    "deleteAccount": "Delete account",
+    "deleting": "Deleting...",
+    "deleteConfirm": "Delete <strong>{accountName}</strong>?",
+    "checkingConnectedTransactions": "Checking connected transactions...",
+    "noTransactions": "This account has no transactions.",
+    "transactionsWillBeDeleted": "{count, plural, one {# transaction} other {# transactions}} connected to this account will also be permanently deleted.",
+    "fields": {
+      "name": "Name",
+      "type": "Type",
+      "currency": "Currency (ISO code)",
+      "initialBalance": "Initial balance"
+    },
+    "accountsHeading": "Accounts",
+    "yourBalances": "Your account balances.",
+    "noAccountsYet": "No accounts yet",
+    "noAccountsYetBody": "Add a cash, bank, savings, or credit account to start tracking balances.",
+    "noAccountsInCurrency": "No accounts in this currency yet.",
+    "viewDetails": "View {accountName} details",
+    "editAria": "Edit {accountName}",
+    "deleteAria": "Delete {accountName}",
+    "totalBalance": "Total balance",
+    "mainCurrency": "Main currency",
+    "ratesUnavailable": "Live rates unavailable for some currencies — totals below show native amounts.",
+    "notConverted": "(not converted)",
+    "noRecentTransactions": "No recent transactions.",
+    "recentExpenses": "Recent expenses",
+    "recentIncome": "Recent income",
+    "uncategorized": "Uncategorized",
+    "detail": {
+      "closeAria": "Close account detail",
+      "from": "From",
+      "to": "To",
+      "expenseByCategory": "Expense by category",
+      "transactions": "Transactions",
+      "incomingTransfers": "Incoming transfers",
+      "noTransactionsInPeriod": "No transactions for this account in this period",
+      "noIncomingTransfers": "No incoming transfers in this period"
+    }
   }
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 interface AuthThemeToggleProps {
@@ -13,6 +14,7 @@ export function AuthThemeToggle({ className }: AuthThemeToggleProps) {
   const [mounted, setMounted] = useState(false);
   const [documentTheme, setDocumentTheme] = useState<"dark" | "light">("light");
   const { theme, resolvedTheme, setTheme } = useTheme();
+  const t = useTranslations("auth.theme");
 
   useEffect(() => {
     setMounted(true);
@@ -35,9 +37,9 @@ export function AuthThemeToggle({ className }: AuthThemeToggleProps) {
   const isDark = activeTheme === "dark";
   const label = mounted
     ? isDark
-      ? "Switch to light theme"
-      : "Switch to dark theme"
-    : "Toggle color theme";
+      ? t("switchToLight")
+      : t("switchToDark")
+    : t("toggle");
 
   return (
     <button

@@ -1,9 +1,10 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { FeaturedBalanceCard } from "@/components/accounts/featured-balance-card";
 import type { BalancesSummary, CurrencyBalance } from "@/services/analytics-service";
+import { renderWithIntl as render } from "@/test/test-utils";
 
 const multiCurrencyBalances: CurrencyBalance[] = [
   { currency: "USD", totalBalance: "14059.00", accounts: [] },

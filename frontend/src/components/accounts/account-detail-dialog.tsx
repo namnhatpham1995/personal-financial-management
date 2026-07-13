@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type { Account } from "@/services/account-service";
 import { transactionService } from "@/services/transaction-service";
 import { analyticsService } from "@/services/analytics-service";
@@ -25,6 +26,8 @@ const inputCls =
  * its queries are lazy by construction.
  */
 export function AccountDetailDialog({ account, onClose }: { account: Account; onClose: () => void }) {
+  const t = useTranslations("accounts");
+  const tCommon = useTranslations("common");
   // Default to the last 12 months; the pie endpoint requires a concrete range, so
   // all three sections share this window rather than an open-ended "all time".
   const [startDate, setStartDate] = useState(
@@ -89,8 +92,8 @@ export function AccountDetailDialog({ account, onClose }: { account: Account; on
           <button
             onClick={onClose}
             className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-            title="Close"
-            aria-label="Close account detail"
+            title={tCommon("close")}
+            aria-label={t("detail.closeAria")}
           >
             <X className="h-5 w-5" />
           </button>
@@ -99,7 +102,7 @@ export function AccountDetailDialog({ account, onClose }: { account: Account; on
         {/* Date range — scopes all three sections */}
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <label className="flex items-center gap-2 text-xs text-muted-foreground">
-            From
+            {t("detail.from")}
             <input
               type="date"
               value={startDate}
@@ -113,7 +116,7 @@ export function AccountDetailDialog({ account, onClose }: { account: Account; on
             />
           </label>
           <label className="flex items-center gap-2 text-xs text-muted-foreground">
-            To
+            {t("detail.to")}
             <input
               type="date"
               value={endDate}
@@ -131,7 +134,7 @@ export function AccountDetailDialog({ account, onClose }: { account: Account; on
         <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[320px_1fr]">
           {/* Pie: expense categories + hatched incoming slice */}
           <Card className="p-5">
-            <h3 className="mb-4 font-semibold tracking-tight text-foreground">Expense by category</h3>
+            <h3 className="mb-4 font-semibold tracking-tight text-foreground">{t("detail.expenseByCategory")}</h3>
             <SpendingDonutChart
               data={spending}
               currency={account.currency}
@@ -142,14 +145,14 @@ export function AccountDetailDialog({ account, onClose }: { account: Account; on
           {/* Lists */}
           <div className="space-y-6">
             <section>
-              <h3 className="mb-3 font-semibold tracking-tight text-foreground">Transactions</h3>
+              <h3 className="mb-3 font-semibold tracking-tight text-foreground">{t("detail.transactions")}</h3>
               {ownLoading ? (
-                <p className="text-sm text-muted-foreground">Loading…</p>
+                <p className="text-sm text-muted-foreground">{tCommon("loading")}</p>
               ) : (
                 <TransactionTable
                   transactions={ownData?.content ?? []}
                   showAccountColumn={false}
-                  emptyMessage="No transactions for this account in this period"
+                  emptyMessage={t("detail.noTransactionsInPeriod")}
                   pagination={{
                     currentPage: ownPage,
                     totalPages: ownData?.totalPages ?? 1,
@@ -161,14 +164,14 @@ export function AccountDetailDialog({ account, onClose }: { account: Account; on
             </section>
 
             <section>
-              <h3 className="mb-3 font-semibold tracking-tight text-foreground">Incoming transfers</h3>
+              <h3 className="mb-3 font-semibold tracking-tight text-foreground">{t("detail.incomingTransfers")}</h3>
               {incomingLoading ? (
-                <p className="text-sm text-muted-foreground">Loading…</p>
+                <p className="text-sm text-muted-foreground">{tCommon("loading")}</p>
               ) : (
                 <TransactionTable
                   transactions={incomingData?.content ?? []}
                   showAccountColumn
-                  emptyMessage="No incoming transfers in this period"
+                  emptyMessage={t("detail.noIncomingTransfers")}
                   pagination={{
                     currentPage: incomingPage,
                     totalPages: incomingData?.totalPages ?? 1,

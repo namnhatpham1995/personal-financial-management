@@ -1,10 +1,11 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AxiosError, AxiosHeaders } from "axios";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import LoginPage from "@/app/login/page";
 import RegisterPage from "@/app/register/page";
 import { classifyAuthError } from "@/lib/auth-error";
+import { renderWithIntl as render } from "@/test/test-utils";
 
 const mocks = vi.hoisted(() => ({
   login: vi.fn(),
@@ -39,7 +40,6 @@ describe("auth error classification", () => {
   it("keeps login credential failures generic", () => {
     expect(classifyAuthError(axiosError(401), "login")).toEqual({
       kind: "credentials",
-      message: "Invalid email or password.",
     });
   });
 
@@ -51,7 +51,6 @@ describe("auth error classification", () => {
   it("classifies missing responses as connection or browser configuration failures", () => {
     expect(classifyAuthError(new AxiosError("Network Error", "ERR_NETWORK"), "login")).toEqual({
       kind: "connection",
-      message: "Unable to connect to Fintrack. Check your connection and try again.",
     });
   });
 
