@@ -56,12 +56,18 @@ const processQueue = (error: unknown, token: string | null) => {
   queue = [];
 };
 
+// A 401 here is a definitive outcome (bad credentials / invalid refresh token),
+// not an expired-session signal — never route it through the refresh flow.
+const AUTH_ENDPOINTS = ["/auth/login", "/auth/register", "/auth/refresh"];
+const isAuthEndpoint = (url: string | undefined) =>
+  !!url && AUTH_ENDPOINTS.some((endpoint) => url.endsWith(endpoint));
+
 apiClient.interceptors.response.use(
   (r) => r,
   async (error: AxiosError) => {
     const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-    if (error.response?.status !== 401 || original._retry) {
+    if (error.response?.status !== 401 || original._retry || isAuthEndpoint(original.url)) {
       return Promise.reject(error);
     }
 
@@ -79,7 +85,9 @@ apiClient.interceptors.response.use(
 
     const refreshToken = localStorage.getItem("refreshToken");
     if (!refreshToken) {
+      processQueue(error, null);
       redirectToLoginIfProtected();
+      isRefreshing = false;
       return Promise.reject(error);
     }
 
