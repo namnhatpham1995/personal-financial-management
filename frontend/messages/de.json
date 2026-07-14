@@ -97,7 +97,9 @@
     "spendingByCategory": "Ausgaben nach Kategorie",
     "recentActivity": "Letzte Aktivität",
     "accounts": "Konten",
-    "budgetProgress": "Budgetfortschritt"
+    "budgetProgress": "Budgetfortschritt",
+    "overall": "Gesamtübersicht",
+    "ratesUnavailableNotice": "Live-Wechselkurse nicht verfügbar — unten werden Werte je Währung angezeigt."
   },
   "accounts": {
     "addAccount": "Konto hinzufügen",

@@ -20,6 +20,7 @@ import { BalanceBreakdown } from "@/components/accounts/balance-breakdown";
 import { AccountDetailDialog } from "@/components/accounts/account-detail-dialog";
 import { FeaturedBalanceCard } from "@/components/accounts/featured-balance-card";
 import { CurrencySection } from "@/components/overview/currency-section";
+import { OverallStatistics } from "@/components/overview/overall-statistics";
 
 const RANGE_OPTIONS = [
   { label: "1M", months: 1 },
@@ -108,6 +109,14 @@ export default function DashboardPage() {
     enabled: !!mainCurrency && availableCurrencies.length > 1,
   });
 
+  const isMultiCurrency = availableCurrencies.length > 1;
+
+  const { data: overview, isLoading: overviewLoading } = useQuery({
+    queryKey: ["overview", mainCurrency, from, to],
+    queryFn: () => analyticsService.getOverview(mainCurrency!, from, to),
+    enabled: !!mainCurrency && isMultiCurrency,
+  });
+
   // Section list: every currency with a balance, transaction, or budget footprint.
   const currencies = Array.from(
     new Set([
@@ -191,6 +200,14 @@ export default function DashboardPage() {
           onMainCurrencyChange={setMainCurrencyOverride}
           summary={balancesSummary ?? null}
           isSummaryLoading={balancesSummaryLoading}
+        />
+      )}
+
+      {isMultiCurrency && mainCurrency && (
+        <OverallStatistics
+          mainCurrency={mainCurrency}
+          overview={overview ?? null}
+          isLoading={overviewLoading}
         />
       )}
 

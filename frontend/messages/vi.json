@@ -97,7 +97,9 @@
     "spendingByCategory": "Chi tiêu theo danh mục",
     "recentActivity": "Hoạt động gần đây",
     "accounts": "Tài khoản",
-    "budgetProgress": "Tiến độ ngân sách"
+    "budgetProgress": "Tiến độ ngân sách",
+    "overall": "Tổng thể",
+    "ratesUnavailableNotice": "Không có tỷ giá trực tiếp — hiển thị số liệu theo từng loại tiền bên dưới."
   },
   "accounts": {
     "addAccount": "Thêm tài khoản",
