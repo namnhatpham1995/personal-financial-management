@@ -1,12 +1,15 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AxiosInstance } from "axios";
 import { mapApiError } from "../api-client.js";
+import type { components } from "../generated/api-types.js";
 import { createBudgetShape, updateBudgetShape } from "./schemas.js";
 import { toErrorResult, toToolResult, type ToolResult } from "./tool-result.js";
 
+type BudgetResponse = components["schemas"]["BudgetResponse"];
+
 export async function createBudget(api: AxiosInstance, params: unknown): Promise<ToolResult> {
   try {
-    const { data } = await api.post("/budgets", params);
+    const { data } = await api.post<BudgetResponse>("/budgets", params);
     return toToolResult(data);
   } catch (err) {
     return toErrorResult(mapApiError(err));
@@ -21,7 +24,7 @@ export function registerBudgetTools(server: McpServer, api: AxiosInstance): void
     {},
     async (): Promise<ToolResult> => {
       try {
-        const { data } = await api.get("/budgets");
+        const { data } = await api.get<BudgetResponse[]>("/budgets");
         return toToolResult(data);
       } catch (err) {
         return toErrorResult(mapApiError(err));
@@ -42,7 +45,7 @@ export function registerBudgetTools(server: McpServer, api: AxiosInstance): void
     updateBudgetShape,
     async ({ id, ...body }): Promise<ToolResult> => {
       try {
-        const { data } = await api.put(`/budgets/${id}`, body);
+        const { data } = await api.put<BudgetResponse>(`/budgets/${id}`, body);
         return toToolResult(data);
       } catch (err) {
         return toErrorResult(mapApiError(err));

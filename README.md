@@ -104,9 +104,9 @@ GitHub Actions runs five jobs on every push to `main` (PRs run backend + fronten
 
 | Job | What it does |
 |---|---|
-| **Backend** | `mvn clean verify` with a live PostgreSQL 16 service; uploads Surefire + JaCoCo reports |
+| **Backend** | `mvn clean verify` with a live PostgreSQL 16 service; checks `mcp-server/openapi.json` matches the live OpenAPI contract; uploads Surefire + JaCoCo reports |
 | **Frontend** | Type-check → lint → Vitest → design-token gate (no raw palette classes) → `next build` |
-| **MCP Server** | `npm install` → type-check → Vitest → `npm run build` in `mcp-server/` |
+| **MCP Server** | `npm install` → type-check → Vitest → checks generated API types are up to date → `npm run build` in `mcp-server/` |
 | **Docker** | `docker compose build --no-cache` — verifies the full image stack compiles |
 | **Deploy** | `railway up` to Railway — gated on all prior jobs passing on `main` |
 
