@@ -1,32 +1,13 @@
 /**
  * Tests for the Axios auth/refresh interceptor in api-client.ts (task 4.2).
- * Covers: helper functions, 401→refresh→retry, failed refresh → logout, no infinite loop.
+ * Covers: helper functions, 401→refresh→retry, failed refresh → logout, no infinite loop,
+ * and route-aware redirect gating (only /dashboard routes navigate to /login on session expiry).
  */
-import { describe, it, expect, beforeEach, vi } from "vitest";
-
-// ── helpers from api-client that touch localStorage ───────────────────────────
-
-// Re-implement the helpers here so we can test them without importing the full
-// module (which adds interceptors to a real axios instance at load time).
-const getAccessToken = () =>
-  typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
-
-const setTokens = (access: string, refresh: string) => {
-  localStorage.setItem("accessToken", access);
-  localStorage.setItem("refreshToken", refresh);
-};
-
-const clearTokens = () => {
-  localStorage.removeItem("accessToken");
-  localStorage.removeItem("refreshToken");
-};
+import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+import { setTokens, clearTokens, redirectToLoginIfProtected, isProtectedRoute } from "@/lib/api-client";
 
 describe("token helpers", () => {
   beforeEach(() => localStorage.clear());
-
-  it("getAccessToken returns null when not set", () => {
-    expect(getAccessToken()).toBeNull();
-  });
 
   it("setTokens persists both tokens to localStorage", () => {
     setTokens("acc-123", "ref-456");
@@ -42,7 +23,52 @@ describe("token helpers", () => {
   });
 });
 
-// ── interceptor behavior ──────────────────────────────────────────────────────
+describe("redirectToLoginIfProtected", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    setTokens("acc-123", "ref-456");
+  });
+
+  it("clears tokens but does not navigate on the public landing page", () => {
+    const navigate = vi.fn();
+    redirectToLoginIfProtected("/", navigate);
+    expect(localStorage.getItem("accessToken")).toBeNull();
+    expect(localStorage.getItem("refreshToken")).toBeNull();
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it("clears tokens but does not navigate on /login", () => {
+    const navigate = vi.fn();
+    redirectToLoginIfProtected("/login", navigate);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it("clears tokens but does not navigate on /register", () => {
+    const navigate = vi.fn();
+    redirectToLoginIfProtected("/register", navigate);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it("clears tokens and redirects to /login from a /dashboard route", () => {
+    const navigate = vi.fn();
+    redirectToLoginIfProtected("/dashboard/settings", navigate);
+    expect(localStorage.getItem("accessToken")).toBeNull();
+    expect(navigate).toHaveBeenCalledWith("/login");
+  });
+});
+
+describe("isProtectedRoute", () => {
+  it("treats /dashboard and its subroutes as protected", () => {
+    expect(isProtectedRoute("/dashboard")).toBe(true);
+    expect(isProtectedRoute("/dashboard/settings")).toBe(true);
+  });
+
+  it("treats public routes as unprotected", () => {
+    expect(isProtectedRoute("/")).toBe(false);
+    expect(isProtectedRoute("/login")).toBe(false);
+    expect(isProtectedRoute("/register")).toBe(false);
+  });
+});
 
 describe("refresh interceptor logic", () => {
   beforeEach(() => {
@@ -69,7 +95,7 @@ describe("refresh interceptor logic", () => {
     localStorage.removeItem("refreshToken");
     const refreshToken = localStorage.getItem("refreshToken");
     expect(refreshToken).toBeNull();
-    // Interceptor path: no refreshToken → clearTokens + redirect, no POST /auth/refresh
+    // Interceptor path: no refreshToken → redirectToLoginIfProtected(), no POST /auth/refresh
   });
 
   it("successful refresh stores new tokens", () => {
