@@ -251,3 +251,33 @@ Authenticated app load / login / register response
 3. If the language needs distinct plural handling, use ICU plural syntax (`{count, plural, one {...} other {...}}`); languages with no singular/plural distinction (like `vi`/`zh`) can use a single `other` branch.
 4. Add the language to the backend's supported-code validation in `UpdateLanguageRequest` (`backend/src/main/java/com/fintrack/auth/web/dto/UpdateLanguageRequest.java`).
 5. Run `npm test` — the completeness gate confirms the new file has full key parity before merge.
+
+## What's New Changelog
+
+Announces user-visible updates right after login/app-open and keeps a permanent review page, so shipped features don't go unnoticed.
+
+```
+Dashboard mounts (any route, inside AuthGuard)
+  → WhatsNewModal compares latestChangelogVersion (highest version in
+    changelog-entries.ts) against the signed-in user's lastSeenChangelogVersion.
+  → if there are unseen entries, opens showing up to 3 newest, newest-first,
+    with a "View all updates" link when there are more.
+  → Got it / Escape / backdrop click / the view-all link all mark the latest
+    version seen: PUT /api/v1/auth/me/changelog-seen (fire-and-forget) + an
+    optimistic local update via auth-context's setLastSeenChangelogVersion.
+
+/dashboard/whats-new
+  → lists every entry, newest-first, always available — the way to review
+    entries skipped or dismissed via the modal. Visiting it also marks the
+    latest version seen.
+
+New registration
+  → the register flow immediately marks the user caught up to
+    latestChangelogVersion, so nothing published before signup is announced.
+```
+
+- **Backend**: `users.last_seen_changelog_version` (`INT NOT NULL DEFAULT 0`, migration `V12`) — same cross-device sync shape as `preferred_language`. `PUT /api/v1/auth/me/changelog-seen` takes `{"version": <positive int>}` and applies a monotonic guard (`AuthService.updateChangelogSeen` stores `max(current, requested)`, never regresses); `GET /api/v1/auth/me` and the login/register response echo it back as `lastSeenChangelogVersion`.
+- **Content is authored in the frontend, not the database**: `frontend/src/changelog/changelog-entries.ts` exports an ordered array of `{ version, date, titleKey, bodyKey, tag }` plus `latestChangelogVersion` (the highest version present). `version` is a monotonically increasing integer — the sole "has this been seen" signal — never reused. Title/body text lives in `frontend/messages/{en,vi,de,zh}.json` under the `changelog.entries.<version>` namespace, so it rides the same i18n completeness gate as everything else.
+- **Adding an entry**: bump a new `version` in `changelog-entries.ts`, add its `titleKey`/`bodyKey` under `changelog.entries.<version>` in all 4 message files, in the same PR as the feature it announces.
+
+

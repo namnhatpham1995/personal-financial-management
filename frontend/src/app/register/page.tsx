@@ -14,6 +14,8 @@ import { AuthThemeToggle } from "@/components/auth-theme-toggle";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { Button } from "@/components/ui/button";
 import { classifyAuthError } from "@/lib/auth-error";
+import { latestChangelogVersion } from "@/changelog/changelog-entries";
+import { changelogService } from "@/services/changelog-service";
 
 function createSchema(t: (key: string) => string) {
   return z
@@ -43,7 +45,7 @@ const errorCls =
   "mt-1.5 text-xs font-medium text-destructive dark:text-destructive-foreground";
 
 export default function RegisterPage() {
-  const { register: registerUser } = useAuth();
+  const { register: registerUser, setLastSeenChangelogVersion } = useAuth();
   const router = useRouter();
   const t = useTranslations("auth");
   const schema = useMemo(() => createSchema(t), [t]);
@@ -61,6 +63,13 @@ export default function RegisterPage() {
   }: FormValues) => {
     try {
       await registerUser(payload);
+      // A brand-new user has nothing to "catch up" on — mark them as having
+      // seen everything published before today so the What's New modal only
+      // ever announces entries shipped after they signed up.
+      changelogService.markSeen(latestChangelogVersion).catch(() => {
+        // best-effort — local seen-state already applied regardless of backend result
+      });
+      setLastSeenChangelogVersion(latestChangelogVersion);
       router.push("/dashboard");
     } catch (error: unknown) {
       toast.error(t(`errors.${classifyAuthError(error, "register").kind}`));

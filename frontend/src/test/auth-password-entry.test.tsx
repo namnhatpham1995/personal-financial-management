@@ -12,6 +12,8 @@ const mocks = vi.hoisted(() => ({
   toastError: vi.fn(),
   setTheme: vi.fn(),
   resolvedTheme: "light",
+  setLastSeenChangelogVersion: vi.fn(),
+  markChangelogSeen: vi.fn(),
 }));
 
 vi.mock("@/lib/auth-context", () => ({
@@ -21,7 +23,12 @@ vi.mock("@/lib/auth-context", () => ({
     login: mocks.login,
     register: mocks.register,
     logout: vi.fn(),
+    setLastSeenChangelogVersion: mocks.setLastSeenChangelogVersion,
   }),
+}));
+
+vi.mock("@/services/changelog-service", () => ({
+  changelogService: { markSeen: mocks.markChangelogSeen },
 }));
 
 vi.mock("next/navigation", () => ({
@@ -48,6 +55,8 @@ describe("auth password entry", () => {
     mocks.login.mockResolvedValue(undefined);
     mocks.register.mockResolvedValue(undefined);
     mocks.resolvedTheme = "light";
+    mocks.setLastSeenChangelogVersion.mockReset();
+    mocks.markChangelogSeen.mockReset().mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -144,6 +153,20 @@ describe("auth password entry", () => {
     });
     expect(mocks.register.mock.calls[0][0]).not.toHaveProperty("confirmPassword");
     expect(mocks.push).toHaveBeenCalledWith("/dashboard");
+  });
+
+  it("seeds a new user as caught up on the changelog after registering", async () => {
+    const user = userEvent.setup();
+    render(<RegisterPage />);
+
+    await fillRegistrationForm(user, {
+      password: "password123",
+      confirmPassword: "password123",
+    });
+    await user.click(screen.getByRole("button", { name: "Create account" }));
+
+    await waitFor(() => expect(mocks.markChangelogSeen).toHaveBeenCalled());
+    expect(mocks.setLastSeenChangelogVersion).toHaveBeenCalled();
   });
 });
 
