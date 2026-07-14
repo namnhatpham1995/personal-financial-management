@@ -23,6 +23,21 @@ export const clearTokens = () => {
   localStorage.removeItem("refreshToken");
 };
 
+// Protected surface mirrors auth-guard.tsx, which is only mounted under /dashboard.
+// Redirecting to /login from public pages (/, /login, /register) would force
+// anonymous visitors with stale tokens off pages they're allowed to see.
+export const isProtectedRoute = (pathname: string) => pathname.startsWith("/dashboard");
+
+export const redirectToLoginIfProtected = (
+  pathname: string = typeof window !== "undefined" ? window.location.pathname : "",
+  navigate: (url: string) => void = (url) => {
+    window.location.href = url;
+  }
+) => {
+  clearTokens();
+  if (isProtectedRoute(pathname)) navigate("/login");
+};
+
 // ── Request: attach Bearer token ───────────────────────────────────────────────
 
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
@@ -64,8 +79,7 @@ apiClient.interceptors.response.use(
 
     const refreshToken = localStorage.getItem("refreshToken");
     if (!refreshToken) {
-      clearTokens();
-      window.location.href = "/login";
+      redirectToLoginIfProtected();
       return Promise.reject(error);
     }
 
@@ -79,8 +93,7 @@ apiClient.interceptors.response.use(
       return apiClient(original);
     } catch (refreshError) {
       processQueue(refreshError, null);
-      clearTokens();
-      window.location.href = "/login";
+      redirectToLoginIfProtected();
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;
