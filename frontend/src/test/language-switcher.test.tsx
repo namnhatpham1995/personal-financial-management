@@ -33,6 +33,15 @@ describe("LanguageSwitcher", () => {
     expect(options).toEqual(["English", "Tiếng Việt", "Deutsch", "简体中文"]);
   });
 
+  it("styles every option with an explicit theme-safe background and text color", () => {
+    renderWithIntl(<LanguageSwitcher />);
+    const options = screen.getAllByRole("option");
+    expect(options).toHaveLength(4);
+    for (const option of options) {
+      expect(option).toHaveClass("bg-card", "text-foreground");
+    }
+  });
+
   it("switching sets the locale cookie and triggers a soft refresh", async () => {
     const user = userEvent.setup();
     renderWithIntl(<LanguageSwitcher />);

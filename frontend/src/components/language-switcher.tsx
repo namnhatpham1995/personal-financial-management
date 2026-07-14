@@ -36,7 +36,7 @@ export function LanguageSwitcher({ syncToBackend = false, className }: LanguageS
       className={className}
     >
       {locales.map((l) => (
-        <option key={l} value={l}>
+        <option key={l} value={l} className="bg-card text-foreground">
           {localeNames[l]}
         </option>
       ))}
