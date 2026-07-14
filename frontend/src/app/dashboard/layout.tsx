@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Menu } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
 import { Sidebar } from "@/components/sidebar";
+import { WhatsNewModal } from "@/components/whats-new-modal";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -28,6 +29,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <AuthGuard>
+      <WhatsNewModal />
       <div className="flex h-screen overflow-hidden bg-background">
         <Sidebar open={drawerOpen} onClose={closeDrawer} />
 

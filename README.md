@@ -25,6 +25,7 @@ A full-stack personal finance management application.
 - **Structured logging** — Logstash JSON encoder in prod/test; correlation ID on every request
 - **Durable audit log** — every authenticated mutation written to `audit_log` (PostgreSQL) in a dedicated `REQUIRES_NEW` transaction; committed immediately after the business write, never rolled back with it
 - **Multi-language UI** — English, Vietnamese, German, Chinese (Simplified); browser-language default, remembered once changed, synced across devices for signed-in users. See [`docs/system-architecture.md`](docs/system-architecture.md#internationalization-i18n) for how it works and how to add a language.
+- **What's New changelog** — a login/app-open notification for user-visible updates, plus a permanent review page; per-user seen-state synced across devices. See [`docs/system-architecture.md`](docs/system-architecture.md#whats-new-changelog).
 
 ## Why Two Databases
 
@@ -115,7 +116,7 @@ The design-token gate fails the build if any `.tsx`/`.ts` file uses raw Tailwind
 
 | Resource | Endpoints |
 |---|---|
-| Auth | POST /auth/register, /auth/login, /auth/refresh, /auth/logout, GET /auth/me |
+| Auth | POST /auth/register, /auth/login, /auth/refresh, /auth/logout, GET /auth/me, PUT /auth/me/language, PUT /auth/me/changelog-seen |
 | Accounts | CRUD + POST /{id}/recompute-balance |
 | Categories | CRUD (system categories read-only) |
 | Transactions | CRUD + paginated list with filters |
