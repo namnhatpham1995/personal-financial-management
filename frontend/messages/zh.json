@@ -97,7 +97,9 @@
     "spendingByCategory": "按分类支出",
     "recentActivity": "近期活动",
     "accounts": "账户",
-    "budgetProgress": "预算进度"
+    "budgetProgress": "预算进度",
+    "overall": "总体概览",
+    "ratesUnavailableNotice": "实时汇率不可用——以下显示各币种的原始数据。"
   },
   "accounts": {
     "addAccount": "添加账户",

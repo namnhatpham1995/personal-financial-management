@@ -97,7 +97,9 @@
     "spendingByCategory": "Spending by Category",
     "recentActivity": "Recent Activity",
     "accounts": "Accounts",
-    "budgetProgress": "Budget Progress"
+    "budgetProgress": "Budget Progress",
+    "overall": "Overall",
+    "ratesUnavailableNotice": "Live rates unavailable — showing per-currency figures below."
   },
   "accounts": {
     "addAccount": "Add account",
