@@ -45,6 +45,18 @@ jobs:
           JWT_SECRET: ci-test-secret-that-is-long-enough-256-bits-required
         run: mvn clean verify
 
+      - name: Check OpenAPI contract snapshot is up to date
+        working-directory: backend
+        run: |
+          if ! diff -u ../mcp-server/openapi.json target/openapi.json; then
+            echo ""
+            echo "ERROR: the backend's OpenAPI contract changed but mcp-server/openapi.json wasn't updated."
+            echo "Run the backend tests locally, then: cp backend/target/openapi.json mcp-server/openapi.json"
+            echo "and run 'npm run generate-types' in mcp-server/ to refresh the generated types."
+            exit 1
+          fi
+          echo "OK: mcp-server/openapi.json matches the backend contract"
+
       - name: Upload test report
         if: always()
         uses: actions/upload-artifact@v4
@@ -125,6 +137,18 @@ jobs:
       - name: Test
         working-directory: mcp-server
         run: npm test
+
+      - name: Check generated API types are up to date
+        working-directory: mcp-server
+        run: |
+          npm run generate-types
+          if ! git diff --exit-code -- src/generated; then
+            echo ""
+            echo "ERROR: src/generated/api-types.ts is stale relative to openapi.json."
+            echo "Run 'npm run generate-types' in mcp-server/ and commit the result."
+            exit 1
+          fi
+          echo "OK: generated API types match openapi.json"
 
       - name: Build
         working-directory: mcp-server

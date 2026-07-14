@@ -1,12 +1,15 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AxiosInstance } from "axios";
 import { mapApiError } from "../api-client.js";
+import type { components } from "../generated/api-types.js";
 import { createCategoryShape, listCategoriesShape, updateCategoryShape } from "./schemas.js";
 import { toErrorResult, toToolResult, type ToolResult } from "./tool-result.js";
 
+type CategoryResponse = components["schemas"]["CategoryResponse"];
+
 export async function createCategory(api: AxiosInstance, params: unknown): Promise<ToolResult> {
   try {
-    const { data } = await api.post("/categories", params);
+    const { data } = await api.post<CategoryResponse>("/categories", params);
     return toToolResult(data);
   } catch (err) {
     return toErrorResult(mapApiError(err));
@@ -21,7 +24,7 @@ export function registerCategoryTools(server: McpServer, api: AxiosInstance): vo
     listCategoriesShape,
     async (params): Promise<ToolResult> => {
       try {
-        const { data } = await api.get("/categories", { params });
+        const { data } = await api.get<CategoryResponse[]>("/categories", { params });
         return toToolResult(data);
       } catch (err) {
         return toErrorResult(mapApiError(err));
@@ -42,7 +45,7 @@ export function registerCategoryTools(server: McpServer, api: AxiosInstance): vo
     updateCategoryShape,
     async ({ id, ...body }): Promise<ToolResult> => {
       try {
-        const { data } = await api.put(`/categories/${id}`, body);
+        const { data } = await api.put<CategoryResponse>(`/categories/${id}`, body);
         return toToolResult(data);
       } catch (err) {
         return toErrorResult(mapApiError(err));

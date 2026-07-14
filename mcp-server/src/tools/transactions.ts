@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AxiosInstance } from "axios";
 import { mapApiError } from "../api-client.js";
+import type { components } from "../generated/api-types.js";
 import {
   createTransactionShape,
   createTransactionsBatchShape,
@@ -10,9 +11,13 @@ import {
 } from "./schemas.js";
 import { toErrorResult, toToolResult, type ToolResult } from "./tool-result.js";
 
+type TransactionResponse = components["schemas"]["TransactionResponse"];
+type PageResponseTransactionResponse = components["schemas"]["PageResponseTransactionResponse"];
+type BatchTransactionResponse = components["schemas"]["BatchTransactionResponse"];
+
 export async function createTransactionsBatch(api: AxiosInstance, params: unknown): Promise<ToolResult> {
   try {
-    const { data } = await api.post("/transactions/batch", params);
+    const { data } = await api.post<BatchTransactionResponse>("/transactions/batch", params);
     return toToolResult(data);
   } catch (err) {
     return toErrorResult(mapApiError(err));
@@ -21,7 +26,7 @@ export async function createTransactionsBatch(api: AxiosInstance, params: unknow
 
 export async function createTransaction(api: AxiosInstance, params: unknown): Promise<ToolResult> {
   try {
-    const { data } = await api.post("/transactions", params);
+    const { data } = await api.post<TransactionResponse>("/transactions", params);
     return toToolResult(data);
   } catch (err) {
     return toErrorResult(mapApiError(err));
@@ -36,7 +41,7 @@ export function registerTransactionTools(server: McpServer, api: AxiosInstance):
     listTransactionsShape,
     async (params): Promise<ToolResult> => {
       try {
-        const { data } = await api.get("/transactions", { params });
+        const { data } = await api.get<PageResponseTransactionResponse>("/transactions", { params });
         return toToolResult(data);
       } catch (err) {
         return toErrorResult(mapApiError(err));
@@ -58,7 +63,7 @@ export function registerTransactionTools(server: McpServer, api: AxiosInstance):
     getTransactionShape,
     async ({ id }): Promise<ToolResult> => {
       try {
-        const { data } = await api.get(`/transactions/${id}`);
+        const { data } = await api.get<TransactionResponse>(`/transactions/${id}`);
         return toToolResult(data);
       } catch (err) {
         return toErrorResult(mapApiError(err));
@@ -82,7 +87,7 @@ export function registerTransactionTools(server: McpServer, api: AxiosInstance):
     updateTransactionShape,
     async ({ id, ...body }): Promise<ToolResult> => {
       try {
-        const { data } = await api.put(`/transactions/${id}`, body);
+        const { data } = await api.put<TransactionResponse>(`/transactions/${id}`, body);
         return toToolResult(data);
       } catch (err) {
         return toErrorResult(mapApiError(err));

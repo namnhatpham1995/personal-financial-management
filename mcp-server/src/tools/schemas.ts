@@ -1,9 +1,33 @@
 import { z } from "zod";
+import type { components } from "../generated/api-types.js";
+
+/**
+ * Builds a literal-string tuple that is checked, at compile time, to contain exactly the
+ * members of Union — no more, no less. If the backend OpenAPI spec adds or removes an enum
+ * value and the tuple below isn't updated to match, this fails `npm run type-check` instead
+ * of silently drifting (see openspec/changes/mcp-openapi-contract-types).
+ */
+type ExactTuple<Union extends string, Tuple extends readonly Union[]> =
+  Exclude<Union, Tuple[number]> extends never ? Tuple : never;
+
+function exactTuple<Union extends string>() {
+  return <const Tuple extends readonly Union[]>(tuple: ExactTuple<Union, Tuple>): Tuple => tuple;
+}
+
+type TransactionTypeUnion = NonNullable<components["schemas"]["CreateTransactionRequest"]["transactionType"]>;
+type AccountTypeUnion = NonNullable<components["schemas"]["CreateAccountRequest"]["accountType"]>;
+type BudgetPeriodUnion = NonNullable<components["schemas"]["CreateBudgetRequest"]["period"]>;
+
+const transactionTypeValues = exactTuple<TransactionTypeUnion>()(["INCOME", "EXPENSE", "TRANSFER"] as const);
+const accountTypeValues = exactTuple<AccountTypeUnion>()(
+  ["CASH", "BANK", "CREDIT_CARD", "SAVINGS", "OTHER"] as const
+);
+const budgetPeriodValues = exactTuple<BudgetPeriodUnion>()(["MONTHLY", "YEARLY"] as const);
 
 export const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected an ISO date (YYYY-MM-DD)");
-export const transactionType = z.enum(["INCOME", "EXPENSE", "TRANSFER"]);
-export const accountType = z.enum(["CASH", "BANK", "CREDIT_CARD", "SAVINGS", "OTHER"]);
-export const budgetPeriod = z.enum(["MONTHLY", "YEARLY"]);
+export const transactionType = z.enum(transactionTypeValues);
+export const accountType = z.enum(accountTypeValues);
+export const budgetPeriod = z.enum(budgetPeriodValues);
 export const currencyCode = z.string().regex(/^[A-Z]{3}$/, "Expected an uppercase ISO 4217 currency code");
 
 export const listTransactionsShape = {
@@ -118,3 +142,37 @@ export const updateBudgetShape = {
   amountLimit: z.number().positive().optional(),
   period: budgetPeriod.optional(),
 };
+
+// ── Compile-time contract pinning ───────────────────────────────────────────
+// Unused type aliases, evaluated only by the compiler: each fails `npm run type-check` if a
+// hand-written shape above stops matching the backend request DTO it corresponds to.
+type AssertAssignable<Expected, _Actual extends Expected> = true;
+
+type _CheckCreateTransaction = AssertAssignable<
+  components["schemas"]["CreateTransactionRequest"],
+  z.infer<z.ZodObject<typeof createTransactionShape>>
+>;
+type _CheckUpdateTransaction = AssertAssignable<
+  components["schemas"]["UpdateTransactionRequest"],
+  z.infer<z.ZodObject<typeof updateTransactionShape>>
+>;
+type _CheckBatchTransactionRow = AssertAssignable<
+  components["schemas"]["CreateTransactionRequest"],
+  z.infer<typeof createTransactionsBatchShape.transactions>[number]
+>;
+type _CheckCreateAccount = AssertAssignable<
+  components["schemas"]["CreateAccountRequest"],
+  z.infer<z.ZodObject<typeof createAccountShape>>
+>;
+type _CheckUpdateAccount = AssertAssignable<
+  components["schemas"]["UpdateAccountRequest"],
+  z.infer<z.ZodObject<typeof updateAccountShape>>
+>;
+type _CheckCreateBudget = AssertAssignable<
+  components["schemas"]["CreateBudgetRequest"],
+  z.infer<z.ZodObject<typeof createBudgetShape>>
+>;
+type _CheckUpdateBudget = AssertAssignable<
+  components["schemas"]["UpdateBudgetRequest"],
+  z.infer<z.ZodObject<typeof updateBudgetShape>>
+>;

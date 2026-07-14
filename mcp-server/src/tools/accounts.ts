@@ -1,13 +1,16 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AxiosInstance } from "axios";
 import { mapApiError } from "../api-client.js";
+import type { components } from "../generated/api-types.js";
 import { createAccountShape, getAccountShape, updateAccountShape } from "./schemas.js";
 import { toErrorResult, toToolResult, type ToolResult } from "./tool-result.js";
+
+type AccountResponse = components["schemas"]["AccountResponse"];
 
 /** Exported separately so integration tests can drive the real handler against a real backend without the MCP transport layer. */
 export async function listAccounts(api: AxiosInstance): Promise<ToolResult> {
   try {
-    const { data } = await api.get("/accounts");
+    const { data } = await api.get<AccountResponse[]>("/accounts");
     return toToolResult(data);
   } catch (err) {
     return toErrorResult(mapApiError(err));
@@ -16,7 +19,7 @@ export async function listAccounts(api: AxiosInstance): Promise<ToolResult> {
 
 export async function createAccount(api: AxiosInstance, params: unknown): Promise<ToolResult> {
   try {
-    const { data } = await api.post("/accounts", params);
+    const { data } = await api.post<AccountResponse>("/accounts", params);
     return toToolResult(data);
   } catch (err) {
     return toErrorResult(mapApiError(err));
@@ -38,7 +41,7 @@ export function registerAccountTools(server: McpServer, api: AxiosInstance): voi
     getAccountShape,
     async ({ id }): Promise<ToolResult> => {
       try {
-        const { data } = await api.get(`/accounts/${id}`);
+        const { data } = await api.get<AccountResponse>(`/accounts/${id}`);
         return toToolResult(data);
       } catch (err) {
         return toErrorResult(mapApiError(err));
@@ -59,7 +62,7 @@ export function registerAccountTools(server: McpServer, api: AxiosInstance): voi
     updateAccountShape,
     async ({ id, ...body }): Promise<ToolResult> => {
       try {
-        const { data } = await api.put(`/accounts/${id}`, body);
+        const { data } = await api.put<AccountResponse>(`/accounts/${id}`, body);
         return toToolResult(data);
       } catch (err) {
         return toErrorResult(mapApiError(err));

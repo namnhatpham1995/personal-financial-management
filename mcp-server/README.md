@@ -82,8 +82,22 @@ No delete, token/session-management, vault, or raw-request tool is available. Th
 ## Development
 
 ```bash
-npm run dev         # run against source with tsx
-npm run type-check  # tsc --noEmit
-npm test            # vitest
-npm run build       # compile to dist/
+npm run dev             # run against source with tsx
+npm run type-check      # tsc --noEmit
+npm test                # vitest
+npm run build           # compile to dist/
+npm run generate-types  # regenerate src/generated/api-types.ts from openapi.json
 ```
+
+### Keeping the backend contract in sync
+
+`src/tools/schemas.ts` hand-writes Zod validation for each tool's input (so the AI client gets friendly, LLM-facing error messages), but those shapes are pinned at compile time to `src/generated/api-types.ts` — TypeScript types generated from `openapi.json`, a committed snapshot of the backend's OpenAPI spec. If the backend changes a request/response contract (new enum value, renamed field, new required field) without this package catching up, `npm run type-check` fails instead of the mismatch surfacing later as a confusing runtime tool error.
+
+When you change a backend DTO or enum that this server's tools touch:
+
+1. Run the backend tests once (`cd backend && mvn clean verify`) — this regenerates `backend/target/openapi.json` via `OpenApiSpecExportTest`.
+2. Copy the refreshed snapshot: `cp backend/target/openapi.json mcp-server/openapi.json`.
+3. Regenerate types: `cd mcp-server && npm run generate-types`.
+4. Run `npm run type-check` and fix any compile errors it surfaces in `src/tools/schemas.ts` or the tool files.
+
+CI enforces both halves automatically: the backend job fails if `mcp-server/openapi.json` is stale relative to the live spec, and the `mcp-server` job fails if `src/generated/api-types.ts` is stale relative to `openapi.json`.
