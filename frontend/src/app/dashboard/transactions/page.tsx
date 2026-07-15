@@ -130,7 +130,16 @@ function HistoryTab() {
 
   const onSubmit = (values: TransactionFormValues) => {
     if (editingTx) {
-      updateMutation.mutate({ id: editingTx.id, data: { amount: values.amount, transactionDate: values.transactionDate, categoryId: values.categoryId, note: values.note } });
+      updateMutation.mutate({
+        id: editingTx.id,
+        data: {
+          amount: values.amount,
+          destinationAmount: values.destinationAmount,
+          transactionDate: values.transactionDate,
+          categoryId: values.categoryId,
+          note: values.note,
+        },
+      });
     } else {
       createMutation.mutate(values);
     }

@@ -31,7 +31,7 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
                     WHEN t.transactionType = 'INCOME' THEN t.amount
                     WHEN t.transactionType = 'EXPENSE' THEN -t.amount
                     WHEN t.transactionType = 'TRANSFER' AND t.account.id = :accountId THEN -t.amount
-                    WHEN t.transactionType = 'TRANSFER' AND t.transferAccount.id = :accountId THEN t.amount
+                    WHEN t.transactionType = 'TRANSFER' AND t.transferAccount.id = :accountId THEN COALESCE(t.destinationAmount, t.amount)
                     ELSE 0
                 END
             ), 0) FROM Transaction t WHERE t.account.id = :accountId OR t.transferAccount.id = :accountId

@@ -185,10 +185,15 @@
         "date": "Date",
         "transferToAccount": "Transfer to Account",
         "category": "Category",
-        "note": "Note"
+        "note": "Note",
+        "destinationAmount": "Destination Amount"
       },
       "noCategory": "No category",
-      "saveChanges": "Save Changes"
+      "saveChanges": "Save Changes",
+      "autoConvert": "Auto Convert",
+      "autoConvertFailed": "Could not fetch conversion rate",
+      "destinationAmountRequired": "Destination amount is required for transfers between different currencies",
+      "destinationAmountNotAllowed": "Destination amount must be empty for transfers within the same currency"
     },
     "recurring": {
       "newRule": "New Rule",

@@ -87,8 +87,10 @@ public class AccountService {
         for (Transaction tx : connected) {
             if (tx.getTransactionType() == TransactionType.TRANSFER) {
                 if (tx.getAccount().getId().equals(accountId)) {
-                    // This account is the transfer source — counterparty (dest) gained amount, reverse it
-                    adjustBalance(tx.getTransferAccount().getId(), tx.getAmount().negate());
+                    // This account is the transfer source — counterparty (dest) gained
+                    // destinationAmount (or amount for same-currency transfers), reverse it
+                    BigDecimal destEffect = tx.getDestinationAmount() != null ? tx.getDestinationAmount() : tx.getAmount();
+                    adjustBalance(tx.getTransferAccount().getId(), destEffect.negate());
                 } else {
                     // This account is the transfer dest — counterparty (source) lost amount, restore it
                     adjustBalance(tx.getAccount().getId(), tx.getAmount());

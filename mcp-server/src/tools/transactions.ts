@@ -52,7 +52,9 @@ export function registerTransactionTools(server: McpServer, api: AxiosInstance):
   server.tool(
     "create_transactions_batch",
     "Create up to 100 transactions independently. Each result reports CREATED, SKIPPED_DUPLICATE, " +
-      "or FAILED with its input row index. Requires a write-scoped API token.",
+      "or FAILED with its input row index. Requires a write-scoped API token. A TRANSFER row " +
+      "between accounts of different currencies needs destinationAmount (see create_transaction); " +
+      "a row missing it fails with status FAILED without affecting the other rows.",
     createTransactionsBatchShape,
     (params) => createTransactionsBatch(api, params)
   );
@@ -76,14 +78,20 @@ export function registerTransactionTools(server: McpServer, api: AxiosInstance):
   server.tool(
     "create_transaction",
     "Create an INCOME, EXPENSE, or TRANSFER transaction. Requires a write-scoped API token — " +
-      "if the token is read-only, this fails with a scope error.",
+      "if the token is read-only, this fails with a scope error. For a TRANSFER between accounts " +
+      "denominated in different currencies, destinationAmount is required — the amount actually " +
+      "received, in the destination account's currency; omitting it is rejected, so set it whenever " +
+      "the source and destination accounts differ in currency. destinationAmount must be omitted " +
+      "when the source and destination accounts share a currency.",
     createTransactionShape,
     (params) => createTransaction(api, params)
   );
 
   server.tool(
     "update_transaction",
-    "Update a transaction's amount, date, category, or note. Requires a write-scoped API token.",
+    "Update a transaction's amount, date, category, or note. Requires a write-scoped API token. " +
+      "For a cross-currency TRANSFER, amount and destinationAmount must be supplied together when " +
+      "either changes — sending only one is rejected, so include both.",
     updateTransactionShape,
     async ({ id, ...body }): Promise<ToolResult> => {
       try {

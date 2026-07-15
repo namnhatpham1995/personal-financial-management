@@ -139,6 +139,7 @@ public class StatementImportService {
                         accountId,
                         null,
                         null,
+                        null,
                         (String) row.get("description"),
                         dedupKey   // importDedupKey — prevents duplicate on re-import
                 );

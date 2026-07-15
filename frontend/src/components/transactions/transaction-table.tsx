@@ -107,12 +107,20 @@ export function TransactionTable({
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{tx.categoryName ?? "—"}</td>
                   <td className="px-4 py-3">
-                    <MoneyText
-                      amount={Number(tx.amount)}
-                      type={tx.transactionType}
-                      currency={tx.currency}
-                      className="font-medium"
-                    />
+                    {tx.transactionType === "TRANSFER" && tx.destinationAmount && tx.destinationCurrency ? (
+                      <span className="flex items-center gap-1.5 font-mono tabular-nums font-medium text-muted-foreground">
+                        <MoneyText amount={Number(tx.amount)} type="TRANSFER" currency={tx.currency} />
+                        <span aria-hidden="true">→</span>
+                        <MoneyText amount={Number(tx.destinationAmount)} type="TRANSFER" currency={tx.destinationCurrency} />
+                      </span>
+                    ) : (
+                      <MoneyText
+                        amount={Number(tx.amount)}
+                        type={tx.transactionType}
+                        currency={tx.currency}
+                        className="font-medium"
+                      />
+                    )}
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
                     <span className="block max-w-[16rem] truncate" title={tx.note ?? undefined}>

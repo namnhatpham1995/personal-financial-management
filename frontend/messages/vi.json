@@ -185,10 +185,15 @@
         "date": "Ngày",
         "transferToAccount": "Chuyển đến tài khoản",
         "category": "Danh mục",
-        "note": "Ghi chú"
+        "note": "Ghi chú",
+        "destinationAmount": "Số tiền nhận"
       },
       "noCategory": "Không có danh mục",
-      "saveChanges": "Lưu thay đổi"
+      "saveChanges": "Lưu thay đổi",
+      "autoConvert": "Tự động quy đổi",
+      "autoConvertFailed": "Không thể lấy tỷ giá quy đổi",
+      "destinationAmountRequired": "Số tiền nhận là bắt buộc khi chuyển khoản giữa các loại tiền tệ khác nhau",
+      "destinationAmountNotAllowed": "Số tiền nhận phải để trống khi chuyển khoản cùng loại tiền tệ"
     },
     "recurring": {
       "newRule": "Quy tắc mới",

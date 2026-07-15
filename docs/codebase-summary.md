@@ -24,9 +24,10 @@
 | auth | `AuthController` → `AuthService` | JWT issue, rotation, SHA-256 refresh token hashing; `PUT /auth/me/language` persists `preferredLanguage` for cross-device UI language sync |
 | account | `AccountController` → `AccountService` | `adjustBalance()` + `recomputeBalance()` |
 | category | `CategoryController` → `CategoryService` | System categories read-only; delete **removes budgets** + reassigns transactions/recurring to "Uncategorized"; type is editable (INCOME/EXPENSE only — TRANSFER rejected) |
-| transaction | `TransactionController` → `TransactionService` | Paginated + filtered list, including account-currency filtering; balance delta on CRUD |
+| transaction | `TransactionController` → `TransactionService` | Paginated + filtered list, including account-currency filtering; balance delta on CRUD; cross-currency TRANSFER carries `destinationAmount` (`COALESCE(destination_amount, amount)` everywhere the destination side is read) |
+| exchange rate | `ExchangeRateController` → `ExchangeRateService` | `GET /exchange-rates/convert` — thin REST wrapper over the cached conversion service, used by the frontend to prefill cross-currency transfer amounts |
 | budget | `BudgetController` → `BudgetService` | Real-time progress via `sumSpentInPeriod()` |
-| recurring | `RecurringTransactionController` + `RecurringTransactionScheduler` + `RecurringOccurrenceProcessor` | Daily scheduler, per-occurrence `@Transactional` boundary, idempotent via unique constraint |
+| recurring | `RecurringTransactionController` + `RecurringTransactionScheduler` + `RecurringOccurrenceProcessor` | Daily scheduler, per-occurrence `@Transactional` boundary, idempotent via unique constraint; no destination-account field, so recurring TRANSFER is same-currency by construction |
 | analytics | `AnalyticsController` → `AnalyticsService` | Per-currency analytics, converted balance summaries, budget progress; JPQL queries in `AnalyticsRepository` |
 
 ### Common Infrastructure
