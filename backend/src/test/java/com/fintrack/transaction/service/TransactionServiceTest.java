@@ -61,7 +61,7 @@ class TransactionServiceTest {
     @Test
     void create_income_addsPositiveBalance() {
         BigDecimal amount = new BigDecimal("150.00");
-        var req = new CreateTransactionRequest(TransactionType.INCOME, amount, LocalDate.now(), 10L, null, null, null, null);
+        var req = new CreateTransactionRequest(TransactionType.INCOME, amount, LocalDate.now(), 10L, null, null, null, null, null);
         when(transactionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         transactionService.create(1L, req);
@@ -72,7 +72,7 @@ class TransactionServiceTest {
     @Test
     void create_expense_subtractsBalance() {
         BigDecimal amount = new BigDecimal("50.00");
-        var req = new CreateTransactionRequest(TransactionType.EXPENSE, amount, LocalDate.now(), 10L, null, null, null, null);
+        var req = new CreateTransactionRequest(TransactionType.EXPENSE, amount, LocalDate.now(), 10L, null, null, null, null, null);
         when(transactionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         transactionService.create(1L, req);
@@ -83,7 +83,7 @@ class TransactionServiceTest {
     @Test
     void create_transfer_debitsSourceCreditsDest() {
         BigDecimal amount = new BigDecimal("200.00");
-        var req = new CreateTransactionRequest(TransactionType.TRANSFER, amount, LocalDate.now(), 10L, 20L, null, null, null);
+        var req = new CreateTransactionRequest(TransactionType.TRANSFER, amount, LocalDate.now(), 10L, 20L, null, null, null, null);
         when(transactionRepository.save(any())).thenAnswer(inv -> {
             Transaction tx = inv.getArgument(0);
             tx.setTransferAccount(destAccount);
@@ -99,7 +99,7 @@ class TransactionServiceTest {
     @Test
     void create_transferWithNullDestination_throwsAndAdjustsNoBalance() {
         var req = new CreateTransactionRequest(TransactionType.TRANSFER, new BigDecimal("100.00"),
-                LocalDate.now(), 10L, null, null, null, null);
+                LocalDate.now(), 10L, null, null, null, null, null);
 
         assertThatThrownBy(() -> transactionService.create(1L, req))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -116,7 +116,7 @@ class TransactionServiceTest {
 
         TransactionResponse result = transactionService.create(1L,
                 new CreateTransactionRequest(TransactionType.EXPENSE, new BigDecimal("25.00"),
-                        LocalDate.now(), 10L, null, null, "Rent", null));
+                        LocalDate.now(), 10L, null, null, null, "Rent", null));
 
         assertThat(result.warnings()).extracting("code").contains("account_balance_negative");
     }
@@ -131,24 +131,70 @@ class TransactionServiceTest {
 
         TransactionResponse result = transactionService.create(1L,
                 new CreateTransactionRequest(TransactionType.EXPENSE, BigDecimal.TEN,
-                        LocalDate.now(), 10L, null, null, "Coffee", null));
+                        LocalDate.now(), 10L, null, null, null, "Coffee", null));
 
         assertThat(result.warnings()).extracting("code").contains("possible_duplicate_transaction");
     }
 
+    // ─── create: cross-currency transfer validation matrix ────────────────────
+
     @Test
-    void create_crossCurrencyTransfer_returnsCurrencyWarning() {
+    void create_crossCurrencyTransferWithoutDestinationAmount_throws() {
+        account.setCurrency("EUR");
+        destAccount.setCurrency("USD");
+
+        var req = new CreateTransactionRequest(TransactionType.TRANSFER, BigDecimal.TEN,
+                LocalDate.now(), 10L, 20L, null, null, null, null);
+
+        assertThatThrownBy(() -> transactionService.create(1L, req))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("destinationAmount");
+
+        verify(accountService, never()).adjustBalance(anyLong(), any());
+    }
+
+    @Test
+    void create_sameCurrencyTransferWithDestinationAmount_throws() {
+        account.setCurrency("USD");
+        destAccount.setCurrency("USD");
+
+        var req = new CreateTransactionRequest(TransactionType.TRANSFER, BigDecimal.TEN,
+                LocalDate.now(), 10L, 20L, new BigDecimal("10.00"), null, null, null);
+
+        assertThatThrownBy(() -> transactionService.create(1L, req))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("destinationAmount");
+    }
+
+    @Test
+    void create_nonTransferWithDestinationAmount_throws() {
+        var req = new CreateTransactionRequest(TransactionType.INCOME, BigDecimal.TEN,
+                LocalDate.now(), 10L, null, new BigDecimal("10.00"), null, null, null);
+
+        assertThatThrownBy(() -> transactionService.create(1L, req))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("destinationAmount");
+    }
+
+    @Test
+    void create_crossCurrencyTransfer_appliesBothSideAmounts() {
         account.setCurrency("EUR");
         account.setCurrentBalance(new BigDecimal("500.00"));
-        destAccount.setCurrency("USD");
-        when(transactionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        destAccount.setCurrency("VND");
+        BigDecimal sourceAmount = new BigDecimal("500.00");
+        BigDecimal destinationAmount = new BigDecimal("14600000.00");
+        when(transactionRepository.save(any())).thenAnswer(inv -> {
+            Transaction tx = inv.getArgument(0);
+            tx.setTransferAccount(destAccount);
+            return tx;
+        });
 
-        TransactionResponse result = transactionService.create(1L,
-                new CreateTransactionRequest(TransactionType.TRANSFER, BigDecimal.TEN,
-                        LocalDate.now(), 10L, 20L, null, null, null));
+        transactionService.create(1L,
+                new CreateTransactionRequest(TransactionType.TRANSFER, sourceAmount,
+                        LocalDate.now(), 10L, 20L, destinationAmount, null, null, null));
 
-        assertThat(result.warnings()).extracting("code")
-                .contains("currency_mismatch_or_unsupported_cross_currency_transfer");
+        verify(accountService).adjustBalance(10L, sourceAmount.negate());
+        verify(accountService).adjustBalance(20L, destinationAmount);
     }
 
     // ─── update: reverses old delta, applies new ──────────────────────────────
@@ -165,7 +211,7 @@ class TransactionServiceTest {
         when(transactionRepository.findByIdAndUserId(5L, 1L)).thenReturn(Optional.of(existing));
         when(transactionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        var req = new UpdateTransactionRequest(newAmount, null, null, null);
+        var req = new UpdateTransactionRequest(newAmount, null, null, null, null);
         transactionService.update(1L, 5L, req);
 
         // Reverse old INCOME: negate old amount
@@ -185,10 +231,73 @@ class TransactionServiceTest {
         when(transactionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         // Same amount — no balance change expected
-        var req = new UpdateTransactionRequest(amount, null, null, null);
+        var req = new UpdateTransactionRequest(amount, null, null, null, null);
         transactionService.update(1L, 5L, req);
 
         verify(accountService, never()).adjustBalance(anyLong(), any());
+    }
+
+    // ─── update: cross-currency transfer two-sided rule ────────────────────────
+
+    @Test
+    void update_crossCurrencyTransfer_amountWithoutDestinationAmount_throws() {
+        account.setCurrency("EUR");
+        destAccount.setCurrency("VND");
+        Transaction existing = Transaction.builder()
+                .id(6L).account(account).transferAccount(destAccount).transactionType(TransactionType.TRANSFER)
+                .amount(new BigDecimal("500.00")).destinationAmount(new BigDecimal("14600000.00"))
+                .transactionDate(LocalDate.now()).build();
+
+        when(transactionRepository.findByIdAndUserId(6L, 1L)).thenReturn(Optional.of(existing));
+
+        var req = new UpdateTransactionRequest(new BigDecimal("600.00"), null, null, null, null);
+
+        assertThatThrownBy(() -> transactionService.update(1L, 6L, req))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("destinationAmount");
+
+        verify(accountService, never()).adjustBalance(anyLong(), any());
+    }
+
+    @Test
+    void update_crossCurrencyTransfer_bothAmounts_reversesOldAppliesNewOnBothSides() {
+        account.setCurrency("EUR");
+        destAccount.setCurrency("VND");
+        BigDecimal oldAmount = new BigDecimal("500.00");
+        BigDecimal oldDestAmount = new BigDecimal("14600000.00");
+        BigDecimal newAmount = new BigDecimal("600.00");
+        BigDecimal newDestAmount = new BigDecimal("17520000.00");
+        Transaction existing = Transaction.builder()
+                .id(6L).account(account).transferAccount(destAccount).transactionType(TransactionType.TRANSFER)
+                .amount(oldAmount).destinationAmount(oldDestAmount).transactionDate(LocalDate.now()).build();
+
+        when(transactionRepository.findByIdAndUserId(6L, 1L)).thenReturn(Optional.of(existing));
+        when(transactionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var req = new UpdateTransactionRequest(newAmount, newDestAmount, null, null, null);
+        transactionService.update(1L, 6L, req);
+
+        verify(accountService).adjustBalance(10L, oldAmount);
+        verify(accountService).adjustBalance(20L, oldDestAmount.negate());
+        verify(accountService).adjustBalance(10L, newAmount.negate());
+        verify(accountService).adjustBalance(20L, newDestAmount);
+    }
+
+    @Test
+    void update_sameCurrencyTransfer_destinationAmountRejected() {
+        account.setCurrency("USD");
+        destAccount.setCurrency("USD");
+        Transaction existing = Transaction.builder()
+                .id(6L).account(account).transferAccount(destAccount).transactionType(TransactionType.TRANSFER)
+                .amount(new BigDecimal("100.00")).transactionDate(LocalDate.now()).build();
+
+        when(transactionRepository.findByIdAndUserId(6L, 1L)).thenReturn(Optional.of(existing));
+
+        var req = new UpdateTransactionRequest(new BigDecimal("120.00"), new BigDecimal("120.00"), null, null, null);
+
+        assertThatThrownBy(() -> transactionService.update(1L, 6L, req))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("destinationAmount");
     }
 
     // ─── delete: reverses full balance effect ─────────────────────────────────
@@ -221,6 +330,23 @@ class TransactionServiceTest {
 
         // Reversing EXPENSE means adding back
         verify(accountService).adjustBalance(10L, amount);
+        verify(transactionRepository).delete(existing);
+    }
+
+    @Test
+    void delete_crossCurrencyTransfer_reversesBothSidesWithTheirOwnAmounts() {
+        BigDecimal amount = new BigDecimal("500.00");
+        BigDecimal destinationAmount = new BigDecimal("14600000.00");
+        Transaction existing = Transaction.builder()
+                .id(9L).account(account).transferAccount(destAccount).transactionType(TransactionType.TRANSFER)
+                .amount(amount).destinationAmount(destinationAmount).build();
+
+        when(transactionRepository.findByIdAndUserId(9L, 1L)).thenReturn(Optional.of(existing));
+
+        transactionService.delete(1L, 9L);
+
+        verify(accountService).adjustBalance(10L, amount);
+        verify(accountService).adjustBalance(20L, destinationAmount.negate());
         verify(transactionRepository).delete(existing);
     }
 }

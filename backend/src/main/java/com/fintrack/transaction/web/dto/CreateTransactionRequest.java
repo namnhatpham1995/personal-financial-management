@@ -20,6 +20,13 @@ public record CreateTransactionRequest(
         /** Required when transactionType is TRANSFER */
         Long transferAccountId,
 
+        /**
+         * Required when transactionType is TRANSFER and the source/destination accounts have
+         * different currencies; forbidden otherwise. Denominated in the destination account currency.
+         */
+        @DecimalMin(value = "0.01", message = "destinationAmount must be positive")
+        BigDecimal destinationAmount,
+
         Long categoryId,
 
         @Size(max = 2000) String note,

@@ -40,7 +40,7 @@ public interface AnalyticsRepository extends JpaRepository<Transaction, Long> {
      * Returns 0 when there are no incoming transfers.
      */
     @Query("""
-            SELECT COALESCE(SUM(t.amount), 0)
+            SELECT COALESCE(SUM(COALESCE(t.destinationAmount, t.amount)), 0)
             FROM Transaction t
             WHERE t.user.id = :userId
               AND t.transactionType = com.fintrack.common.domain.TransactionType.TRANSFER

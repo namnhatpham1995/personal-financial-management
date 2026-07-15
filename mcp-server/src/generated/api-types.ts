@@ -403,6 +403,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/exchange-rates/convert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Convert an amount between two currencies using cached exchange rates */
+        get: operations["convert"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/recurring-transactions": {
         parameters: {
             query?: never;
@@ -852,6 +869,15 @@ export interface components {
         ConfirmImportRequest: {
             selectedDedupKeys: string[];
         };
+        ConvertResponse: {
+            amount?: number;
+            /** Format: date-time */
+            asOf?: string;
+            convertedAmount?: number;
+            from?: string;
+            rate?: number;
+            to?: string;
+        };
         ConvertedOverviewDto: {
             /** Format: date-time */
             asOf?: string;
@@ -935,6 +961,7 @@ export interface components {
             amount: number;
             /** Format: int64 */
             categoryId?: number;
+            destinationAmount?: number;
             importDedupKey?: string;
             note?: string;
             /** Format: date */
@@ -1132,6 +1159,8 @@ export interface components {
             /** Format: date-time */
             createdAt?: string;
             currency?: string;
+            destinationAmount?: number;
+            destinationCurrency?: string;
             /** Format: int64 */
             id?: number;
             note?: string;
@@ -1177,6 +1206,7 @@ export interface components {
             amount?: number;
             /** Format: int64 */
             categoryId?: number;
+            destinationAmount?: number;
             note?: string;
             /** Format: date */
             transactionDate?: string;
@@ -1929,6 +1959,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    convert: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+                amount: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ConvertResponse"];
+                };
             };
         };
     };

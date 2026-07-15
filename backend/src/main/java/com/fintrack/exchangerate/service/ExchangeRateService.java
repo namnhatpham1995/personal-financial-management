@@ -86,7 +86,11 @@ public class ExchangeRateService {
     public RateSnapshot getRates(String base) {
         List<ExchangeRate> cached = exchangeRateRepository.findByBaseCode(base);
         if (cached.isEmpty() || isCacheExpired(cached)) {
-            refresh(base);
+            // Self-invocation would bypass refresh()'s own @Transactional proxy interception
+            // (same self-invocation pitfall documented on convert()) — go through self so a
+            // transaction always backs the @Modifying upsert, even when the caller (e.g. a
+            // REST controller) has no outer @Transactional boundary of its own.
+            self.refresh(base);
             cached = exchangeRateRepository.findByBaseCode(base);
         }
         return toSnapshot(cached);

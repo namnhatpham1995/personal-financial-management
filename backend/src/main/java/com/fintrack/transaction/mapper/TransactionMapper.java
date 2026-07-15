@@ -11,6 +11,7 @@ public interface TransactionMapper {
     @Mapping(target = "accountId", source = "account.id")
     @Mapping(target = "accountName", source = "account.name")
     @Mapping(target = "currency", source = "account.currency")
+    @Mapping(target = "destinationCurrency", source = "transferAccount.currency")
     @Mapping(target = "transferAccountId", source = "transferAccount.id")
     @Mapping(target = "transferAccountName", source = "transferAccount.name")
     @Mapping(target = "categoryId", source = "category.id")

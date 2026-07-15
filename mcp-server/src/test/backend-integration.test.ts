@@ -327,4 +327,73 @@ describe.skipIf(!BACKEND_URL)("MCP tool <-> real backend", () => {
       expect(history.every((period) => period.currency === currency)).toBe(true);
     }
   });
+
+  it("creates a cross-currency TRANSFER with destinationAmount, and rejects one missing it", async () => {
+    const suffix = Date.now();
+    const email = `mcp-xfer-${suffix}@test.com`;
+    const backend = axios.create({ baseURL: `${BACKEND_URL}/api/v1` });
+
+    const registerResponse = await unwrapAxiosErrors(() =>
+      backend.post("/auth/register", {
+        email,
+        password: "pass1234",
+        firstName: "MCP",
+        lastName: "Transfer",
+      })
+    );
+    const jwt: string = registerResponse.data.accessToken;
+
+    const tokenResponse = await unwrapAxiosErrors(() =>
+      backend.post(
+        "/tokens",
+        { name: "MCP Transfer Token", scope: "WRITE", expiryDays: 365 },
+        { headers: { Authorization: `Bearer ${jwt}` } }
+      )
+    );
+    const pat: string = tokenResponse.data.plaintextToken;
+    const api = createApiClient({ apiUrl: BACKEND_URL!, apiToken: pat });
+
+    const eurAccountResult = await createAccount(api, {
+      name: `Transfer EUR account ${suffix}`,
+      accountType: "BANK",
+      currency: "EUR",
+      initialBalance: 1_000,
+    });
+    expect(eurAccountResult.isError).toBeFalsy();
+    const eurAccount = JSON.parse(eurAccountResult.content[0].text) as { id: number };
+
+    const vndAccountResult = await createAccount(api, {
+      name: `Transfer VND account ${suffix}`,
+      accountType: "BANK",
+      currency: "VND",
+      initialBalance: 0,
+    });
+    expect(vndAccountResult.isError).toBeFalsy();
+    const vndAccount = JSON.parse(vndAccountResult.content[0].text) as { id: number };
+
+    // mapApiError deliberately returns a generic message for 4xx (never the response body,
+    // which could carry sensitive details) — so the retry guidance for this field lives in
+    // create_transaction's static tool description, not in the error text itself.
+    const missingDestination = await createTransaction(api, {
+      transactionType: "TRANSFER",
+      amount: 500,
+      transactionDate: "2026-06-01",
+      accountId: eurAccount.id,
+      transferAccountId: vndAccount.id,
+    });
+    expect(missingDestination.isError).toBe(true);
+    expect(missingDestination.content[0].text).toContain("400");
+
+    const created = await createTransaction(api, {
+      transactionType: "TRANSFER",
+      amount: 500,
+      destinationAmount: 14_600_000,
+      transactionDate: "2026-06-01",
+      accountId: eurAccount.id,
+      transferAccountId: vndAccount.id,
+    });
+    expect(created.isError).toBeFalsy();
+    const transfer = JSON.parse(created.content[0].text) as { destinationAmount: number };
+    expect(transfer.destinationAmount).toBe(14_600_000);
+  });
 });

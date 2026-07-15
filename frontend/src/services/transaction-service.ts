@@ -9,6 +9,10 @@ export interface Transaction {
   categoryName?: string;
   transactionType: "INCOME" | "EXPENSE" | "TRANSFER";
   amount: string;
+  /** Amount received in the destination account currency, for cross-currency TRANSFER only. */
+  destinationAmount?: string;
+  /** Destination account's currency, set for TRANSFER transactions. */
+  destinationCurrency?: string;
   transactionDate: string;
   note?: string;
   transferAccountId?: number;
@@ -48,6 +52,8 @@ export interface CreateTransactionPayload {
   transactionDate: string;
   note?: string;
   transferAccountId?: number;
+  /** Required for TRANSFER between accounts with different currencies; forbidden otherwise. */
+  destinationAmount?: string;
 }
 
 /** Fields accepted by PUT /transactions/{id} — type and account are immutable */
@@ -56,6 +62,8 @@ export interface UpdateTransactionPayload {
   transactionDate?: string;
   categoryId?: number;
   note?: string;
+  /** Must be supplied together with amount when updating a cross-currency transfer. */
+  destinationAmount?: string;
 }
 
 export const transactionService = {

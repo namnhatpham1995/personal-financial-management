@@ -51,6 +51,12 @@ export const createTransactionShape = {
   transactionDate: isoDate,
   accountId: z.number().int(),
   transferAccountId: z.number().int().optional(),
+  /**
+   * Required for TRANSFER between accounts with different currencies, denominated in the
+   * destination account's currency; forbidden otherwise. The backend rejects a mismatch with
+   * a 400 naming this field — retry with it set to the amount actually received.
+   */
+  destinationAmount: z.number().positive().optional(),
   categoryId: z.number().int().optional(),
   note: z.string().max(2000).optional(),
 };
@@ -58,6 +64,8 @@ export const createTransactionShape = {
 export const updateTransactionShape = {
   id: z.number().int(),
   amount: z.number().positive().optional(),
+  /** Must be supplied together with amount when updating a cross-currency transfer. */
+  destinationAmount: z.number().positive().optional(),
   transactionDate: isoDate.optional(),
   categoryId: z.number().int().optional(),
   note: z.string().max(2000).optional(),
@@ -70,6 +78,7 @@ export const createTransactionsBatchShape = {
     transactionDate: isoDate,
     accountId: z.number().int(),
     transferAccountId: z.number().int().optional(),
+    destinationAmount: z.number().positive().optional(),
     categoryId: z.number().int().optional(),
     note: z.string().max(2000).optional(),
     importDedupKey: z.string().min(1).max(255).optional(),

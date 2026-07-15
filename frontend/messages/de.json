@@ -185,10 +185,15 @@
         "date": "Datum",
         "transferToAccount": "Überweisung an Konto",
         "category": "Kategorie",
-        "note": "Notiz"
+        "note": "Notiz",
+        "destinationAmount": "Zielbetrag"
       },
       "noCategory": "Keine Kategorie",
-      "saveChanges": "Änderungen speichern"
+      "saveChanges": "Änderungen speichern",
+      "autoConvert": "Automatisch umrechnen",
+      "autoConvertFailed": "Wechselkurs konnte nicht abgerufen werden",
+      "destinationAmountRequired": "Zielbetrag ist bei Überweisungen zwischen verschiedenen Währungen erforderlich",
+      "destinationAmountNotAllowed": "Zielbetrag muss bei Überweisungen innerhalb derselben Währung leer bleiben"
     },
     "recurring": {
       "newRule": "Neue Regel",

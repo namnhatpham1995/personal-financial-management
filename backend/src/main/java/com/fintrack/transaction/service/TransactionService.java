@@ -87,16 +87,25 @@ public class TransactionService {
             }
             Account dest = accountService.findOwned(userId, req.transferAccountId());
             tx.setTransferAccount(dest);
-            if (!account.getCurrency().equals(dest.getCurrency())) {
-                warnings.add(new MutationWarning("currency_mismatch_or_unsupported_cross_currency_transfer",
-                        "Transfer accounts use different currencies; no conversion was performed", account.getId()));
+            boolean crossCurrency = !account.getCurrency().equals(dest.getCurrency());
+            if (crossCurrency && req.destinationAmount() == null) {
+                throw new IllegalArgumentException(
+                        "destinationAmount is required for a TRANSFER between accounts with different currencies ("
+                                + account.getCurrency() + " -> " + dest.getCurrency() + ")");
             }
+            if (!crossCurrency && req.destinationAmount() != null) {
+                throw new IllegalArgumentException(
+                        "destinationAmount must be omitted for a TRANSFER between accounts with the same currency");
+            }
+            tx.setDestinationAmount(req.destinationAmount());
+        } else if (req.destinationAmount() != null) {
+            throw new IllegalArgumentException("destinationAmount is only valid for TRANSFER transactions");
         }
 
         addNegativeBalanceWarning(warnings, account, req.transactionType(), req.amount());
 
         Transaction saved = transactionRepository.save(tx);
-        applyBalanceDelta(saved, saved.getAmount());
+        applyBalanceDelta(saved, saved.getAmount(), saved.getDestinationAmount());
         cacheVersionService.bump(userId);
         return TransactionResponse.withWarnings(transactionMapper.toResponse(saved), warnings);
     }
@@ -181,23 +190,38 @@ public class TransactionService {
     public TransactionResponse update(Long userId, Long txId, UpdateTransactionRequest req) {
         Transaction tx = findOwned(userId, txId);
         BigDecimal oldAmount = tx.getAmount();
+        BigDecimal oldDestinationAmount = tx.getDestinationAmount();
+        boolean isCrossCurrencyTransfer = tx.getTransactionType() == TransactionType.TRANSFER
+                && tx.getTransferAccount() != null
+                && !tx.getAccount().getCurrency().equals(tx.getTransferAccount().getCurrency());
+
+        if (isCrossCurrencyTransfer && (req.amount() == null) != (req.destinationAmount() == null)) {
+            throw new IllegalArgumentException(
+                    "amount and destinationAmount must be supplied together when updating a cross-currency transfer");
+        }
+        if (!isCrossCurrencyTransfer && req.destinationAmount() != null) {
+            throw new IllegalArgumentException("destinationAmount must be omitted for this transaction");
+        }
+
         BigDecimal finalAmount = req.amount() == null ? oldAmount : req.amount();
+        BigDecimal finalDestinationAmount = isCrossCurrencyTransfer
+                ? (req.destinationAmount() == null ? oldDestinationAmount : req.destinationAmount())
+                : oldDestinationAmount;
+
         List<MutationWarning> warnings = new ArrayList<>();
         BigDecimal balanceDelta = finalAmount.subtract(oldAmount);
         if (tx.getTransactionType() == TransactionType.EXPENSE || tx.getTransactionType() == TransactionType.TRANSFER) {
             addNegativeBalanceWarning(warnings, tx.getAccount(), tx.getTransactionType(), balanceDelta);
         }
-        if (tx.getTransactionType() == TransactionType.TRANSFER
-                && !tx.getAccount().getCurrency().equals(tx.getTransferAccount().getCurrency())) {
-            warnings.add(new MutationWarning("currency_mismatch_or_unsupported_cross_currency_transfer",
-                    "Transfer accounts use different currencies; no conversion was performed", tx.getAccount().getId()));
-        }
 
-        if (req.amount() != null && req.amount().compareTo(oldAmount) != 0) {
+        boolean amountsChanged = finalAmount.compareTo(oldAmount) != 0
+                || amountsDiffer(finalDestinationAmount, oldDestinationAmount);
+        if (amountsChanged) {
             // Reverse old balance effect, apply new
-            reverseBalanceDelta(tx, oldAmount);
-            tx.setAmount(req.amount());
-            applyBalanceDelta(tx, req.amount());
+            reverseBalanceDelta(tx, oldAmount, oldDestinationAmount);
+            tx.setAmount(finalAmount);
+            tx.setDestinationAmount(finalDestinationAmount);
+            applyBalanceDelta(tx, finalAmount, finalDestinationAmount);
         }
         if (req.transactionDate() != null) tx.setTransactionDate(req.transactionDate());
         if (req.note() != null) tx.setNote(req.note());
@@ -213,35 +237,46 @@ public class TransactionService {
     @Transactional
     public void delete(Long userId, Long txId) {
         Transaction tx = findOwned(userId, txId);
-        reverseBalanceDelta(tx, tx.getAmount());
+        reverseBalanceDelta(tx, tx.getAmount(), tx.getDestinationAmount());
         transactionRepository.delete(tx);
         cacheVersionService.bump(userId);
     }
 
     // ─── Internal balance helpers ──────────────────────────────────────────────
 
-    /** Apply the signed balance delta for a transaction (create or amount-increase). */
-    private void applyBalanceDelta(Transaction tx, BigDecimal amount) {
+    /**
+     * Apply the signed balance delta for a transaction (create or amount-increase).
+     * For TRANSFER, {@code destinationAmount} is the destination-side amount (falls back to
+     * {@code amount} for same-currency transfers where destinationAmount is null).
+     */
+    private void applyBalanceDelta(Transaction tx, BigDecimal amount, BigDecimal destinationAmount) {
         switch (tx.getTransactionType()) {
             case INCOME   -> accountService.adjustBalance(tx.getAccount().getId(), amount);
             case EXPENSE  -> accountService.adjustBalance(tx.getAccount().getId(), amount.negate());
             case TRANSFER -> {
                 accountService.adjustBalance(tx.getAccount().getId(), amount.negate());
-                accountService.adjustBalance(tx.getTransferAccount().getId(), amount);
+                accountService.adjustBalance(tx.getTransferAccount().getId(),
+                        destinationAmount != null ? destinationAmount : amount);
             }
         }
     }
 
     /** Reverse the balance delta (delete or pre-update). */
-    private void reverseBalanceDelta(Transaction tx, BigDecimal amount) {
+    private void reverseBalanceDelta(Transaction tx, BigDecimal amount, BigDecimal destinationAmount) {
         switch (tx.getTransactionType()) {
             case INCOME   -> accountService.adjustBalance(tx.getAccount().getId(), amount.negate());
             case EXPENSE  -> accountService.adjustBalance(tx.getAccount().getId(), amount);
             case TRANSFER -> {
                 accountService.adjustBalance(tx.getAccount().getId(), amount);
-                accountService.adjustBalance(tx.getTransferAccount().getId(), amount.negate());
+                accountService.adjustBalance(tx.getTransferAccount().getId(),
+                        (destinationAmount != null ? destinationAmount : amount).negate());
             }
         }
+    }
+
+    private boolean amountsDiffer(BigDecimal a, BigDecimal b) {
+        if (a == null || b == null) return a != b;
+        return a.compareTo(b) != 0;
     }
 
     private void addNegativeBalanceWarning(List<MutationWarning> warnings, Account account,

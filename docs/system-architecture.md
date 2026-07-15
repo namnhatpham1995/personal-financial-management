@@ -108,7 +108,8 @@ MCP client (stdio) ⇄ fintrack-mcp-server ── HTTPS Bearer fintrack_pat_... 
 Every transaction mutation calls `AccountService.adjustBalance(accountId, delta)`:
 - INCOME: `balance += amount`
 - EXPENSE: `balance -= amount`
-- TRANSFER: `from -= amount`, `to += amount`
+- TRANSFER (same currency): `from -= amount`, `to += amount`
+- TRANSFER (cross-currency): `from -= amount`, `to += destinationAmount` — `destinationAmount` (nullable `transactions.destination_amount`, denominated in the destination account's currency) is required whenever source and destination accounts differ in currency, and forbidden otherwise. The client supplies both amounts (no server-side conversion at save time); `GET /api/v1/exchange-rates/convert` exposes the cached `ExchangeRateService` rate so the frontend can prefill one side from the other. Every query that reads the destination-side effect (`AccountRepository` balance recompute, `AnalyticsRepository.incomingTransferTotal`) uses `COALESCE(destination_amount, amount)`. Amount edits on a cross-currency transfer must supply both `amount` and `destinationAmount` together (400 otherwise) so the two sides never drift out of sync. Recurring TRANSFER definitions have no destination-account field at all, so they are same-currency by construction.
 
 `POST /accounts/{id}/recompute-balance` recomputes from transaction history as a safety-net.
 

@@ -50,6 +50,10 @@ public class Transaction {
     @Column(nullable = false, precision = 19, scale = 4)
     private BigDecimal amount;
 
+    /** Amount received in the destination account currency, for cross-currency TRANSFER only. */
+    @Column(name = "destination_amount", precision = 19, scale = 4)
+    private BigDecimal destinationAmount;
+
     @Column(name = "transaction_date", nullable = false)
     private LocalDate transactionDate;
 

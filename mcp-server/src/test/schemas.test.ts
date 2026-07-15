@@ -77,6 +77,53 @@ describe("tool input schemas reject malformed input before any API call", () => 
     expect(result.success).toBe(false);
   });
 
+  it("create_transaction accepts a cross-currency TRANSFER with destinationAmount", () => {
+    const result = z.object(createTransactionShape).safeParse({
+      transactionType: "TRANSFER",
+      amount: 500,
+      destinationAmount: 14600000,
+      transactionDate: "2026-01-01",
+      accountId: 1,
+      transferAccountId: 2,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("create_transaction rejects a non-positive destinationAmount", () => {
+    const result = z.object(createTransactionShape).safeParse({
+      transactionType: "TRANSFER",
+      amount: 500,
+      destinationAmount: 0,
+      transactionDate: "2026-01-01",
+      accountId: 1,
+      transferAccountId: 2,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("update_transaction accepts amount and destinationAmount supplied together", () => {
+    const result = z.object(updateTransactionShape).safeParse({
+      id: 1,
+      amount: 600,
+      destinationAmount: 17520000,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("create_transactions_batch accepts a row with destinationAmount", () => {
+    const result = z.object(createTransactionsBatchShape).safeParse({
+      transactions: [{
+        transactionType: "TRANSFER",
+        amount: 500,
+        destinationAmount: 14600000,
+        transactionDate: "2026-01-01",
+        accountId: 1,
+        transferAccountId: 2,
+      }],
+    });
+    expect(result.success).toBe(true);
+  });
+
   it("get_account rejects unknown fields", () => {
     const result = z.object(getAccountShape).strict().safeParse({ id: 1, path: "/vault" });
     expect(result.success).toBe(false);

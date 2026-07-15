@@ -185,10 +185,15 @@
         "date": "日期",
         "transferToAccount": "转入账户",
         "category": "分类",
-        "note": "备注"
+        "note": "备注",
+        "destinationAmount": "到账金额"
       },
       "noCategory": "无分类",
-      "saveChanges": "保存更改"
+      "saveChanges": "保存更改",
+      "autoConvert": "自动换算",
+      "autoConvertFailed": "无法获取汇率",
+      "destinationAmountRequired": "不同币种账户间转账必须填写到账金额",
+      "destinationAmountNotAllowed": "同币种转账不得填写到账金额"
     },
     "recurring": {
       "newRule": "新建规则",
