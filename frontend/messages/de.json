@@ -189,8 +189,6 @@
       },
       "noCategory": "Keine Kategorie",
       "saveChanges": "Änderungen speichern",
-      "autoConvert": "Automatisch umrechnen",
-      "autoConvertFailed": "Wechselkurs konnte nicht abgerufen werden",
       "destinationAmountRequired": "Zielbetrag ist bei Überweisungen zwischen verschiedenen Währungen erforderlich",
       "destinationAmountNotAllowed": "Zielbetrag muss bei Überweisungen innerhalb derselben Währung leer bleiben",
       "sameAccountNotAllowed": "Quell- und Zielkonto müssen unterschiedlich sein",
@@ -201,7 +199,10 @@
       },
       "transfer": {
         "from": "Von",
-        "to": "Nach"
+        "to": "Nach",
+        "rateLoading": "Wechselkurs wird abgerufen…",
+        "rateFetchFailed": "Wechselkurs konnte nicht abgerufen werden — Betrag bitte manuell eingeben",
+        "useFetchedRate": "Abgerufenen Kurs verwenden"
       }
     },
     "recurring": {

@@ -189,8 +189,6 @@
       },
       "noCategory": "Không có danh mục",
       "saveChanges": "Lưu thay đổi",
-      "autoConvert": "Tự động quy đổi",
-      "autoConvertFailed": "Không thể lấy tỷ giá quy đổi",
       "destinationAmountRequired": "Số tiền nhận là bắt buộc khi chuyển khoản giữa các loại tiền tệ khác nhau",
       "destinationAmountNotAllowed": "Số tiền nhận phải để trống khi chuyển khoản cùng loại tiền tệ",
       "sameAccountNotAllowed": "Tài khoản nguồn và tài khoản nhận phải khác nhau",
@@ -201,7 +199,10 @@
       },
       "transfer": {
         "from": "Từ",
-        "to": "Đến"
+        "to": "Đến",
+        "rateLoading": "Đang lấy tỷ giá…",
+        "rateFetchFailed": "Không thể lấy tỷ giá — vui lòng nhập số tiền thủ công",
+        "useFetchedRate": "Dùng tỷ giá đã lấy"
       }
     },
     "recurring": {
