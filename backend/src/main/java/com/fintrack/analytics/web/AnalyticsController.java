@@ -18,7 +18,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -29,7 +28,6 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "Analytics")
 @SecurityRequirement(name = "bearerAuth")
-@Validated
 public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
