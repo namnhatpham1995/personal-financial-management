@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Field, fieldInputCls, inputCls } from "@/components/transactions/transaction-field";
 import { TransactionTypeSegmentedControl } from "@/components/transactions/transaction-type-segmented-control";
 import { TransferDirectionFields } from "@/components/transactions/transfer-direction-fields";
-import { useManualConversion } from "@/components/transactions/use-manual-conversion";
+import { useAutoConversion } from "@/components/transactions/use-auto-conversion";
 import { useDefaultAccountSelection } from "@/components/transactions/use-default-account-selection";
 import { buildSchema, todayIsoDate, type TransactionFormValues } from "./transaction-form-schema";
 import type { Transaction } from "@/services/transaction-service";
@@ -81,20 +81,16 @@ export function TransactionForm({ editingTx, accounts, categories, isPending, on
     txType === "TRANSFER" && !!sourceAccount && !!destAccount && sourceAccount.currency !== destAccount.currency;
 
   useDefaultAccountSelection({ isEditing, txType, accountId, transferAccountId, accounts, setValue });
-  const { isConverting, convertError, conversionLine, handleAutoConvert, reset: resetConversion } = useManualConversion({
+  const { isLoading: isRateLoading, error: rateError, overridden, markOverridden, revert, conversionLine } = useAutoConversion({
     sourceAccount,
     destAccount,
     amount,
     destinationAmount,
-    locale,
     crossCurrency,
-    setAmount: (value) => setValue("amount", value),
+    initialOverridden: isEditing,
+    locale,
     setDestinationAmount: (value) => setValue("destinationAmount", value),
   });
-
-  useEffect(() => {
-    if (!crossCurrency) resetConversion();
-  }, [crossCurrency]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (txType === "TRANSFER" && accountId && Number(accountId) === Number(transferAccountId)) setValue("transferAccountId", undefined);
@@ -143,20 +139,23 @@ export function TransactionForm({ editingTx, accounts, categories, isPending, on
             destAccount={destAccount}
             crossCurrency={crossCurrency}
             isEditing={isEditing}
-            isConverting={isConverting}
-            convertError={convertError}
+            isRateLoading={isRateLoading}
+            rateError={rateError}
+            overridden={overridden}
+            onRevertToFetchedRate={revert}
+            onDestinationAmountEdited={markOverridden}
             conversionLine={conversionLine}
             register={register}
             errors={errors}
-            onAutoConvert={handleAutoConvert}
             labels={{
               account: t("fields.account"),
               from: t("transfer.from"),
               to: t("transfer.to"),
               amount: t("fields.amount"),
               destinationAmount: t("fields.destinationAmount"),
-              autoConvert: t("autoConvert"),
-              autoConvertFailed: t("autoConvertFailed"),
+              rateLoading: t("transfer.rateLoading"),
+              rateFetchFailed: t("transfer.rateFetchFailed"),
+              useFetchedRate: t("transfer.useFetchedRate"),
               destinationAmountError: destinationAmountErrorMessage,
               transferAccountError: transferAccountIdErrorMessage,
             }}
