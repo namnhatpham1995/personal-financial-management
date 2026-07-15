@@ -103,6 +103,48 @@ class AnalyticsHttpIntegrationTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    /**
+     * @RequestParam constraint violations (e.g. a malformed currency code) must surface as 400
+     * via Spring MVC's native HandlerMethodValidationException, not fall through to the generic
+     * 500 handler. Regression coverage for a bug where class-level @Validated on the controller
+     * routed violations through Hibernate Validator's older AOP interceptor instead, which
+     * throws ConstraintViolationException — a type GlobalExceptionHandler has no handler for.
+     */
+    @Test
+    void overview_malformedTargetCurrency_returns400() throws Exception {
+        String jwt = HttpTestHelper.registerAndLogin(mockMvc, objectMapper, "analytics.badcurrency.overview@test.com");
+        LocalDate today = LocalDate.now();
+
+        mockMvc.perform(get("/api/v1/analytics/overview")
+                        .header("Authorization", "Bearer " + jwt)
+                        .param("targetCurrency", "not-a-currency")
+                        .param("from", today.toString())
+                        .param("to", today.toString()))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void budgetHistory_malformedCurrency_returns400() throws Exception {
+        String jwt = HttpTestHelper.registerAndLogin(mockMvc, objectMapper, "analytics.badcurrency.history@test.com");
+
+        mockMvc.perform(get("/api/v1/analytics/budget-history")
+                        .header("Authorization", "Bearer " + jwt)
+                        .param("from", "2026-01-01")
+                        .param("to", "2026-03-31")
+                        .param("currency", "not-a-currency"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void balances_malformedTargetCurrency_returns400() throws Exception {
+        String jwt = HttpTestHelper.registerAndLogin(mockMvc, objectMapper, "analytics.badcurrency.balances@test.com");
+
+        mockMvc.perform(get("/api/v1/analytics/balances")
+                        .header("Authorization", "Bearer " + jwt)
+                        .param("targetCurrency", "not-a-currency"))
+                .andExpect(status().isBadRequest());
+    }
+
     @Test
     void budgetHistory_returnsEmptyPeriodsSeparatesCurrenciesAndAllowsReadPat() throws Exception {
         String jwt = HttpTestHelper.registerAndLogin(mockMvc, objectMapper, "analytics.history@test.com");
