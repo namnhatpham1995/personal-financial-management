@@ -14,7 +14,6 @@ import {
   Tag,
   Activity,
   Archive,
-  KeyRound,
   Settings,
   LogOut,
   Sun,
@@ -31,9 +30,12 @@ const primaryNavItems = [
 const secondaryNavItems = [
   { href: "/dashboard/categories", labelKey: "categories" as const, icon: Tag },
   { href: "/dashboard/activity", labelKey: "activity" as const, icon: Activity },
-  { href: "/dashboard/settings/api-tokens", labelKey: "apiTokens" as const, icon: KeyRound },
   { href: "/dashboard/settings", labelKey: "settings" as const, icon: Settings },
 ];
+
+function isNavItemActive(pathname: string, href: string) {
+  return href === "/dashboard" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+}
 
 interface SidebarProps {
   open?: boolean;
@@ -91,7 +93,7 @@ function SidebarContent({
 
       <nav className="flex-1 space-y-1">
         {primaryNavItems.map(({ href, labelKey, icon: Icon }) => (
-          <NavLink key={href} href={href} label={t(`nav.${labelKey}`)} Icon={Icon} active={pathname === href} onClose={onClose} />
+          <NavLink key={href} href={href} label={t(`nav.${labelKey}`)} Icon={Icon} active={isNavItemActive(pathname, href)} onClose={onClose} />
         ))}
 
         <div className="my-3 border-t border-border" />
@@ -100,13 +102,13 @@ function SidebarContent({
           href="/dashboard/whats-new"
           label={t("nav.whatsNew")}
           Icon={Megaphone}
-          active={pathname === "/dashboard/whats-new"}
+          active={isNavItemActive(pathname, "/dashboard/whats-new")}
           onClose={onClose}
           showDot={hasUnseenChangelog}
         />
 
         {secondaryNavItems.map(({ href, labelKey, icon: Icon }) => (
-          <NavLink key={href} href={href} label={t(`nav.${labelKey}`)} Icon={Icon} active={pathname === href} onClose={onClose} />
+          <NavLink key={href} href={href} label={t(`nav.${labelKey}`)} Icon={Icon} active={isNavItemActive(pathname, href)} onClose={onClose} />
         ))}
       </nav>
 
