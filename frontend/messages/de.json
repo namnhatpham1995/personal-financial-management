@@ -192,7 +192,17 @@
       "autoConvert": "Automatisch umrechnen",
       "autoConvertFailed": "Wechselkurs konnte nicht abgerufen werden",
       "destinationAmountRequired": "Zielbetrag ist bei Überweisungen zwischen verschiedenen Währungen erforderlich",
-      "destinationAmountNotAllowed": "Zielbetrag muss bei Überweisungen innerhalb derselben Währung leer bleiben"
+      "destinationAmountNotAllowed": "Zielbetrag muss bei Überweisungen innerhalb derselben Währung leer bleiben",
+      "sameAccountNotAllowed": "Quell- und Zielkonto müssen unterschiedlich sein",
+      "typeOptions": {
+        "income": "Einnahme",
+        "expense": "Ausgabe",
+        "transfer": "Überweisung"
+      },
+      "transfer": {
+        "from": "Von",
+        "to": "Nach"
+      }
     },
     "recurring": {
       "newRule": "Neue Regel",

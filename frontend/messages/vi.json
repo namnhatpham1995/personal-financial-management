@@ -192,7 +192,17 @@
       "autoConvert": "Tự động quy đổi",
       "autoConvertFailed": "Không thể lấy tỷ giá quy đổi",
       "destinationAmountRequired": "Số tiền nhận là bắt buộc khi chuyển khoản giữa các loại tiền tệ khác nhau",
-      "destinationAmountNotAllowed": "Số tiền nhận phải để trống khi chuyển khoản cùng loại tiền tệ"
+      "destinationAmountNotAllowed": "Số tiền nhận phải để trống khi chuyển khoản cùng loại tiền tệ",
+      "sameAccountNotAllowed": "Tài khoản nguồn và tài khoản nhận phải khác nhau",
+      "typeOptions": {
+        "income": "Thu nhập",
+        "expense": "Chi tiêu",
+        "transfer": "Chuyển khoản"
+      },
+      "transfer": {
+        "from": "Từ",
+        "to": "Đến"
+      }
     },
     "recurring": {
       "newRule": "Quy tắc mới",
