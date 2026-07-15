@@ -192,7 +192,17 @@
       "autoConvert": "自动换算",
       "autoConvertFailed": "无法获取汇率",
       "destinationAmountRequired": "不同币种账户间转账必须填写到账金额",
-      "destinationAmountNotAllowed": "同币种转账不得填写到账金额"
+      "destinationAmountNotAllowed": "同币种转账不得填写到账金额",
+      "sameAccountNotAllowed": "转出账户和转入账户不能相同",
+      "typeOptions": {
+        "income": "收入",
+        "expense": "支出",
+        "transfer": "转账"
+      },
+      "transfer": {
+        "from": "从",
+        "to": "到"
+      }
     },
     "recurring": {
       "newRule": "新建规则",

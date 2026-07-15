@@ -192,7 +192,17 @@
       "autoConvert": "Auto Convert",
       "autoConvertFailed": "Could not fetch conversion rate",
       "destinationAmountRequired": "Destination amount is required for transfers between different currencies",
-      "destinationAmountNotAllowed": "Destination amount must be empty for transfers within the same currency"
+      "destinationAmountNotAllowed": "Destination amount must be empty for transfers within the same currency",
+      "sameAccountNotAllowed": "Source and destination accounts must be different",
+      "typeOptions": {
+        "income": "Income",
+        "expense": "Expense",
+        "transfer": "Transfer"
+      },
+      "transfer": {
+        "from": "From",
+        "to": "To"
+      }
     },
     "recurring": {
       "newRule": "New Rule",
