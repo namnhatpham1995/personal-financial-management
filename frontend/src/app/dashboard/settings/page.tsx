@@ -21,15 +21,15 @@ export default function SettingsPage() {
         <LanguageSwitcher syncToBackend className={selectCls} />
       </Card>
 
-      <Card className="p-5">
-        <Link
-          href="/dashboard/settings/api-tokens"
-          className="font-semibold tracking-tight text-foreground hover:text-primary transition-colors"
-        >
+      <Link
+        href="/dashboard/settings/api-tokens"
+        className="group block rounded-lg border border-border bg-card p-5 shadow-card transition-all duration-200 hover:border-primary/30 hover:bg-hover-surface hover:shadow-card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+      >
+        <h2 className="mb-1 font-semibold tracking-tight text-foreground transition-colors group-hover:text-primary">
           {t("apiTokensLink")}
-        </Link>
-        <p className="mt-1 text-sm text-muted-foreground">{t("apiTokensLinkDescription")}</p>
-      </Card>
+        </h2>
+        <p className="text-sm text-muted-foreground">{t("apiTokensLinkDescription")}</p>
+      </Link>
     </div>
   );
 }
