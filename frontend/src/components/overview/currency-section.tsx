@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { Account } from "@/services/account-service";
 import type { IncomeExpenseTrend, SpendingByCategory } from "@/services/analytics-service";
@@ -23,8 +22,6 @@ interface CurrencySectionProps {
   onEditAccount: (account: Account) => void;
   onDeleteAccount: (account: Account) => void;
   onOpenAccountDetail: (account: Account) => void;
-  /** When provided, the currency heading links here (e.g. Overview linking to the detail route). */
-  headerHref?: string;
   /** When provided, the empty-accounts state offers an add-account action. */
   onAddAccount?: () => void;
 }
@@ -39,7 +36,6 @@ export function CurrencySection({
   onEditAccount,
   onDeleteAccount,
   onOpenAccountDetail,
-  headerHref,
   onAddAccount,
 }: CurrencySectionProps) {
   const t = useTranslations("overview");
@@ -48,18 +44,7 @@ export function CurrencySection({
   return (
     <section className="space-y-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border pb-2">
-        <h2 className="text-lg font-semibold tracking-tight text-foreground">
-          {headerHref ? (
-            <Link
-              href={headerHref}
-              className="rounded-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-            >
-              {currency}
-            </Link>
-          ) : (
-            currency
-          )}
-        </h2>
+        <h2 className="text-lg font-semibold tracking-tight text-foreground">{currency}</h2>
         {nativeTotal !== undefined && (
           <p className="font-mono text-sm tabular-nums text-muted-foreground">
             {t("total", { amount: formatCurrency(nativeTotal, currency, locale) })}

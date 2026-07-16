@@ -101,7 +101,9 @@
     "ratesUnavailableNotice": "Live-Wechselkurse nicht verfügbar — unten werden Werte je Währung angezeigt.",
     "backToOverview": "Zurück zur Übersicht",
     "noFootprintTitle": "Keine Konten oder Aktivität in {code}",
-    "noFootprintBody": "Sie haben keine Guthaben, Transaktionen oder Budgets in dieser Währung."
+    "noFootprintBody": "Sie haben keine Guthaben, Transaktionen oder Budgets in dieser Währung.",
+    "overBudget": "Budget überschritten",
+    "accountCount": "{count, plural, =0 {Keine Konten} one {# Konto} other {# Konten}}"
   },
   "accounts": {
     "addAccount": "Konto hinzufügen",

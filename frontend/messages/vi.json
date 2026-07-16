@@ -101,7 +101,9 @@
     "ratesUnavailableNotice": "Không có tỷ giá trực tiếp — hiển thị số liệu theo từng loại tiền bên dưới.",
     "backToOverview": "Quay lại Tổng quan",
     "noFootprintTitle": "Không có tài khoản hoặc hoạt động nào bằng {code}",
-    "noFootprintBody": "Bạn không có số dư, giao dịch hoặc ngân sách nào bằng loại tiền này."
+    "noFootprintBody": "Bạn không có số dư, giao dịch hoặc ngân sách nào bằng loại tiền này.",
+    "overBudget": "Vượt ngân sách",
+    "accountCount": "{count, plural, =0 {Không có tài khoản} other {# tài khoản}}"
   },
   "accounts": {
     "addAccount": "Thêm tài khoản",

@@ -101,7 +101,9 @@
     "ratesUnavailableNotice": "Live rates unavailable — showing per-currency figures below.",
     "backToOverview": "Back to Overview",
     "noFootprintTitle": "No accounts or activity in {code}",
-    "noFootprintBody": "You don't hold any balances, transactions, or budgets in this currency."
+    "noFootprintBody": "You don't hold any balances, transactions, or budgets in this currency.",
+    "overBudget": "Over budget",
+    "accountCount": "{count, plural, =0 {No accounts} one {# account} other {# accounts}}"
   },
   "accounts": {
     "addAccount": "Add account",

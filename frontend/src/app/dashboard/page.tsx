@@ -10,6 +10,7 @@ import { accountService, CreateAccountPayload } from "@/services/account-service
 import { BalanceBreakdown } from "@/components/accounts/balance-breakdown";
 import { FeaturedBalanceCard } from "@/components/accounts/featured-balance-card";
 import { CurrencyDetailBody } from "@/components/overview/currency-detail-body";
+import { CurrencySummaryCard } from "@/components/overview/currency-summary-card";
 import { OverallStatistics } from "@/components/overview/overall-statistics";
 
 const RANGE_OPTIONS = [
@@ -175,6 +176,21 @@ export default function DashboardPage() {
 
       {currencies.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("noTransactionData")}</p>
+      ) : isMultiCurrency ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {currencies.map((currency) => (
+            <CurrencySummaryCard
+              key={currency}
+              currency={currency}
+              nativeTotal={bucketsByCurrency.get(currency)?.totalBalance}
+              accountCount={bucketsByCurrency.get(currency)?.accounts.length ?? 0}
+              netCashFlow={trend
+                .filter((t) => t.currency === currency)
+                .reduce((sum, t) => sum + Number(t.net), 0)}
+              isOverBudget={budgetProgress.some((b) => b.currency === currency && b.overBudget)}
+            />
+          ))}
+        </div>
       ) : (
         currencies.map((currency) => (
           <CurrencyDetailBody
@@ -184,7 +200,6 @@ export default function DashboardPage() {
             trend={trend.filter((t) => t.currency === currency)}
             spending={spending.filter((s) => s.currency === currency)}
             accounts={accounts.filter((account) => account.currency === currency)}
-            headerHref={`/dashboard/currency/${currency}`}
           />
         ))
       )}

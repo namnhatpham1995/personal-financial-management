@@ -101,7 +101,9 @@
     "ratesUnavailableNotice": "实时汇率不可用——以下显示各币种的原始数据。",
     "backToOverview": "返回概览",
     "noFootprintTitle": "没有 {code} 的账户或活动记录",
-    "noFootprintBody": "您在该币种下没有余额、交易或预算。"
+    "noFootprintBody": "您在该币种下没有余额、交易或预算。",
+    "overBudget": "预算超支",
+    "accountCount": "{count, plural, =0 {没有账户} other {# 个账户}}"
   },
   "accounts": {
     "addAccount": "添加账户",
