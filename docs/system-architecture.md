@@ -201,14 +201,14 @@ ExchangeRateRefreshScheduler  @Scheduled(01:30 UTC) + @SchedulerLock("exchangeRa
 - `convertedTotal`: grand total converted into the requested target currency by `AnalyticsService` using `ExchangeRateService.convert()`.
 - `rates`, `asOf`, `stale`, `ratesUnavailable`, and `excludedCurrencies`: conversion metadata for the dashboard's featured balance card.
 
-`GET /api/v1/analytics/overview?targetCurrency=USD&from=...&to=...` remains available for converted trend/spending analytics:
+`GET /api/v1/analytics/overview?targetCurrency=USD&from=...&to=...` powers the Overview page's Tier 1 converted overall statistics:
 
 - **Sum-then-convert** per source currency (not convert-then-sum) to prevent VND row truncation at scale 4.
 - Missing-rate currencies reported in `excludedCurrencies` with native amounts — never silently dropped.
 - `asOf` timestamp from the provider's `time_last_update_unix`; `stale=true` if cache is days old.
-- Per-currency endpoints (`/analytics/spending-by-category`, `/analytics/income-vs-expense`, `/analytics/budget-progress`, `/analytics/balances`) remain the default source for the Overview sections.
+- Per-currency endpoints (`/analytics/spending-by-category`, `/analytics/income-vs-expense`, `/analytics/budget-progress`, `/analytics/balances`) remain the default source for Tier 2 summary cards and the Tier 3 currency detail page.
 
-The Overview frontend is currency-centric: `frontend/src/app/dashboard/page.tsx` builds one section per currency found in balances, trend rows, spending rows, or budget progress. Each section contains horizontal cash flow, spending donut, recent transactions, account boxes, and budget limits in that native currency. Recent transaction lists call `GET /api/v1/transactions` with `currency`, `type`, pagination, and date sorting so filtering happens before pagination instead of client-side.
+The Overview frontend follows a three-tier progressive-disclosure layout for multi-currency users (`frontend/src/app/dashboard/page.tsx`): Tier 1 renders one converted overall cash-flow and spending chart in the user's main currency (`OverallStatistics`); Tier 2 renders one compact native-amounts-only `CurrencySummaryCard` per currency found in balances, trend, spending, or budget progress (total, account count, net cash flow, over-budget indicator), each linking to that currency's detail page; Tier 3 (`frontend/src/app/dashboard/currency/[code]/page.tsx`) shows the full per-currency content — horizontal cash flow, spending donut, recent transactions, account boxes, and budget limits, all in that native currency, via the shared `CurrencyDetailBody` component. Users holding exactly one currency skip Tiers 1–2 and see `CurrencyDetailBody` rendered inline on Overview, unchanged from the pre-tiered layout. Recent transaction lists call `GET /api/v1/transactions` with `currency`, `type`, pagination, and date sorting so filtering happens before pagination instead of client-side.
 
 ## Internationalization (i18n)
 
