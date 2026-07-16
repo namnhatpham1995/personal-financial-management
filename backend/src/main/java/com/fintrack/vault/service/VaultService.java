@@ -1,5 +1,8 @@
 package com.fintrack.vault.service;
 
+import com.fintrack.agent.domain.AgentRun;
+import com.fintrack.agent.domain.AgentRunStatus;
+import com.fintrack.agent.repository.AgentRunRepository;
 import com.fintrack.common.exception.ResourceNotFoundException;
 import com.fintrack.vault.domain.VaultDocument;
 import com.fintrack.vault.domain.VaultDocumentStatus;
@@ -25,6 +28,7 @@ public class VaultService {
 
     private final VaultDocumentRepository vaultDocumentRepository;
     private final GridFsFileStore gridFsFileStore;
+    private final AgentRunRepository agentRunRepository;
 
     /** Upload a binary file (receipt image or statement file) and create a VaultDocument. */
     public VaultDocumentResponse upload(Long userId, VaultDocumentType type, MultipartFile file)
@@ -39,7 +43,7 @@ public class VaultService {
                 .gridFsFileId(fileId)
                 .originalFilename(file.getOriginalFilename())
                 .build();
-        return toResponse(vaultDocumentRepository.save(doc));
+        return toResponse(vaultDocumentRepository.save(doc), null);
     }
 
     /** Create a VaultDocument from structured data (no binary), e.g. a manual receipt. */
@@ -53,21 +57,22 @@ public class VaultService {
                 .capturedAt(Instant.now())
                 .payload(payload)
                 .build();
-        return toResponse(vaultDocumentRepository.save(doc));
+        return toResponse(vaultDocumentRepository.save(doc), null);
     }
 
     public VaultDocumentResponse getById(Long userId, String id) {
-        return toResponse(findOwned(userId, id));
+        VaultDocument doc = findOwned(userId, id);
+        return toResponse(doc, latestIngestionStatus(userId, doc.getId()));
     }
 
     public Page<VaultDocumentResponse> list(Long userId, Pageable pageable) {
-        return vaultDocumentRepository
-                .findByUserIdOrderByCapturedAtDesc(userId, pageable)
-                .map(this::toResponse);
+        Page<VaultDocument> page = vaultDocumentRepository.findByUserIdOrderByCapturedAtDesc(userId, pageable);
+        Map<String, AgentRunStatus> statuses = latestIngestionStatuses(userId, page.getContent());
+        return page.map(doc -> toResponse(doc, statuses.get(doc.getId())));
     }
 
     public Page<VaultDocumentResponse> search(Long userId, VaultSearchRequest req, Pageable pageable) {
-        return vaultDocumentRepository.search(
+        Page<VaultDocument> page = vaultDocumentRepository.search(
                 userId,
                 req.merchant(),
                 req.from(),
@@ -75,7 +80,9 @@ public class VaultService {
                 req.lineItemText(),
                 req.maxLineItemAmount(),
                 pageable
-        ).map(this::toResponse);
+        );
+        Map<String, AgentRunStatus> statuses = latestIngestionStatuses(userId, page.getContent());
+        return page.map(doc -> toResponse(doc, statuses.get(doc.getId())));
     }
 
     /** Download the raw binary for a vault document. Returns null if no binary stored. */
@@ -91,15 +98,16 @@ public class VaultService {
     public VaultDocumentResponse linkToTransaction(Long userId, String id, Long transactionId) {
         VaultDocument doc = findOwned(userId, id);
         doc.setTransactionId(transactionId);
-        return toResponse(vaultDocumentRepository.save(doc));
+        VaultDocument saved = vaultDocumentRepository.save(doc);
+        return toResponse(saved, latestIngestionStatus(userId, saved.getId()));
     }
 
     /** Returns the list of vault document ids that are attached to the given transaction ids. */
     public List<VaultDocumentResponse> findByTransactionIds(Long userId, List<Long> transactionIds) {
-        return vaultDocumentRepository
-                .findByTransactionIdInAndUserId(transactionIds, userId)
-                .stream()
-                .map(this::toResponse)
+        List<VaultDocument> docs = vaultDocumentRepository.findByTransactionIdInAndUserId(transactionIds, userId);
+        Map<String, AgentRunStatus> statuses = latestIngestionStatuses(userId, docs);
+        return docs.stream()
+                .map(doc -> toResponse(doc, statuses.get(doc.getId())))
                 .toList();
     }
 
@@ -118,7 +126,32 @@ public class VaultService {
                 .orElseThrow(() -> ResourceNotFoundException.of("VaultDocument", id));
     }
 
-    private VaultDocumentResponse toResponse(VaultDocument doc) {
+    /**
+     * Latest ingestion run status per document, scoped to {@code userId} like all other vault
+     * data — a run belonging to a different user can never surface here even if two users
+     * somehow shared a vault document id (they can't, but the query is scoped defensively).
+     */
+    private Map<String, AgentRunStatus> latestIngestionStatuses(Long userId, List<VaultDocument> docs) {
+        List<String> docIds = docs.stream().map(VaultDocument::getId).toList();
+        if (docIds.isEmpty()) {
+            return Map.of();
+        }
+        return agentRunRepository.findByVaultDocumentIdInAndUser_Id(docIds, userId).stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        AgentRun::getVaultDocumentId,
+                        run -> run,
+                        (a, b) -> a.getCreatedAt().isAfter(b.getCreatedAt()) ? a : b))
+                .entrySet().stream()
+                .collect(java.util.stream.Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getStatus()));
+    }
+
+    private AgentRunStatus latestIngestionStatus(Long userId, String vaultDocumentId) {
+        return agentRunRepository.findFirstByVaultDocumentIdAndUser_IdOrderByCreatedAtDesc(vaultDocumentId, userId)
+                .map(AgentRun::getStatus)
+                .orElse(null);
+    }
+
+    private VaultDocumentResponse toResponse(VaultDocument doc, AgentRunStatus ingestionStatus) {
         return new VaultDocumentResponse(
                 doc.getId(),
                 doc.getType(),
@@ -128,7 +161,8 @@ public class VaultService {
                 doc.getPayload(),
                 doc.getGridFsFileId() != null,
                 doc.getOriginalFilename(),
-                doc.getTransactionId()
+                doc.getTransactionId(),
+                ingestionStatus
         );
     }
 }

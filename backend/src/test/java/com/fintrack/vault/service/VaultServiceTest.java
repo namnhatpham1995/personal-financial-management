@@ -1,5 +1,8 @@
 package com.fintrack.vault.service;
 
+import com.fintrack.agent.domain.AgentRun;
+import com.fintrack.agent.domain.AgentRunStatus;
+import com.fintrack.agent.repository.AgentRunRepository;
 import com.fintrack.common.exception.ResourceNotFoundException;
 import com.fintrack.vault.domain.VaultDocument;
 import com.fintrack.vault.domain.VaultDocumentStatus;
@@ -32,6 +35,7 @@ class VaultServiceTest {
 
     @Mock VaultDocumentRepository vaultDocumentRepository;
     @Mock GridFsFileStore gridFsFileStore;
+    @Mock AgentRunRepository agentRunRepository;
     @InjectMocks VaultService vaultService;
 
     private VaultDocument makeDoc(String id, Long userId) {
@@ -144,5 +148,78 @@ class VaultServiceTest {
 
         assertThat(page.getTotalElements()).isZero();
         verify(vaultDocumentRepository).search(eq(1L), eq("amazon"), any(), any(), any(), any(), eq(pageable));
+    }
+
+    // ── ingestion status linkage ────────────────────────────────────────────────
+
+    private AgentRun makeRun(String vaultDocumentId, AgentRunStatus status, Instant createdAt) {
+        AgentRun run = AgentRun.builder()
+                .vaultDocumentId(vaultDocumentId)
+                .status(status)
+                .build();
+        run.setCreatedAt(createdAt);
+        return run;
+    }
+
+    @Test
+    void list_distinguishesIngestedFromUnIngestedReceipts() {
+        VaultDocument ingested = makeDoc("ingested-doc", 1L);
+        VaultDocument notIngested = makeDoc("bare-doc", 1L);
+        var pageable = PageRequest.of(0, 10);
+        when(vaultDocumentRepository.findByUserIdOrderByCapturedAtDesc(1L, pageable))
+                .thenReturn(new PageImpl<>(List.of(ingested, notIngested), pageable, 2));
+        when(agentRunRepository.findByVaultDocumentIdInAndUser_Id(List.of("ingested-doc", "bare-doc"), 1L))
+                .thenReturn(List.of(makeRun("ingested-doc", AgentRunStatus.COMMITTED, Instant.now())));
+
+        var page = vaultService.list(1L, pageable);
+
+        VaultDocumentResponse ingestedResponse = page.getContent().stream()
+                .filter(r -> r.id().equals("ingested-doc")).findFirst().orElseThrow();
+        VaultDocumentResponse bareResponse = page.getContent().stream()
+                .filter(r -> r.id().equals("bare-doc")).findFirst().orElseThrow();
+
+        assertThat(ingestedResponse.ingestionStatus()).isEqualTo(AgentRunStatus.COMMITTED);
+        assertThat(bareResponse.ingestionStatus()).isNull();
+    }
+
+    @Test
+    void list_showsLatestRunStatusWhenMultipleRunsExist() {
+        VaultDocument doc = makeDoc("multi-run-doc", 1L);
+        var pageable = PageRequest.of(0, 10);
+        when(vaultDocumentRepository.findByUserIdOrderByCapturedAtDesc(1L, pageable))
+                .thenReturn(new PageImpl<>(List.of(doc), pageable, 1));
+        when(agentRunRepository.findByVaultDocumentIdInAndUser_Id(List.of("multi-run-doc"), 1L))
+                .thenReturn(List.of(
+                        makeRun("multi-run-doc", AgentRunStatus.FAILED, Instant.now().minusSeconds(3600)),
+                        makeRun("multi-run-doc", AgentRunStatus.COMMITTED, Instant.now())));
+
+        var page = vaultService.list(1L, pageable);
+
+        assertThat(page.getContent().get(0).ingestionStatus()).isEqualTo(AgentRunStatus.COMMITTED);
+    }
+
+    @Test
+    void list_scopesIngestionRunLookupToTheRequestingUser() {
+        VaultDocument doc = makeDoc("doc5", 2L);
+        var pageable = PageRequest.of(0, 10);
+        when(vaultDocumentRepository.findByUserIdOrderByCapturedAtDesc(2L, pageable))
+                .thenReturn(new PageImpl<>(List.of(doc), pageable, 1));
+        when(agentRunRepository.findByVaultDocumentIdInAndUser_Id(any(), any())).thenReturn(List.of());
+
+        vaultService.list(2L, pageable);
+
+        verify(agentRunRepository).findByVaultDocumentIdInAndUser_Id(List.of("doc5"), 2L);
+    }
+
+    @Test
+    void getById_exposesLatestIngestionStatusScopedToUser() {
+        VaultDocument doc = makeDoc("doc6", 1L);
+        when(vaultDocumentRepository.findByIdAndUserId("doc6", 1L)).thenReturn(Optional.of(doc));
+        when(agentRunRepository.findFirstByVaultDocumentIdAndUser_IdOrderByCreatedAtDesc("doc6", 1L))
+                .thenReturn(Optional.of(makeRun("doc6", AgentRunStatus.AWAITING_REVIEW, Instant.now())));
+
+        VaultDocumentResponse resp = vaultService.getById(1L, "doc6");
+
+        assertThat(resp.ingestionStatus()).isEqualTo(AgentRunStatus.AWAITING_REVIEW);
     }
 }
