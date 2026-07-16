@@ -1,15 +1,17 @@
 "use client";
 
 import { Suspense, useState } from "react";
+import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { vaultService, VaultDocument } from "@/services/vault-service";
 import { accountService } from "@/services/account-service";
+import { agentRunService, isAgentFeatureUnavailable } from "@/services/agent-run-service";
 import { StatementImportWizard } from "@/components/vault/statement-import-wizard";
 import { ReceiptUploadViewer } from "@/components/vault/receipt-upload-viewer";
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
 import { useLocale, useTranslations } from "next-intl";
-import { Receipt, FileText, Download, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Receipt, FileText, Download, Trash2, ChevronLeft, ChevronRight, Sparkles, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function VaultPage() {
@@ -37,6 +39,23 @@ function VaultContent() {
   const { data: accounts } = useQuery({
     queryKey: ["accounts"],
     queryFn: () => accountService.list(),
+  });
+
+  const { error: agentRunsError } = useQuery({
+    queryKey: ["agent-runs"],
+    queryFn: () => agentRunService.list(),
+    retry: false,
+  });
+  const agentFeatureUnavailable = isAgentFeatureUnavailable(agentRunsError);
+
+  const startIngestionMut = useMutation({
+    mutationFn: (documentId: string) => agentRunService.start(documentId),
+    onSuccess: () => {
+      toast.success(t("ingestion.toast.started"));
+      qc.invalidateQueries({ queryKey: ["vault"] });
+      qc.invalidateQueries({ queryKey: ["agent-runs"] });
+    },
+    onError: () => toast.error(t("ingestion.toast.startFailed")),
   });
 
   const deleteMut = useMutation({
@@ -184,6 +203,33 @@ function VaultContent() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-2">
+                          {doc.type === "RECEIPT" && !agentFeatureUnavailable && (
+                            <>
+                              {doc.ingestionStatus ? (
+                                <Link
+                                  href="/dashboard/receipts"
+                                  className="text-xs font-medium text-primary hover:underline"
+                                >
+                                  {t(`ingestion.viewRun`)} — {doc.ingestionStatus}
+                                </Link>
+                              ) : (
+                                <button
+                                  onClick={() => startIngestionMut.mutate(doc.id)}
+                                  disabled={startIngestionMut.isPending}
+                                  className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline disabled:opacity-50"
+                                >
+                                  {startIngestionMut.isPending && startIngestionMut.variables === doc.id ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : (
+                                    <Sparkles className="h-3 w-3" />
+                                  )}
+                                  {startIngestionMut.isPending && startIngestionMut.variables === doc.id
+                                    ? t("ingestion.starting")
+                                    : t("ingestion.start")}
+                                </button>
+                              )}
+                            </>
+                          )}
                           {doc.hasBinary && (
                             <button
                               onClick={() => openDownload(doc)}

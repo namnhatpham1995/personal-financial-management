@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api-client";
+import type { AgentRunStatus } from "@/services/agent-run-service";
 
 export type VaultDocumentType = "RECEIPT" | "STATEMENT";
 export type VaultDocumentStatus = "STAGED" | "ACTIVE";
@@ -13,6 +14,8 @@ export interface VaultDocument {
   hasBinary: boolean;
   originalFilename?: string;
   transactionId?: number;
+  /** Status of the most recent ingestion run for this receipt, or null/undefined if never ingested. */
+  ingestionStatus?: AgentRunStatus | null;
 }
 
 export interface StagedRow {

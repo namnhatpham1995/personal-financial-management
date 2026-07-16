@@ -21,6 +21,7 @@
       "overview": "Overview",
       "transactions": "Transactions",
       "vault": "Vault",
+      "receipts": "Receipts",
       "categories": "Categories",
       "activity": "Activity",
       "whatsNew": "What's New",
@@ -382,6 +383,16 @@
       "parsingFile": "Parsing file…",
       "uploadPrompt": "Upload bank statement",
       "fileTypesHint": "CSV or OFX/QFX files"
+    },
+    "ingestion": {
+      "notIngested": "Not ingested",
+      "start": "Start ingestion",
+      "starting": "Starting…",
+      "viewRun": "View run",
+      "toast": {
+        "started": "Ingestion started",
+        "startFailed": "Could not start ingestion"
+      }
     }
   },
   "apiTokens": {
@@ -439,6 +450,69 @@
       "never": "never",
       "revokeAria": "Revoke {tokenName}"
     }
+  },
+  "receipts": {
+    "title": "Receipt Ingestion",
+    "backToList": "Back to receipts",
+    "unavailable": {
+      "title": "Receipt ingestion isn't available",
+      "body": "This deployment hasn't configured the ingestion agent yet."
+    },
+    "emptyState": {
+      "title": "No ingestion runs yet",
+      "body": "Start an ingestion run from a receipt in the Vault to see it here."
+    },
+    "status": {
+      "EXTRACTING": "Extracting",
+      "AWAITING_REVIEW": "Awaiting review",
+      "COMMITTED": "Committed",
+      "REJECTED": "Rejected",
+      "FAILED": "Failed"
+    },
+    "table": {
+      "receipt": "Receipt",
+      "status": "Status",
+      "created": "Created"
+    },
+    "detail": {
+      "title": "Review run",
+      "extractedMerchant": "Merchant",
+      "extractedTotal": "Extracted total",
+      "proposalsTitle": "Proposed transactions",
+      "merchant": "Merchant",
+      "date": "Date",
+      "amount": "Amount",
+      "currency": "Currency",
+      "category": "Category",
+      "account": "Account",
+      "description": "Description",
+      "exclude": "Exclude this item",
+      "excluded": "Excluded",
+      "flags": {
+        "low-confidence": "Low confidence — pick a category",
+        "totals-mismatch": "Totals don't reconcile",
+        "future-date": "Date is in the future",
+        "unrecognized-currency": "Unrecognized currency"
+      },
+      "selectCategory": "Select category…",
+      "selectAccount": "Select account…",
+      "approve": "Approve",
+      "approving": "Approving…",
+      "reject": "Reject",
+      "rejecting": "Rejecting…",
+      "committedTransactions": "{count, plural, one {# transaction created} other {# transactions created}}",
+      "failureReason": "Failure reason",
+      "retryHint": "This run failed. You can start a new ingestion run for this receipt from the Vault.",
+      "retryableBadge": "Retryable",
+      "notRetryableBadge": "Not retryable"
+    },
+    "toast": {
+      "decisionFailed": "Could not submit your decision — try again",
+      "approved": "Run approved",
+      "rejected": "Run rejected"
+    },
+    "loadError": "Could not load this run.",
+    "notFound": "Run not found"
   },
   "activity": {
     "title": "Activity",
