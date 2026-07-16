@@ -26,4 +26,16 @@ public class RestClientConfig {
                 .requestFactory(factory)
                 .build();
     }
+
+    /** Outbound calls to the agent-service (starting/notifying runs) — short timeouts, best-effort. */
+    @Bean
+    public RestClient agentServiceRestClient() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(CONNECT_TIMEOUT_MS);
+        factory.setReadTimeout(READ_TIMEOUT_MS);
+
+        return RestClient.builder()
+                .requestFactory(factory)
+                .build();
+    }
 }

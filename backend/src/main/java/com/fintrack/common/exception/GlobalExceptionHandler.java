@@ -1,5 +1,6 @@
 package com.fintrack.common.exception;
 
+import com.fintrack.agent.exception.AgentFeatureUnavailableException;
 import com.fintrack.common.dto.ApiError;
 import com.fintrack.exchangerate.exception.ExchangeRateUnavailableException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -107,6 +108,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleExchangeRateUnavailable(
             ExchangeRateUnavailableException ex, HttpServletRequest req) {
         log.warn("Exchange rate unavailable: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ApiError.of(503, "Service Unavailable", ex.getMessage(), req.getRequestURI()));
+    }
+
+    @ExceptionHandler(AgentFeatureUnavailableException.class)
+    public ResponseEntity<ApiError> handleAgentFeatureUnavailable(
+            AgentFeatureUnavailableException ex, HttpServletRequest req) {
         return ResponseEntity
                 .status(HttpStatus.SERVICE_UNAVAILABLE)
                 .body(ApiError.of(503, "Service Unavailable", ex.getMessage(), req.getRequestURI()));
