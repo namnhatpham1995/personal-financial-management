@@ -154,6 +154,42 @@ jobs:
         working-directory: mcp-server
         run: npm run build
 
+  agent-service:
+    name: Agent Service — Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # @testcontainers/postgresql pulls in undici@8, which requires Node >=22.19 (crashes at
+      # runtime — "webidl.util.markAsUncloneable is not a function" — on Node 20, which every
+      # other job in this pipeline uses). Only this job needs the newer runtime.
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        working-directory: agent-service
+        run: npm install
+
+      - name: Type check
+        working-directory: agent-service
+        run: npm run type-check
+
+      # Unit, graph-level (real Postgres checkpointer via Testcontainers — the runner's Docker
+      # daemon provides this, same as the backend's Testcontainers-based tests), and contract
+      # tests all run against LLM_PROVIDER=stub — no job in this pipeline ever calls a live model.
+      - name: Test
+        working-directory: agent-service
+        env:
+          LLM_PROVIDER: stub
+        run: npm test
+
+      - name: Build
+        working-directory: agent-service
+        run: npm run build
+
   mcp-integration:
     name: MCP Server — Backend Integration
     runs-on: ubuntu-latest
@@ -253,7 +289,7 @@ jobs:
   docker:
     name: Docker — Compose Build Check
     runs-on: ubuntu-latest
-    needs: [backend, frontend, mcp-server]
+    needs: [backend, frontend, mcp-server, agent-service]
     if: github.ref == 'refs/heads/main'
 
     steps:
@@ -267,7 +303,7 @@ jobs:
   deploy:
     name: Deploy — Railway (gated on green main)
     runs-on: ubuntu-latest
-    needs: [backend, frontend, mcp-server, docker]
+    needs: [backend, frontend, mcp-server, agent-service, docker]
     if: github.ref == 'refs/heads/main' && success()
 
     steps:

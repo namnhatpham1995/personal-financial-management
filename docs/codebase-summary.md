@@ -29,6 +29,7 @@
 | budget | `BudgetController` → `BudgetService` | Real-time progress via `sumSpentInPeriod()` |
 | recurring | `RecurringTransactionController` + `RecurringTransactionScheduler` + `RecurringOccurrenceProcessor` | Daily scheduler, per-occurrence `@Transactional` boundary, idempotent via unique constraint; no destination-account field, so recurring TRANSFER is same-currency by construction |
 | analytics | `AnalyticsController` → `AnalyticsService` | Per-currency analytics, converted balance summaries, budget progress; JPQL queries in `AnalyticsRepository` |
+| agent | `AgentRunController` → `AgentRunService` | Receipt ingestion run lifecycle (`agent_run` table); agent-token endpoints (`/proposals`, `/commit`, `/fail`) authenticated by `AgentAuthenticationFilter`/`AgentEndpointPolicy`; see `docs/system-architecture.md#receipt-ingestion-agent` |
 
 ### Common Infrastructure
 - `JwtAuthenticationFilter` — extract Bearer, validate, set SecurityContext
@@ -64,6 +65,9 @@
 | `src/lib/locale-preference.ts` | Read/write the `NEXT_LOCALE` cookie client-side |
 | `src/app/dashboard/settings/page.tsx` | Settings landing page: language switcher (backend-synced) + link to API Tokens |
 | `messages/{en,vi,de,zh}.json` | Translation message files, one per locale, namespaced by feature |
+| `src/services/agent-run-service.ts` | Typed API service for `/agent-runs` (start, list, detail, decision) |
+| `src/app/dashboard/receipts/page.tsx` | Ingestion runs list — `AWAITING_REVIEW` prioritized, empty/loading/unavailable/error states |
+| `src/app/dashboard/receipts/[id]/page.tsx` | Review detail: proposed transactions with inline edit, flags, approve/reject |
 
 ## Test Coverage
 

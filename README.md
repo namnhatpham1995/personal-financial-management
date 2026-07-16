@@ -12,7 +12,8 @@ A full-stack personal finance management application.
 | Auth | JWT (JJWT 0.12.6), rotating refresh tokens, SHA-256 hashed storage |
 | Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS, Recharts |
 | API Client | Axios with auto-refresh interceptor, TanStack Query |
-| Testing | JUnit 5, Mockito (unit), Testcontainers (integration), JaCoCo coverage gate; Vitest (frontend) |
+| Receipt Ingestion Agent | LangGraph.js, `@langchain/anthropic` — see [Receipt Ingestion Agent](#receipt-ingestion-agent) |
+| Testing | JUnit 5, Mockito (unit), Testcontainers (integration), JaCoCo coverage gate; Vitest (frontend, agent-service) |
 | Infrastructure | Docker, Docker Compose, GitHub Actions CI/CD |
 
 ## Architecture Highlights
@@ -53,8 +54,20 @@ Set these environment variables on the **backend service**:
 | `CORS_ALLOWED_ORIGINS` | Your frontend URL |
 | `SPRING_DATA_MONGODB_URI` | *(optional)* MongoDB URI — only required when Receipt & Statement Vault is enabled |
 | `SPRING_DATA_REDIS_URL` | Redis URL from Railway Redis plugin: `${{Redis.REDIS_URL}}` |
+| `APP_AGENT_SERVICE_URL` | *(optional)* Base URL of the **agent-service** Railway deployment, e.g. `https://agent-service.up.railway.app`. Leave unset to keep the Receipt Ingestion Agent dark — every `/agent-runs` endpoint reports the feature unavailable and nothing else is affected. |
 
 > **MongoDB note:** `SPRING_DATA_MONGODB_URI` is required for the Receipt & Statement Vault. Set it to `mongodb://<USER>:<PASS>@<HOST>:27017/fintrack_vault?authSource=admin` — Railway's `MONGO_URL` omits the database name, so you must append `/fintrack_vault` manually.
+
+Set these on a **separate `agent-service` Railway service** (only needed if you want the Receipt Ingestion Agent enabled):
+
+| Variable | Value |
+|---|---|
+| `BACKEND_API_URL` | The backend service's Railway URL |
+| `LLM_PROVIDER` | `anthropic` to call the real model, or `stub` (default) for deterministic fixtures — never set `stub` in a real deployment users interact with |
+| `ANTHROPIC_API_KEY` | Required when `LLM_PROVIDER=anthropic` |
+| `ANTHROPIC_MODEL` | *(optional)* defaults to `claude-sonnet-4-5` |
+| `CHECKPOINTER_DB_URL` | Same Postgres `DATABASE_URL` the backend uses — the agent's LangGraph checkpointer lives in its own schema (`agent_checkpoints`) in that instance, no separate database needed |
+| `PORT` | `8081` (or whatever Railway assigns — the service binds to `process.env.PORT`) |
 
 ### Quick Start (Docker)
 
@@ -100,13 +113,14 @@ npm run test:watch                               # watch mode during development
 
 ## CI/CD Pipeline
 
-GitHub Actions runs five jobs on every push to `main` (PRs run backend + frontend + MCP server only):
+GitHub Actions runs six jobs on every push to `main` (PRs run backend + frontend + MCP server + agent-service only):
 
 | Job | What it does |
 |---|---|
 | **Backend** | `mvn clean verify` with a live PostgreSQL 16 service; checks `mcp-server/openapi.json` matches the live OpenAPI contract; uploads Surefire + JaCoCo reports |
 | **Frontend** | Type-check → lint → Vitest → design-token gate (no raw palette classes) → `next build` |
 | **MCP Server** | `npm install` → type-check → Vitest → checks generated API types are up to date → `npm run build` in `mcp-server/` |
+| **Agent Service** | `npm install` → type-check → Vitest (unit, graph-level via a real Postgres Testcontainer, contract tests — all against `LLM_PROVIDER=stub`, no live model call in CI) → `npm run build` in `agent-service/` |
 | **Docker** | `docker compose build --no-cache` — verifies the full image stack compiles |
 | **Deploy** | `railway up` to Railway — gated on all prior jobs passing on `main` |
 
@@ -126,8 +140,31 @@ The design-token gate fails the build if any `.tsx`/`.ts` file uses raw Tailwind
 | API Tokens | POST/GET /tokens, DELETE /tokens/{id} — scoped personal access tokens for API/MCP clients (JWT session only) |
 | Vault | POST /vault/upload, GET /vault, GET /vault/{id}, GET /vault/{id}/download, PATCH /vault/{id}/link, POST /vault/search, DELETE /vault/{id} |
 | Statement Import | POST /vault/import/upload, GET /vault/import/{id}/rows, POST /vault/import/{id}/confirm |
+| Agent Runs | POST /agent-runs, GET /agent-runs, GET /agent-runs/{id}, POST /agent-runs/{id}/decision — see [Receipt Ingestion Agent](#receipt-ingestion-agent) |
 
 Full interactive docs available at `/swagger-ui.html` when the backend is running.
+
+## Receipt Ingestion Agent
+
+An LLM-driven agent (`agent-service/`, TypeScript + LangGraph.js) turns a Vault receipt into
+proposed transactions: `extract → categorize → validate → interrupt (human review) → commit`.
+No transaction is ever created without the user reviewing and explicitly approving the
+proposals in the [Receipts](frontend/src/app/dashboard/receipts) review UI — the graph pauses
+(`AWAITING_REVIEW`) and stays paused, surviving an agent-service restart via a Postgres-backed
+checkpointer, until a decision is made.
+
+The backend (not the agent) is the system of record for run status and remains authoritative
+for every proposal: deterministic checks (category/account ownership, totals reconciliation,
+currency, date plausibility) run again server-side regardless of what the agent submits, so a
+compromised or buggy agent process can't slip bad data into a transaction.
+
+**Dark by default** — with no `APP_AGENT_SERVICE_URL` configured on the backend, every
+`/agent-runs` endpoint reports the feature unavailable and no other capability is affected.
+Locally, `docker compose up` starts `agent-service` with `LLM_PROVIDER=stub` (deterministic
+fixtures, no external calls) unless you set `ANTHROPIC_API_KEY` — see the Railway env var
+tables above for enabling it against the real Anthropic API in a deployed environment.
+
+More detail: [`docs/system-architecture.md`](docs/system-architecture.md#receipt-ingestion-agent).
 
 ## Project Structure
 
@@ -145,6 +182,7 @@ fintrack/
 │   │   ├── recurring/        # Recurring transaction scheduler
 │   │   ├── analytics/        # Dashboard aggregations
 │   │   ├── vault/            # Receipt & Statement Vault (MongoDB + GridFS)
+│   │   ├── agent/            # Receipt ingestion run lifecycle (agent_run table, agent-token auth)
 │   │   └── common/           # Security, config, exception handling
 │   └── src/main/resources/
 │       ├── db/migration/     # Flyway SQL migrations
@@ -156,6 +194,11 @@ fintrack/
 │       ├── services/         # API service layer
 │       └── lib/              # Auth context, API client, utils
 ├── mcp-server/                # MCP server (AI clients via a scoped API token — see mcp-server/README.md)
+├── agent-service/             # Receipt Ingestion Agent (LangGraph.js) — see "Receipt Ingestion Agent" above
+│   └── src/
+│       ├── graph/             # extract -> categorize -> validate -> interrupt -> commit
+│       ├── llm/                # LlmProvider interface + anthropic/stub implementations
+│       └── schemas.ts          # zod schemas shared (via contract fixtures) with the backend DTOs
 ├── docker-compose.yml
 └── .github/workflows/ci.yml
 ```

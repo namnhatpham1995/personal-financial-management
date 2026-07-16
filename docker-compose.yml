@@ -51,6 +51,9 @@ services:
       CORS_ALLOWED_ORIGINS: http://localhost:3000
       SPRING_DATA_MONGODB_URI: mongodb://mongo:27017/fintrack_audit
       SPRING_DATA_REDIS_URL: redis://redis:6379
+      # Blank by default — the receipt ingestion agent stays dark until this and
+      # agent-service's ANTHROPIC_API_KEY are both set (see agent-service block below).
+      APP_AGENT_SERVICE_URL: ${APP_AGENT_SERVICE_URL:-http://agent-service:8081}
     ports:
       - "8080:8080"
     depends_on:
@@ -62,6 +65,32 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # Receipt ingestion agent (LangGraph.js). Dark by default: defaults to LLM_PROVIDER=stub
+  # (deterministic fixtures, no external calls) unless ANTHROPIC_API_KEY is provided — see
+  # README for enabling it against the real Anthropic API.
+  agent-service:
+    build:
+      context: ./agent-service
+    environment:
+      BACKEND_API_URL: http://backend:8080
+      LLM_PROVIDER: ${LLM_PROVIDER:-stub}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-4-5}
+      CHECKPOINTER_DB_URL: postgresql://fintrack:fintrack@postgres:5432/fintrack
+      PORT: 8081
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/health || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
