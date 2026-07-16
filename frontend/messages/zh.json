@@ -98,7 +98,10 @@
     "accounts": "账户",
     "budgetProgress": "预算进度",
     "overall": "总体概览",
-    "ratesUnavailableNotice": "实时汇率不可用——以下显示各币种的原始数据。"
+    "ratesUnavailableNotice": "实时汇率不可用——以下显示各币种的原始数据。",
+    "backToOverview": "返回概览",
+    "noFootprintTitle": "没有 {code} 的账户或活动记录",
+    "noFootprintBody": "您在该币种下没有余额、交易或预算。"
   },
   "accounts": {
     "addAccount": "添加账户",

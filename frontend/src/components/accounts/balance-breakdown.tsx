@@ -77,16 +77,28 @@ export function AccountsGroup({
   onEdit,
   onDelete,
   onOpenDetail,
+  onAdd,
 }: {
   accounts: Account[];
   onEdit: (account: Account) => void;
   onDelete: (account: Account) => void;
   onOpenDetail: (account: Account) => void;
+  /** When provided, the empty state offers an add-account action instead of just text. */
+  onAdd?: () => void;
 }) {
   const t = useTranslations("accounts");
 
   if (accounts.length === 0) {
-    return <p className="text-sm text-muted-foreground">{t("noAccountsInCurrency")}</p>;
+    return (
+      <div className="flex flex-col items-start gap-3">
+        <p className="text-sm text-muted-foreground">{t("noAccountsInCurrency")}</p>
+        {onAdd && (
+          <Button size="sm" variant="secondary" onClick={onAdd}>
+            <Plus className="h-4 w-4" /> {t("addAccount")}
+          </Button>
+        )}
+      </div>
+    );
   }
 
   return (

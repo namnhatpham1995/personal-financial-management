@@ -42,11 +42,14 @@ export function CreateAccountForm({
   onCancel,
   isPending,
   framed = true,
+  defaultCurrency,
 }: {
   onSubmit: (v: CreateAccountPayload) => void;
   onCancel: () => void;
   isPending: boolean;
   framed?: boolean;
+  /** Pre-fills the currency field, e.g. when adding an account from a currency detail page. */
+  defaultCurrency?: string;
 }) {
   const {
     register,
@@ -60,7 +63,12 @@ export function CreateAccountForm({
     <>
       <h2 className="mb-4 font-semibold tracking-tight text-foreground">{t("addAccount")}</h2>
       <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <AccountFields register={register} errors={errors} includeDefaults />
+        <AccountFields
+          register={register}
+          errors={errors}
+          includeDefaults
+          defaultCurrency={defaultCurrency}
+        />
         <div className="flex gap-2 sm:col-span-2">
           <Button type="submit" disabled={isPending}>
             {isPending ? t("saving") : tCommon("save")}
@@ -188,10 +196,12 @@ function AccountFields({
   register,
   errors,
   includeDefaults = false,
+  defaultCurrency,
 }: {
   register: ReturnType<typeof useForm<CreateAccountFormValues>>["register"];
   errors: Partial<Record<keyof CreateAccountFormValues, { message?: string }>>;
   includeDefaults?: boolean;
+  defaultCurrency?: string;
 }) {
   const t = useTranslations("accounts.fields");
   return (
@@ -209,7 +219,7 @@ function AccountFields({
       <Field label={t("currency")} error={errors.currency?.message}>
         <input
           {...register("currency")}
-          defaultValue={includeDefaults ? "USD" : undefined}
+          defaultValue={defaultCurrency ?? (includeDefaults ? "USD" : undefined)}
           placeholder="USD"
           className={inputCls}
         />

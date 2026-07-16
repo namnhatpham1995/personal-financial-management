@@ -98,7 +98,10 @@
     "accounts": "Accounts",
     "budgetProgress": "Budget Progress",
     "overall": "Overall",
-    "ratesUnavailableNotice": "Live rates unavailable — showing per-currency figures below."
+    "ratesUnavailableNotice": "Live rates unavailable — showing per-currency figures below.",
+    "backToOverview": "Back to Overview",
+    "noFootprintTitle": "No accounts or activity in {code}",
+    "noFootprintBody": "You don't hold any balances, transactions, or budgets in this currency."
   },
   "accounts": {
     "addAccount": "Add account",
