@@ -161,10 +161,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # @testcontainers/postgresql pulls in undici@8, which requires Node >=22.19 (crashes at
+      # runtime — "webidl.util.markAsUncloneable is not a function" — on Node 20, which every
+      # other job in this pipeline uses). Only this job needs the newer runtime.
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Install dependencies
         working-directory: agent-service
