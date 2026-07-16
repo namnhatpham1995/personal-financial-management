@@ -21,6 +21,7 @@
       "overview": "概览",
       "transactions": "交易",
       "vault": "资料库",
+      "receipts": "收据",
       "categories": "分类",
       "activity": "活动记录",
       "whatsNew": "更新日志",
@@ -382,6 +383,16 @@
       "parsingFile": "正在解析文件…",
       "uploadPrompt": "上传银行对账单",
       "fileTypesHint": "CSV 或 OFX/QFX 文件"
+    },
+    "ingestion": {
+      "notIngested": "尚未导入",
+      "start": "开始导入",
+      "starting": "正在开始…",
+      "viewRun": "查看处理记录",
+      "toast": {
+        "started": "已开始导入",
+        "startFailed": "无法开始导入"
+      }
     }
   },
   "apiTokens": {
@@ -439,6 +450,69 @@
       "never": "从未使用",
       "revokeAria": "吊销 {tokenName}"
     }
+  },
+  "receipts": {
+    "title": "收据智能导入",
+    "backToList": "返回收据列表",
+    "unavailable": {
+      "title": "收据导入功能不可用",
+      "body": "此部署尚未配置导入代理。"
+    },
+    "emptyState": {
+      "title": "暂无导入记录",
+      "body": "从资料库中的收据开始一次导入，即可在此处查看。"
+    },
+    "status": {
+      "EXTRACTING": "正在提取",
+      "AWAITING_REVIEW": "待审核",
+      "COMMITTED": "已完成",
+      "REJECTED": "已拒绝",
+      "FAILED": "失败"
+    },
+    "table": {
+      "receipt": "收据",
+      "status": "状态",
+      "created": "创建时间"
+    },
+    "detail": {
+      "title": "审核处理记录",
+      "extractedMerchant": "商家",
+      "extractedTotal": "提取的总额",
+      "proposalsTitle": "建议的交易",
+      "merchant": "商家",
+      "date": "日期",
+      "amount": "金额",
+      "currency": "货币",
+      "category": "分类",
+      "account": "账户",
+      "description": "描述",
+      "exclude": "排除此项",
+      "excluded": "已排除",
+      "flags": {
+        "low-confidence": "置信度低 — 请选择分类",
+        "totals-mismatch": "总额不一致",
+        "future-date": "日期在未来",
+        "unrecognized-currency": "无法识别的货币"
+      },
+      "selectCategory": "选择分类…",
+      "selectAccount": "选择账户…",
+      "approve": "批准",
+      "approving": "正在批准…",
+      "reject": "拒绝",
+      "rejecting": "正在拒绝…",
+      "committedTransactions": "{count, plural, other {已创建 # 笔交易}}",
+      "failureReason": "失败原因",
+      "retryHint": "此次处理失败。您可以在资料库中为此收据重新开始一次导入。",
+      "retryableBadge": "可重试",
+      "notRetryableBadge": "不可重试"
+    },
+    "toast": {
+      "decisionFailed": "无法提交您的决定 — 请重试",
+      "approved": "处理记录已批准",
+      "rejected": "处理记录已拒绝"
+    },
+    "loadError": "无法加载此处理记录。",
+    "notFound": "未找到处理记录"
   },
   "activity": {
     "title": "活动记录",

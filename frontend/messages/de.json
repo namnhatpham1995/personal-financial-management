@@ -21,6 +21,7 @@
       "overview": "Übersicht",
       "transactions": "Transaktionen",
       "vault": "Tresor",
+      "receipts": "Belege",
       "categories": "Kategorien",
       "activity": "Aktivität",
       "whatsNew": "Neuigkeiten",
@@ -382,6 +383,16 @@
       "parsingFile": "Datei wird gelesen…",
       "uploadPrompt": "Kontoauszug hochladen",
       "fileTypesHint": "CSV- oder OFX/QFX-Dateien"
+    },
+    "ingestion": {
+      "notIngested": "Nicht erfasst",
+      "start": "Erfassung starten",
+      "starting": "Wird gestartet…",
+      "viewRun": "Lauf ansehen",
+      "toast": {
+        "started": "Erfassung gestartet",
+        "startFailed": "Erfassung konnte nicht gestartet werden"
+      }
     }
   },
   "apiTokens": {
@@ -439,6 +450,69 @@
       "never": "nie",
       "revokeAria": "{tokenName} widerrufen"
     }
+  },
+  "receipts": {
+    "title": "Beleg-Erfassung",
+    "backToList": "Zurück zu Belegen",
+    "unavailable": {
+      "title": "Beleg-Erfassung ist nicht verfügbar",
+      "body": "Für dieses Deployment ist der Erfassungs-Agent noch nicht konfiguriert."
+    },
+    "emptyState": {
+      "title": "Noch keine Erfassungsläufe",
+      "body": "Starte einen Erfassungslauf von einem Beleg im Tresor, um ihn hier zu sehen."
+    },
+    "status": {
+      "EXTRACTING": "Wird extrahiert",
+      "AWAITING_REVIEW": "Prüfung ausstehend",
+      "COMMITTED": "Abgeschlossen",
+      "REJECTED": "Abgelehnt",
+      "FAILED": "Fehlgeschlagen"
+    },
+    "table": {
+      "receipt": "Beleg",
+      "status": "Status",
+      "created": "Erstellt"
+    },
+    "detail": {
+      "title": "Lauf prüfen",
+      "extractedMerchant": "Händler",
+      "extractedTotal": "Extrahierte Summe",
+      "proposalsTitle": "Vorgeschlagene Transaktionen",
+      "merchant": "Händler",
+      "date": "Datum",
+      "amount": "Betrag",
+      "currency": "Währung",
+      "category": "Kategorie",
+      "account": "Konto",
+      "description": "Beschreibung",
+      "exclude": "Diesen Posten ausschließen",
+      "excluded": "Ausgeschlossen",
+      "flags": {
+        "low-confidence": "Geringe Konfidenz — Kategorie wählen",
+        "totals-mismatch": "Summen stimmen nicht überein",
+        "future-date": "Datum liegt in der Zukunft",
+        "unrecognized-currency": "Unbekannte Währung"
+      },
+      "selectCategory": "Kategorie auswählen…",
+      "selectAccount": "Konto auswählen…",
+      "approve": "Genehmigen",
+      "approving": "Wird genehmigt…",
+      "reject": "Ablehnen",
+      "rejecting": "Wird abgelehnt…",
+      "committedTransactions": "{count, plural, one {# Transaktion erstellt} other {# Transaktionen erstellt}}",
+      "failureReason": "Fehlerursache",
+      "retryHint": "Dieser Lauf ist fehlgeschlagen. Du kannst für diesen Beleg einen neuen Erfassungslauf im Tresor starten.",
+      "retryableBadge": "Wiederholbar",
+      "notRetryableBadge": "Nicht wiederholbar"
+    },
+    "toast": {
+      "decisionFailed": "Entscheidung konnte nicht übermittelt werden — bitte erneut versuchen",
+      "approved": "Lauf genehmigt",
+      "rejected": "Lauf abgelehnt"
+    },
+    "loadError": "Dieser Lauf konnte nicht geladen werden.",
+    "notFound": "Lauf nicht gefunden"
   },
   "activity": {
     "title": "Aktivität",

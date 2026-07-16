@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useTheme } from "next-themes";
 import { useTranslations } from "next-intl";
 import { useAuth, type AuthUser } from "@/lib/auth-context";
 import { latestChangelogVersion } from "@/changelog/changelog-entries";
+import { agentRunService, isAgentFeatureUnavailable } from "@/services/agent-run-service";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -14,6 +16,7 @@ import {
   Tag,
   Activity,
   Archive,
+  Receipt,
   Settings,
   LogOut,
   Sun,
@@ -83,6 +86,17 @@ function SidebarContent({
   const t = useTranslations("sidebar");
   const hasUnseenChangelog = !!user && user.lastSeenChangelogVersion < latestChangelogVersion;
 
+  // Best-effort: a 503 (feature unavailable) or any other error just means no badge — the
+  // nav item itself always shows, and the receipts page explains unavailability in full.
+  const { data: agentRuns } = useQuery({
+    queryKey: ["agent-runs", "sidebar-badge"],
+    queryFn: () => agentRunService.list(),
+    retry: false,
+    enabled: !!user,
+    throwOnError: false,
+  });
+  const hasPendingReviews = (agentRuns ?? []).some((run) => run.status === "AWAITING_REVIEW");
+
   return (
     <>
       <div className="mb-8 px-1">
@@ -95,6 +109,15 @@ function SidebarContent({
         {primaryNavItems.map(({ href, labelKey, icon: Icon }) => (
           <NavLink key={href} href={href} label={t(`nav.${labelKey}`)} Icon={Icon} active={isNavItemActive(pathname, href)} onClose={onClose} />
         ))}
+
+        <NavLink
+          href="/dashboard/receipts"
+          label={t("nav.receipts")}
+          Icon={Receipt}
+          active={isNavItemActive(pathname, "/dashboard/receipts")}
+          onClose={onClose}
+          showDot={hasPendingReviews}
+        />
 
         <div className="my-3 border-t border-border" />
 

@@ -21,6 +21,7 @@
       "overview": "Tổng quan",
       "transactions": "Giao dịch",
       "vault": "Kho lưu trữ",
+      "receipts": "Hóa đơn",
       "categories": "Danh mục",
       "activity": "Hoạt động",
       "whatsNew": "Có gì mới",
@@ -382,6 +383,16 @@
       "parsingFile": "Đang đọc tệp…",
       "uploadPrompt": "Tải lên sao kê ngân hàng",
       "fileTypesHint": "Tệp CSV hoặc OFX/QFX"
+    },
+    "ingestion": {
+      "notIngested": "Chưa nhập vào hệ thống",
+      "start": "Bắt đầu nhập",
+      "starting": "Đang bắt đầu…",
+      "viewRun": "Xem lượt xử lý",
+      "toast": {
+        "started": "Đã bắt đầu nhập hóa đơn",
+        "startFailed": "Không thể bắt đầu nhập hóa đơn"
+      }
     }
   },
   "apiTokens": {
@@ -439,6 +450,69 @@
       "never": "chưa từng",
       "revokeAria": "Thu hồi {tokenName}"
     }
+  },
+  "receipts": {
+    "title": "Nhập hóa đơn tự động",
+    "backToList": "Quay lại danh sách hóa đơn",
+    "unavailable": {
+      "title": "Tính năng nhập hóa đơn chưa khả dụng",
+      "body": "Hệ thống này chưa cấu hình agent xử lý hóa đơn."
+    },
+    "emptyState": {
+      "title": "Chưa có lượt xử lý nào",
+      "body": "Bắt đầu một lượt xử lý từ hóa đơn trong Kho lưu trữ để xem tại đây."
+    },
+    "status": {
+      "EXTRACTING": "Đang trích xuất",
+      "AWAITING_REVIEW": "Chờ xem xét",
+      "COMMITTED": "Đã hoàn tất",
+      "REJECTED": "Đã từ chối",
+      "FAILED": "Thất bại"
+    },
+    "table": {
+      "receipt": "Hóa đơn",
+      "status": "Trạng thái",
+      "created": "Ngày tạo"
+    },
+    "detail": {
+      "title": "Xem xét lượt xử lý",
+      "extractedMerchant": "Cửa hàng",
+      "extractedTotal": "Tổng tiền trích xuất",
+      "proposalsTitle": "Giao dịch đề xuất",
+      "merchant": "Cửa hàng",
+      "date": "Ngày",
+      "amount": "Số tiền",
+      "currency": "Loại tiền",
+      "category": "Danh mục",
+      "account": "Tài khoản",
+      "description": "Mô tả",
+      "exclude": "Loại trừ mục này",
+      "excluded": "Đã loại trừ",
+      "flags": {
+        "low-confidence": "Độ tin cậy thấp — hãy chọn danh mục",
+        "totals-mismatch": "Tổng tiền không khớp",
+        "future-date": "Ngày nằm trong tương lai",
+        "unrecognized-currency": "Loại tiền không xác định"
+      },
+      "selectCategory": "Chọn danh mục…",
+      "selectAccount": "Chọn tài khoản…",
+      "approve": "Phê duyệt",
+      "approving": "Đang phê duyệt…",
+      "reject": "Từ chối",
+      "rejecting": "Đang từ chối…",
+      "committedTransactions": "{count, plural, other {Đã tạo # giao dịch}}",
+      "failureReason": "Lý do thất bại",
+      "retryHint": "Lượt xử lý này đã thất bại. Bạn có thể bắt đầu lượt xử lý mới cho hóa đơn này từ Kho lưu trữ.",
+      "retryableBadge": "Có thể thử lại",
+      "notRetryableBadge": "Không thể thử lại"
+    },
+    "toast": {
+      "decisionFailed": "Không thể gửi quyết định — hãy thử lại",
+      "approved": "Đã phê duyệt lượt xử lý",
+      "rejected": "Đã từ chối lượt xử lý"
+    },
+    "loadError": "Không thể tải lượt xử lý này.",
+    "notFound": "Không tìm thấy lượt xử lý"
   },
   "activity": {
     "title": "Hoạt động",
