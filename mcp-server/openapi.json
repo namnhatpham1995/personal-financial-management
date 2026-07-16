@@ -72,6 +72,94 @@
         },
         "type" : "object"
       },
+      "AgentDecisionRequest" : {
+        "properties" : {
+          "approve" : {
+            "type" : "boolean"
+          },
+          "proposals" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ProposalDto"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "approve" ],
+        "type" : "object"
+      },
+      "AgentRunDetailResponse" : {
+        "properties" : {
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "createdTransactionIds" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array"
+          },
+          "extraction" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object"
+          },
+          "failureReason" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "proposals" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ProposalDto"
+            },
+            "type" : "array"
+          },
+          "retryable" : {
+            "type" : "boolean"
+          },
+          "status" : {
+            "enum" : [ "EXTRACTING", "AWAITING_REVIEW", "COMMITTED", "REJECTED", "FAILED" ],
+            "type" : "string"
+          },
+          "updatedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "vaultDocumentId" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "AgentRunSummaryResponse" : {
+        "properties" : {
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "status" : {
+            "enum" : [ "EXTRACTING", "AWAITING_REVIEW", "COMMITTED", "REJECTED", "FAILED" ],
+            "type" : "string"
+          },
+          "updatedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "vaultDocumentId" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiTokenResponse" : {
         "properties" : {
           "createdAt" : {
@@ -624,6 +712,17 @@
         },
         "type" : "object"
       },
+      "FailAgentRunRequest" : {
+        "properties" : {
+          "reason" : {
+            "type" : "string"
+          },
+          "retryable" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
       "IncomeExpenseTrendDto" : {
         "properties" : {
           "currency" : {
@@ -866,6 +965,45 @@
         },
         "type" : "object"
       },
+      "ProposalDto" : {
+        "properties" : {
+          "accountId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "amount" : {
+            "type" : "number"
+          },
+          "categoryId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "date" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "excluded" : {
+            "type" : "boolean"
+          },
+          "flags" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "merchant" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "amount", "currency", "date", "merchant" ],
+        "type" : "object"
+      },
       "RateUsedDto" : {
         "properties" : {
           "from" : {
@@ -1045,6 +1183,33 @@
             "type" : "string"
           }
         },
+        "type" : "object"
+      },
+      "StartAgentRunRequest" : {
+        "properties" : {
+          "vaultDocumentId" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "vaultDocumentId" ],
+        "type" : "object"
+      },
+      "SubmitProposalsRequest" : {
+        "properties" : {
+          "extraction" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object"
+          },
+          "proposals" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ProposalDto"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "extraction", "proposals" ],
         "type" : "object"
       },
       "TokenResponse" : {
@@ -1279,6 +1444,10 @@
           "id" : {
             "type" : "string"
           },
+          "ingestionStatus" : {
+            "enum" : [ "EXTRACTING", "AWAITING_REVIEW", "COMMITTED", "REJECTED", "FAILED" ],
+            "type" : "string"
+          },
           "originalFilename" : {
             "type" : "string"
           },
@@ -1347,7 +1516,7 @@
   "paths" : {
     "/api/v1/accounts" : {
       "get" : {
-        "operationId" : "list_7",
+        "operationId" : "list_8",
         "responses" : {
           "200" : {
             "content" : {
@@ -1556,7 +1725,7 @@
     },
     "/api/v1/activity" : {
       "get" : {
-        "operationId" : "list_6",
+        "operationId" : "list_7",
         "parameters" : [ {
           "in" : "query",
           "name" : "page",
@@ -1593,6 +1762,218 @@
         } ],
         "summary" : "List recent activity events for the current user",
         "tags" : [ "Activity" ]
+      }
+    },
+    "/api/v1/agent-runs" : {
+      "get" : {
+        "operationId" : "list_6",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/AgentRunSummaryResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "List the authenticated user's ingestion runs",
+        "tags" : [ "Agent Runs" ]
+      },
+      "post" : {
+        "operationId" : "start",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/StartAgentRunRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AgentRunSummaryResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Start an ingestion run for an owned vault receipt",
+        "tags" : [ "Agent Runs" ]
+      }
+    },
+    "/api/v1/agent-runs/{id}" : {
+      "get" : {
+        "operationId" : "get",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AgentRunDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Get an ingestion run's full detail, including proposals",
+        "tags" : [ "Agent Runs" ]
+      }
+    },
+    "/api/v1/agent-runs/{id}/commit" : {
+      "post" : {
+        "operationId" : "commit",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AgentRunDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Agent-token or recovery path: commit the run's stored proposals",
+        "tags" : [ "Agent Runs" ]
+      }
+    },
+    "/api/v1/agent-runs/{id}/decision" : {
+      "post" : {
+        "operationId" : "decide",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AgentDecisionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AgentRunDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Approve (with optional edits) or reject a run awaiting review",
+        "tags" : [ "Agent Runs" ]
+      }
+    },
+    "/api/v1/agent-runs/{id}/fail" : {
+      "post" : {
+        "operationId" : "fail",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/FailAgentRunRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Agent-token: report that the run could not complete",
+        "tags" : [ "Agent Runs" ]
+      }
+    },
+    "/api/v1/agent-runs/{id}/proposals" : {
+      "post" : {
+        "operationId" : "submitProposals",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SubmitProposalsRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AgentRunDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Agent-token: submit extraction + proposals, moving the run to AWAITING_REVIEW",
+        "tags" : [ "Agent Runs" ]
       }
     },
     "/api/v1/analytics/balances" : {
@@ -3286,5 +3667,8 @@
   "tags" : [ {
     "description" : "Register, login, token refresh and logout",
     "name" : "Authentication"
+  }, {
+    "description" : "Receipt ingestion agent run lifecycle",
+    "name" : "Agent Runs"
   } ]
 }

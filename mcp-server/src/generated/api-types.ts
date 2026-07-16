@@ -12,7 +12,7 @@ export interface paths {
             cookie?: never;
         };
         /** List all accounts for the current user */
-        get: operations["list_7"];
+        get: operations["list_8"];
         put?: never;
         /** Create a new account */
         post: operations["create_5"];
@@ -83,9 +83,112 @@ export interface paths {
             cookie?: never;
         };
         /** List recent activity events for the current user */
-        get: operations["list_6"];
+        get: operations["list_7"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the authenticated user's ingestion runs */
+        get: operations["list_6"];
+        put?: never;
+        /** Start an ingestion run for an owned vault receipt */
+        post: operations["start"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent-runs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get an ingestion run's full detail, including proposals */
+        get: operations["get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent-runs/{id}/commit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Agent-token or recovery path: commit the run's stored proposals */
+        post: operations["commit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent-runs/{id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve (with optional edits) or reject a run awaiting review */
+        post: operations["decide"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent-runs/{id}/fail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Agent-token: report that the run could not complete */
+        post: operations["fail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent-runs/{id}/proposals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Agent-token: submit extraction + proposals, moving the run to AWAITING_REVIEW */
+        post: operations["submitProposals"];
         delete?: never;
         options?: never;
         head?: never;
@@ -774,6 +877,39 @@ export interface components {
             /** Format: date-time */
             ts?: string;
         };
+        AgentDecisionRequest: {
+            approve: boolean;
+            proposals?: components["schemas"]["ProposalDto"][];
+        };
+        AgentRunDetailResponse: {
+            /** Format: date-time */
+            createdAt?: string;
+            createdTransactionIds?: number[];
+            extraction?: {
+                [key: string]: Record<string, never>;
+            };
+            failureReason?: string;
+            /** Format: int64 */
+            id?: number;
+            proposals?: components["schemas"]["ProposalDto"][];
+            retryable?: boolean;
+            /** @enum {string} */
+            status?: "EXTRACTING" | "AWAITING_REVIEW" | "COMMITTED" | "REJECTED" | "FAILED";
+            /** Format: date-time */
+            updatedAt?: string;
+            vaultDocumentId?: string;
+        };
+        AgentRunSummaryResponse: {
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: int64 */
+            id?: number;
+            /** @enum {string} */
+            status?: "EXTRACTING" | "AWAITING_REVIEW" | "COMMITTED" | "REJECTED" | "FAILED";
+            /** Format: date-time */
+            updatedAt?: string;
+            vaultDocumentId?: string;
+        };
         ApiTokenResponse: {
             /** Format: date-time */
             createdAt?: string;
@@ -979,6 +1115,10 @@ export interface components {
             currency?: string;
             nativeAmount?: number;
         };
+        FailAgentRunRequest: {
+            reason?: string;
+            retryable?: boolean;
+        };
         IncomeExpenseTrendDto: {
             currency?: string;
             /** Format: int32 */
@@ -1070,6 +1210,20 @@ export interface components {
             sort?: components["schemas"]["SortObject"][];
             unpaged?: boolean;
         };
+        ProposalDto: {
+            /** Format: int64 */
+            accountId?: number;
+            amount: number;
+            /** Format: int64 */
+            categoryId?: number;
+            currency: string;
+            /** Format: date */
+            date: string;
+            description?: string;
+            excluded?: boolean;
+            flags?: string[];
+            merchant: string;
+        };
         RateUsedDto: {
             from?: string;
             rate?: number;
@@ -1139,6 +1293,15 @@ export interface components {
             dedupKey?: string;
             description?: string;
             type?: string;
+        };
+        StartAgentRunRequest: {
+            vaultDocumentId: string;
+        };
+        SubmitProposalsRequest: {
+            extraction: {
+                [key: string]: Record<string, never>;
+            };
+            proposals: components["schemas"]["ProposalDto"][];
         };
         TokenResponse: {
             accessToken?: string;
@@ -1226,6 +1389,8 @@ export interface components {
             capturedAt?: string;
             hasBinary?: boolean;
             id?: string;
+            /** @enum {string} */
+            ingestionStatus?: "EXTRACTING" | "AWAITING_REVIEW" | "COMMITTED" | "REJECTED" | "FAILED";
             originalFilename?: string;
             payload?: {
                 [key: string]: Record<string, never>;
@@ -1256,7 +1421,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    list_7: {
+    list_8: {
         parameters: {
             query?: never;
             header?: never;
@@ -1412,7 +1577,7 @@ export interface operations {
             };
         };
     };
-    list_6: {
+    list_7: {
         parameters: {
             query?: {
                 page?: number;
@@ -1431,6 +1596,170 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["PageActivityEventResponse"];
+                };
+            };
+        };
+    };
+    list_6: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AgentRunSummaryResponse"][];
+                };
+            };
+        };
+    };
+    start: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartAgentRunRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AgentRunSummaryResponse"];
+                };
+            };
+        };
+    };
+    get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AgentRunDetailResponse"];
+                };
+            };
+        };
+    };
+    commit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AgentRunDetailResponse"];
+                };
+            };
+        };
+    };
+    decide: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AgentRunDetailResponse"];
+                };
+            };
+        };
+    };
+    fail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FailAgentRunRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    submitProposals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitProposalsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AgentRunDetailResponse"];
                 };
             };
         };
