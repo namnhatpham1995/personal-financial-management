@@ -19,6 +19,10 @@ frontend/dist/
 mcp-server/node_modules/
 mcp-server/dist/
 
+# Agent service
+agent-service/node_modules/
+agent-service/dist/
+
 # Node/npm
 node_modules/
 package-lock.json
