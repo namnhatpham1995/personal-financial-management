@@ -98,7 +98,10 @@
     "accounts": "Tài khoản",
     "budgetProgress": "Tiến độ ngân sách",
     "overall": "Tổng thể",
-    "ratesUnavailableNotice": "Không có tỷ giá trực tiếp — hiển thị số liệu theo từng loại tiền bên dưới."
+    "ratesUnavailableNotice": "Không có tỷ giá trực tiếp — hiển thị số liệu theo từng loại tiền bên dưới.",
+    "backToOverview": "Quay lại Tổng quan",
+    "noFootprintTitle": "Không có tài khoản hoặc hoạt động nào bằng {code}",
+    "noFootprintBody": "Bạn không có số dư, giao dịch hoặc ngân sách nào bằng loại tiền này."
   },
   "accounts": {
     "addAccount": "Thêm tài khoản",

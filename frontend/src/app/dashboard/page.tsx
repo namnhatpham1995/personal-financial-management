@@ -6,20 +6,10 @@ import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { analyticsService } from "@/services/analytics-service";
-import {
-  accountService,
-  Account,
-  CreateAccountPayload,
-  UpdateAccountPayload,
-} from "@/services/account-service";
-import {
-  DeleteAccountDialog,
-  EditAccountDialog,
-} from "@/components/accounts/account-management-ui";
+import { accountService, CreateAccountPayload } from "@/services/account-service";
 import { BalanceBreakdown } from "@/components/accounts/balance-breakdown";
-import { AccountDetailDialog } from "@/components/accounts/account-detail-dialog";
 import { FeaturedBalanceCard } from "@/components/accounts/featured-balance-card";
-import { CurrencySection } from "@/components/overview/currency-section";
+import { CurrencyDetailBody } from "@/components/overview/currency-detail-body";
 import { OverallStatistics } from "@/components/overview/overall-statistics";
 
 const RANGE_OPTIONS = [
@@ -48,9 +38,6 @@ export default function DashboardPage() {
     readStoredMainCurrency()
   );
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Account | null>(null);
-  const [detailAccount, setDetailAccount] = useState<Account | null>(null);
 
   const from = format(startOfMonth(subMonths(new Date(), months - 1)), "yyyy-MM-dd");
   const to = format(endOfMonth(new Date()), "yyyy-MM-dd");
@@ -62,11 +49,6 @@ export default function DashboardPage() {
   const { data: accounts = [] } = useQuery({
     queryKey: ["accounts"],
     queryFn: accountService.list,
-  });
-  const { data: deletePreview } = useQuery({
-    queryKey: ["deletePreview", deleteTarget?.id],
-    queryFn: () => accountService.deletePreview(deleteTarget!.id),
-    enabled: deleteTarget !== null,
   });
   const { data: trend = [] } = useQuery({
     queryKey: ["trend", from, to],
@@ -129,45 +111,16 @@ export default function DashboardPage() {
 
   const bucketsByCurrency = new Map(balancesByCurrency.map((bucket) => [bucket.currency, bucket]));
 
-  const invalidateAccountViews = () => {
-    qc.invalidateQueries({ queryKey: ["accounts"] });
-    qc.invalidateQueries({ queryKey: ["balances"] });
-    qc.invalidateQueries({ queryKey: ["balancesSummary"] });
-    qc.invalidateQueries({ queryKey: ["transactions"] });
-    qc.invalidateQueries({ queryKey: ["recentTransactions"] });
-    qc.invalidateQueries({ queryKey: ["spending"] });
-    qc.invalidateQueries({ queryKey: ["trend"] });
-  };
-
   const createMutation = useMutation({
     mutationFn: (data: CreateAccountPayload) => accountService.create(data),
     onSuccess: () => {
-      invalidateAccountViews();
+      qc.invalidateQueries({ queryKey: ["accounts"] });
+      qc.invalidateQueries({ queryKey: ["balances"] });
+      qc.invalidateQueries({ queryKey: ["balancesSummary"] });
       setShowCreateForm(false);
       toast.success(t("toast.accountCreated"));
     },
     onError: () => toast.error(t("toast.accountCreateFailed")),
-  });
-
-  const editMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: UpdateAccountPayload }) =>
-      accountService.update(id, data),
-    onSuccess: () => {
-      invalidateAccountViews();
-      setEditingAccount(null);
-      toast.success(t("toast.accountUpdated"));
-    },
-    onError: () => toast.error(t("toast.accountUpdateFailed")),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => accountService.delete(id),
-    onSuccess: () => {
-      invalidateAccountViews();
-      setDeleteTarget(null);
-      toast.success(t("toast.accountDeleted"));
-    },
-    onError: () => toast.error(t("toast.accountDeleteFailed")),
   });
 
   return (
@@ -215,10 +168,7 @@ export default function DashboardPage() {
         hasAccounts={accounts.length > 0}
         showCreateForm={showCreateForm}
         isCreating={createMutation.isPending}
-        onAdd={() => {
-          setShowCreateForm(true);
-          setEditingAccount(null);
-        }}
+        onAdd={() => setShowCreateForm(true)}
         onCreate={(values) => createMutation.mutate(values)}
         onCancelCreate={() => setShowCreateForm(false)}
       />
@@ -227,47 +177,16 @@ export default function DashboardPage() {
         <p className="text-sm text-muted-foreground">{t("noTransactionData")}</p>
       ) : (
         currencies.map((currency) => (
-          <CurrencySection
+          <CurrencyDetailBody
             key={currency}
             currency={currency}
             nativeTotal={bucketsByCurrency.get(currency)?.totalBalance}
             trend={trend.filter((t) => t.currency === currency)}
             spending={spending.filter((s) => s.currency === currency)}
             accounts={accounts.filter((account) => account.currency === currency)}
-            onEditAccount={(account) => {
-              setEditingAccount(account);
-              setShowCreateForm(false);
-            }}
-            onDeleteAccount={setDeleteTarget}
-            onOpenAccountDetail={setDetailAccount}
+            headerHref={`/dashboard/currency/${currency}`}
           />
         ))
-      )}
-
-      {detailAccount && (
-        <AccountDetailDialog
-          account={detailAccount}
-          onClose={() => setDetailAccount(null)}
-        />
-      )}
-
-      {editingAccount && (
-        <EditAccountDialog
-          account={editingAccount}
-          onSubmit={(values) => editMutation.mutate({ id: editingAccount.id, data: values })}
-          onCancel={() => setEditingAccount(null)}
-          isPending={editMutation.isPending}
-        />
-      )}
-
-      {deleteTarget && (
-        <DeleteAccountDialog
-          account={deleteTarget}
-          transactionCount={deletePreview?.transactionCount ?? null}
-          onConfirm={() => deleteMutation.mutate(deleteTarget.id)}
-          onCancel={() => setDeleteTarget(null)}
-          isPending={deleteMutation.isPending}
-        />
       )}
     </div>
   );

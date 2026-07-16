@@ -98,7 +98,10 @@
     "accounts": "Konten",
     "budgetProgress": "Budgetfortschritt",
     "overall": "Gesamtübersicht",
-    "ratesUnavailableNotice": "Live-Wechselkurse nicht verfügbar — unten werden Werte je Währung angezeigt."
+    "ratesUnavailableNotice": "Live-Wechselkurse nicht verfügbar — unten werden Werte je Währung angezeigt.",
+    "backToOverview": "Zurück zur Übersicht",
+    "noFootprintTitle": "Keine Konten oder Aktivität in {code}",
+    "noFootprintBody": "Sie haben keine Guthaben, Transaktionen oder Budgets in dieser Währung."
   },
   "accounts": {
     "addAccount": "Konto hinzufügen",
