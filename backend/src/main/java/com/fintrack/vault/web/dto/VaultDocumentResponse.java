@@ -1,5 +1,6 @@
 package com.fintrack.vault.web.dto;
 
+import com.fintrack.agent.domain.AgentRunStatus;
 import com.fintrack.vault.domain.VaultDocumentStatus;
 import com.fintrack.vault.domain.VaultDocumentType;
 
@@ -15,5 +16,7 @@ public record VaultDocumentResponse(
         Map<String, Object> payload,
         boolean hasBinary,
         String originalFilename,
-        Long transactionId
+        Long transactionId,
+        /** Status of the most recent ingestion run for this receipt, or null if never ingested. */
+        AgentRunStatus ingestionStatus
 ) {}
