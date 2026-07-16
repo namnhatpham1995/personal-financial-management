@@ -1,11 +1,23 @@
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import path from "node:path";
 import { LlmProviderError, type CategorizeInput, type CategorizeOutput, type LlmProvider } from "./provider.js";
 import { ExtractionResultSchema, type ExtractionResult, type Proposal } from "../schemas.js";
+import cleanReceipt from "./fixtures/clean-receipt.json" with { type: "json" };
+import totalsMismatch from "./fixtures/totals-mismatch.json" with { type: "json" };
+import unknownCategories from "./fixtures/unknown-categories.json" with { type: "json" };
+import unparseable from "./fixtures/unparseable.json" with { type: "json" };
+import injectionReceipt from "./fixtures/injection-receipt.json" with { type: "json" };
+import providerError from "./fixtures/provider-error.json" with { type: "json" };
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const FIXTURES_DIR = path.join(__dirname, "fixtures");
+// Statically imported (not read from disk at runtime): `tsc` only compiles .ts files, so a
+// fs.readFileSync against a path under dist/ would silently find nothing in the packaged
+// build even though it works under tsx/vitest, which run against src/ directly.
+const FIXTURES: Record<string, Record<string, unknown>> = {
+  "clean-receipt": cleanReceipt,
+  "totals-mismatch": totalsMismatch,
+  "unknown-categories": unknownCategories,
+  "unparseable": unparseable,
+  "injection-receipt": injectionReceipt,
+  "provider-error": providerError,
+};
 
 /**
  * Deterministic, fixture-driven LlmProvider used by every test and by CI (design.md D7) — no
@@ -62,10 +74,9 @@ function parseScenario(receiptImage: Buffer): string {
 }
 
 function loadFixture(scenario: string): Record<string, unknown> {
-  const filePath = path.join(FIXTURES_DIR, `${scenario}.json`);
-  try {
-    return JSON.parse(readFileSync(filePath, "utf8"));
-  } catch {
+  const fixture = FIXTURES[scenario];
+  if (!fixture) {
     throw new LlmProviderError(`Unknown stub scenario: ${scenario}`, false);
   }
+  return fixture;
 }
