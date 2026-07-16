@@ -1,8 +1,0 @@
-{
-  "name": "personal-financial-management",
-  "private": true,
-  "description": "Repo-level tooling dependencies (not part of the frontend/backend/mcp-server apps)",
-  "devDependencies": {
-    "@fission-ai/openspec": "1.6.0"
-  }
-}
