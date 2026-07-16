@@ -16,6 +16,7 @@ public class AppProperties {
     private RateLimit rateLimit = new RateLimit();
     private ExchangeRate exchangeRate = new ExchangeRate();
     private Pat pat = new Pat();
+    private Agent agent = new Agent();
 
     @Getter
     @Setter
@@ -56,5 +57,18 @@ public class AppProperties {
         /** Kill switch for PAT authentication — rollback path without a schema change. */
         private boolean enabled = true;
         private int requestsPerMinute = 60;
+    }
+
+    @Getter
+    @Setter
+    public static class Agent {
+        /**
+         * Base URL of the agent-service (e.g. http://agent-service:8081). Empty/blank means
+         * the receipt ingestion feature is unconfigured — run-related endpoints report the
+         * feature unavailable rather than affecting any other capability (dark by default).
+         */
+        private String serviceUrl = "";
+        /** TTL of the per-run scoped token minted for the agent service (bounds a run). */
+        private long tokenExpiryMs = 900_000L; // 15 min
     }
 }

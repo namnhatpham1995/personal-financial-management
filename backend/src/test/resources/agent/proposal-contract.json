@@ -1,0 +1,37 @@
+{
+  "extraction": {
+    "merchant": "Corner Market",
+    "date": "2026-01-05",
+    "currency": "USD",
+    "lineItems": [
+      { "description": "Milk", "quantity": 1, "amount": "3.50" },
+      { "description": "Bread", "quantity": 1, "amount": "4.00" },
+      { "description": "Eggs", "quantity": 1, "amount": "5.00" }
+    ],
+    "total": "12.50"
+  },
+  "proposals": [
+    {
+      "merchant": "Corner Market",
+      "date": "2026-01-05",
+      "amount": "3.50",
+      "currency": "USD",
+      "categoryId": 1,
+      "accountId": 10,
+      "description": "Milk",
+      "flags": [],
+      "excluded": false
+    },
+    {
+      "merchant": "Corner Market",
+      "date": "2026-01-05",
+      "amount": "4.00",
+      "currency": "USD",
+      "categoryId": null,
+      "accountId": 10,
+      "description": "Bread",
+      "flags": ["low-confidence"],
+      "excluded": false
+    }
+  ]
+}
