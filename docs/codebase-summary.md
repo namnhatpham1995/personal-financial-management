@@ -46,12 +46,16 @@
 | `src/components/auth-guard.tsx` | Redirect unauthenticated users to /login |
 | `src/components/sidebar.tsx` | Navigation sidebar (no separate Budgets entry) |
 | `src/services/*.ts` | Typed API service modules per feature |
-| `src/app/dashboard/page.tsx` | Overview: featured converted total, range toggle, per-currency sections |
+| `src/app/dashboard/page.tsx` | Overview: featured converted total, range toggle, Tier 1 converted overall statistics, Tier 2 currency summary cards (or Tier 3 inline detail for single-currency users) |
 | `src/components/accounts/featured-balance-card.tsx` | Main-currency converted grand total with native per-currency balances |
-| `src/components/overview/currency-section.tsx` | One Overview section per currency: charts, recent transactions, accounts, budgets |
-| `src/components/accounts/balance-breakdown.tsx` | Overview account creation entry point plus reusable per-currency account boxes |
+| `src/components/overview/overall-statistics.tsx` | Tier 1: converted overall cash flow + spending, multi-currency users only |
+| `src/components/overview/currency-summary-card.tsx` | Tier 2: compact native-amounts-only card per currency (total, account count, net cash flow, over-budget indicator), links to the currency's detail page |
+| `src/app/dashboard/currency/[code]/page.tsx` | Tier 3: currency detail route — full charts/accounts/budgets for one currency, own range toggle, deep-linkable |
+| `src/components/overview/currency-detail-body.tsx` | Shared per-currency body (add-account, account CRUD, `CurrencySection`) reused by the detail route and the single-currency inline collapse |
+| `src/components/overview/currency-section.tsx` | Charts, recent transactions, accounts, budgets for one currency |
+| `src/components/accounts/balance-breakdown.tsx` | Overview's global account creation entry point plus reusable per-currency account boxes |
 | `src/components/accounts/recent-transactions-list.tsx` | Compact recent income/expense lists scoped by account currency |
-| `src/components/charts/budget-progress-manager.tsx` | Inline budget limit management, scoped by currency on Overview |
+| `src/components/charts/budget-progress-manager.tsx` | Inline budget limit management, scoped by currency |
 | `src/app/dashboard/categories/page.tsx` | "Categories & Limit" — categories + inline spending-limit management |
 | `src/app/dashboard/categories/category-row.tsx` | CategoryRow: type dropdown (INCOME/EXPENSE), inline limit form, LimitBar |
 | `src/i18n/config.ts` | Supported locale registry (`en`/`vi`/`de`/`zh`), default locale, cookie name, native names |
