@@ -1,0 +1,10 @@
+{
+  "merchant": "Corner Market",
+  "date": "2026-01-05",
+  "currency": "USD",
+  "lineItems": [
+    { "description": "Milk", "quantity": 1, "amount": "3.50" },
+    { "description": "Bread", "quantity": 1, "amount": "4.00" }
+  ],
+  "total": "12.50"
+}

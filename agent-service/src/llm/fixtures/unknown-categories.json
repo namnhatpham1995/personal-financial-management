@@ -1,0 +1,9 @@
+{
+  "merchant": "Obscure Import Shop",
+  "date": "2026-01-05",
+  "currency": "USD",
+  "lineItems": [
+    { "description": "Handcrafted artisanal widget", "quantity": 1, "amount": "40.00" }
+  ],
+  "total": "40.00"
+}
