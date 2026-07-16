@@ -81,19 +81,6 @@ describe("CurrencyDetailBody", () => {
     expect(screen.getByText("Checking")).toBeInTheDocument();
   });
 
-  it("links the currency heading when headerHref is provided", () => {
-    renderBody({ headerHref: "/dashboard/currency/USD" });
-    expect(screen.getByRole("link", { name: "USD" })).toHaveAttribute(
-      "href",
-      "/dashboard/currency/USD"
-    );
-  });
-
-  it("does not link the currency heading when headerHref is omitted", () => {
-    renderBody();
-    expect(screen.queryByRole("link", { name: "USD" })).not.toBeInTheDocument();
-  });
-
   it("opens the add-account form pre-filled with this currency and submits it", async () => {
     const user = userEvent.setup();
     vi.mocked(accountService.create).mockResolvedValue(usdAccount);

@@ -28,8 +28,6 @@ interface CurrencyDetailBodyProps {
   trend: IncomeExpenseTrend[];
   spending: SpendingByCategory[];
   accounts: Account[];
-  /** When provided, the currency heading links here (temporary Overview -> detail route link). */
-  headerHref?: string;
 }
 
 /**
@@ -43,7 +41,6 @@ export function CurrencyDetailBody({
   trend,
   spending,
   accounts,
-  headerHref,
 }: CurrencyDetailBodyProps) {
   const qc = useQueryClient();
   const t = useTranslations("dashboard");
@@ -133,7 +130,6 @@ export function CurrencyDetailBody({
         trend={trend}
         spending={spending}
         accounts={accounts}
-        headerHref={headerHref}
         onEditAccount={(account) => {
           setEditingAccount(account);
           setShowCreateForm(false);
