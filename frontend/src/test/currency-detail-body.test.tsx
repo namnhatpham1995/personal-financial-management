@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { InternalAxiosRequestConfig } from "axios";
 import type { ComponentProps } from "react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { CurrencyDetailBody } from "@/components/overview/currency-detail-body";
@@ -141,7 +142,13 @@ describe("CurrencyDetailBody", () => {
       accountId: usdAccount.id,
       transactionCount: 0,
     });
-    vi.mocked(accountService.delete).mockResolvedValue(undefined);
+    vi.mocked(accountService.delete).mockResolvedValue({
+      data: undefined,
+      status: 204,
+      statusText: "No Content",
+      headers: {},
+      config: {} as InternalAxiosRequestConfig,
+    });
     renderBody();
 
     await user.click(screen.getByRole("button", { name: "Delete Checking" }));
