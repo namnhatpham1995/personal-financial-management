@@ -34,8 +34,8 @@ CREATE TABLE idempotency_operations (
     id                     BIGSERIAL     PRIMARY KEY,
     user_id                BIGINT        NOT NULL REFERENCES users(id),
     operation              VARCHAR(100)  NOT NULL,
-    key_hash               CHAR(64)      NOT NULL,
-    request_hash           CHAR(64)      NOT NULL,
+    key_hash               VARCHAR(64)   NOT NULL,
+    request_hash           VARCHAR(64)   NOT NULL,
     state                  VARCHAR(20)   NOT NULL,
     response_status        INTEGER,
     response_body          TEXT,
@@ -53,8 +53,8 @@ CREATE INDEX idx_idempotency_operations_expires_at
     ON idempotency_operations (expires_at);
 
 -- ─── api_tokens: additive idempotency metadata for PAT creation (group 5) ──────
-ALTER TABLE api_tokens ADD COLUMN idempotency_key_hash CHAR(64);
-ALTER TABLE api_tokens ADD COLUMN request_hash CHAR(64);
+ALTER TABLE api_tokens ADD COLUMN idempotency_key_hash VARCHAR(64);
+ALTER TABLE api_tokens ADD COLUMN request_hash VARCHAR(64);
 
 CREATE UNIQUE INDEX uq_api_tokens_user_idempotency_key_hash
     ON api_tokens (user_id, idempotency_key_hash)
