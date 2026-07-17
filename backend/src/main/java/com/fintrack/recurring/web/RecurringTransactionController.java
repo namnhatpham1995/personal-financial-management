@@ -1,10 +1,13 @@
 package com.fintrack.recurring.web;
 
 import com.fintrack.common.security.UserPrincipal;
+import com.fintrack.idempotency.service.IdempotencyEnforcementGuard;
+import com.fintrack.idempotency.service.IdempotentMutationExecutor;
 import com.fintrack.recurring.service.RecurringTransactionService;
 import com.fintrack.recurring.web.dto.CreateRecurringRequest;
 import com.fintrack.recurring.web.dto.RecurringResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -24,14 +27,28 @@ import java.util.List;
 public class RecurringTransactionController {
 
     private final RecurringTransactionService recurringService;
+    private final IdempotentMutationExecutor idempotentMutationExecutor;
+    private final IdempotencyEnforcementGuard idempotencyEnforcementGuard;
 
     @PostMapping
     @Operation(summary = "Create a recurring transaction definition")
     public ResponseEntity<RecurringResponse> create(
             @AuthenticationPrincipal UserPrincipal principal,
+            @Parameter(description = "Optional client-generated key (16-128 URL-safe characters) "
+                    + "that makes a retried create safe to resend; a retry with the same key and "
+                    + "payload replays the original result instead of creating a duplicate "
+                    + "recurring definition.")
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             @Valid @RequestBody CreateRecurringRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(recurringService.create(principal.getUserId(), request));
+        if (idempotencyKey == null) {
+            idempotencyEnforcementGuard.requireKeyOrThrow(idempotencyKey);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(recurringService.create(principal.getUserId(), request));
+        }
+        return idempotentMutationExecutor.execute(principal.getUserId(), "recurring.create", idempotencyKey,
+                request, RecurringResponse.class,
+                () -> ResponseEntity.status(HttpStatus.CREATED)
+                        .body(recurringService.create(principal.getUserId(), request)));
     }
 
     @GetMapping

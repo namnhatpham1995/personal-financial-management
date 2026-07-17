@@ -136,6 +136,50 @@ class TransactionServiceTest {
         assertThat(result.warnings()).extracting("code").contains("possible_duplicate_transaction");
     }
 
+    // ─── create: keyless internal-caller compatibility (idempotency task 2.5) ─
+
+    /**
+     * {@code create(Long, CreateTransactionRequest)} is called directly (no Idempotency-Key
+     * concept exists at this layer) by {@code AgentRunService.doCommit} and
+     * {@code StatementImportService.confirm}, both of which loop over rows and catch
+     * {@code DataIntegrityViolationException} per row expecting each {@code create} call to
+     * commit/fail in isolation. This proves the method still works as a plain keyless call and
+     * that its isolation-critical annotation was not weakened by the idempotency wiring.
+     */
+    @Test
+    void create_calledDirectlyWithoutIdempotencyKey_stillWorks() {
+        BigDecimal amount = new BigDecimal("42.00");
+        var req = new CreateTransactionRequest(TransactionType.INCOME, amount, LocalDate.now(), 10L, null, null, null, null, null);
+        when(transactionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        TransactionResponse result = transactionService.create(1L, req);
+
+        assertThat(result).isNotNull();
+        verify(accountService).adjustBalance(10L, amount);
+    }
+
+    @Test
+    void create_retainsRequiresNewPropagation_forInternalIsolatedCallers() throws NoSuchMethodException {
+        var annotation = TransactionService.class
+                .getMethod("create", Long.class, CreateTransactionRequest.class)
+                .getAnnotation(org.springframework.transaction.annotation.Transactional.class);
+
+        assertThat(annotation).isNotNull();
+        assertThat(annotation.propagation())
+                .isEqualTo(org.springframework.transaction.annotation.Propagation.REQUIRES_NEW);
+    }
+
+    @Test
+    void createJoiningCallerTransaction_usesDefaultRequiredPropagation_forIdempotentHttpPath() throws NoSuchMethodException {
+        var annotation = TransactionService.class
+                .getMethod("createJoiningCallerTransaction", Long.class, CreateTransactionRequest.class)
+                .getAnnotation(org.springframework.transaction.annotation.Transactional.class);
+
+        assertThat(annotation).isNotNull();
+        assertThat(annotation.propagation())
+                .isEqualTo(org.springframework.transaction.annotation.Propagation.REQUIRED);
+    }
+
     // ─── create: cross-currency transfer validation matrix ────────────────────
 
     @Test

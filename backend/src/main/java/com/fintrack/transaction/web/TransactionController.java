@@ -3,6 +3,8 @@ package com.fintrack.transaction.web;
 import com.fintrack.common.domain.TransactionType;
 import com.fintrack.common.dto.PageResponse;
 import com.fintrack.common.security.UserPrincipal;
+import com.fintrack.idempotency.service.IdempotencyEnforcementGuard;
+import com.fintrack.idempotency.service.IdempotentMutationExecutor;
 import com.fintrack.transaction.service.TransactionService;
 import com.fintrack.transaction.web.dto.CreateTransactionRequest;
 import com.fintrack.transaction.web.dto.BatchTransactionRequest;
@@ -10,6 +12,7 @@ import com.fintrack.transaction.web.dto.BatchTransactionResponse;
 import com.fintrack.transaction.web.dto.TransactionResponse;
 import com.fintrack.transaction.web.dto.UpdateTransactionRequest;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -30,14 +33,28 @@ import java.time.LocalDate;
 public class TransactionController {
 
     private final TransactionService transactionService;
+    private final IdempotentMutationExecutor idempotentMutationExecutor;
+    private final IdempotencyEnforcementGuard idempotencyEnforcementGuard;
 
     @PostMapping
     @Operation(summary = "Create a transaction (INCOME, EXPENSE, or TRANSFER)")
     public ResponseEntity<TransactionResponse> create(
             @AuthenticationPrincipal UserPrincipal principal,
+            @Parameter(description = "Optional client-generated key (16-128 URL-safe characters) "
+                    + "that makes a retried create safe to resend; a retry with the same key and "
+                    + "payload replays the original result instead of creating a duplicate "
+                    + "transaction/balance effect.")
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             @Valid @RequestBody CreateTransactionRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(transactionService.create(principal.getUserId(), request));
+        if (idempotencyKey == null) {
+            idempotencyEnforcementGuard.requireKeyOrThrow(idempotencyKey);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(transactionService.createJoiningCallerTransaction(principal.getUserId(), request));
+        }
+        return idempotentMutationExecutor.execute(principal.getUserId(), "transaction.create", idempotencyKey,
+                request, TransactionResponse.class,
+                () -> ResponseEntity.status(HttpStatus.CREATED)
+                        .body(transactionService.createJoiningCallerTransaction(principal.getUserId(), request)));
     }
 
     @PostMapping("/batch")
