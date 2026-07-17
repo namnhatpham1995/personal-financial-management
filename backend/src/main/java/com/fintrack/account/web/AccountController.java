@@ -6,7 +6,10 @@ import com.fintrack.account.web.dto.AccountResponse;
 import com.fintrack.account.web.dto.CreateAccountRequest;
 import com.fintrack.account.web.dto.UpdateAccountRequest;
 import com.fintrack.common.security.UserPrincipal;
+import com.fintrack.idempotency.service.IdempotencyEnforcementGuard;
+import com.fintrack.idempotency.service.IdempotentMutationExecutor;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -26,14 +29,27 @@ import java.util.List;
 public class AccountController {
 
     private final AccountService accountService;
+    private final IdempotentMutationExecutor idempotentMutationExecutor;
+    private final IdempotencyEnforcementGuard idempotencyEnforcementGuard;
 
     @PostMapping
     @Operation(summary = "Create a new account")
     public ResponseEntity<AccountResponse> create(
             @AuthenticationPrincipal UserPrincipal principal,
+            @Parameter(description = "Optional client-generated key (16-128 URL-safe characters) "
+                    + "that makes a retried create safe to resend; a retry with the same key and "
+                    + "payload replays the original result instead of creating a duplicate account.")
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             @Valid @RequestBody CreateAccountRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(accountService.create(principal.getUserId(), request));
+        if (idempotencyKey == null) {
+            idempotencyEnforcementGuard.requireKeyOrThrow(idempotencyKey);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(accountService.create(principal.getUserId(), request));
+        }
+        return idempotentMutationExecutor.execute(principal.getUserId(), "account.create", idempotencyKey,
+                request, AccountResponse.class,
+                () -> ResponseEntity.status(HttpStatus.CREATED)
+                        .body(accountService.create(principal.getUserId(), request)));
     }
 
     @GetMapping

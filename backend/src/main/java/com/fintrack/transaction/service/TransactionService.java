@@ -54,8 +54,31 @@ public class TransactionService {
     private final Validator validator;
     private final PlatformTransactionManager transactionManager;
 
+    /**
+     * Isolated create used by internal callers (receipt-ingestion agent commit, statement-import
+     * confirmation) that rely on each row committing/failing independently of any surrounding
+     * transaction. Do not change this method's signature, annotation, or behavior — see
+     * {@link #createJoiningCallerTransaction(Long, CreateTransactionRequest)} for the variant used
+     * by the idempotent HTTP create path.
+     */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public TransactionResponse create(Long userId, CreateTransactionRequest req) {
+        return createInternal(userId, req);
+    }
+
+    /**
+     * Same creation logic as {@link #create(Long, CreateTransactionRequest)} but joins the
+     * caller's ambient transaction (default {@code REQUIRED} propagation) instead of suspending
+     * it. Intended for the idempotent HTTP create path, where {@code IdempotencyClaimRunner}
+     * already holds an open transaction and the claim row must commit atomically with this
+     * mutation.
+     */
+    @Transactional
+    public TransactionResponse createJoiningCallerTransaction(Long userId, CreateTransactionRequest req) {
+        return createInternal(userId, req);
+    }
+
+    private TransactionResponse createInternal(Long userId, CreateTransactionRequest req) {
         User user = userRepository.getReferenceById(userId);
         Account account = accountService.findOwned(userId, req.accountId());
         List<MutationWarning> warnings = new ArrayList<>();

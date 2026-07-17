@@ -1540,6 +1540,15 @@
       },
       "post" : {
         "operationId" : "create_5",
+        "parameters" : [ {
+          "description" : "Optional client-generated key (16-128 URL-safe characters) that makes a retried create safe to resend; a retry with the same key and payload replays the original result instead of creating a duplicate account.",
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -2489,6 +2498,15 @@
       },
       "post" : {
         "operationId" : "create_4",
+        "parameters" : [ {
+          "description" : "Optional client-generated key (16-128 URL-safe characters) that makes a retried create safe to resend; a retry with the same key and payload replays the original result instead of creating a duplicate budget.",
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -2645,6 +2663,15 @@
       },
       "post" : {
         "operationId" : "create_3",
+        "parameters" : [ {
+          "description" : "Optional client-generated key (16-128 URL-safe characters) that makes a retried create safe to resend; a retry with the same key and payload replays the original result instead of creating a duplicate category.",
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -2809,6 +2836,15 @@
       },
       "post" : {
         "operationId" : "create_2",
+        "parameters" : [ {
+          "description" : "Optional client-generated key (16-128 URL-safe characters) that makes a retried create safe to resend; a retry with the same key and payload replays the original result instead of creating a duplicate recurring definition.",
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -3151,6 +3187,15 @@
       },
       "post" : {
         "operationId" : "create",
+        "parameters" : [ {
+          "description" : "Optional client-generated key (16-128 URL-safe characters) that makes a retried create safe to resend; a retry with the same key and payload replays the original result instead of creating a duplicate transaction/balance effect.",
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "requestBody" : {
           "content" : {
             "application/json" : {

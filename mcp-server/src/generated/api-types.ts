@@ -1444,7 +1444,10 @@ export interface operations {
     create_5: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional client-generated key (16-128 URL-safe characters) that makes a retried create safe to resend; a retry with the same key and payload replays the original result instead of creating a duplicate account. */
+                "Idempotency-Key"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2110,7 +2113,10 @@ export interface operations {
     create_4: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional client-generated key (16-128 URL-safe characters) that makes a retried create safe to resend; a retry with the same key and payload replays the original result instead of creating a duplicate budget. */
+                "Idempotency-Key"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2224,7 +2230,10 @@ export interface operations {
     create_3: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional client-generated key (16-128 URL-safe characters) that makes a retried create safe to resend; a retry with the same key and payload replays the original result instead of creating a duplicate category. */
+                "Idempotency-Key"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2338,7 +2347,10 @@ export interface operations {
     create_2: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional client-generated key (16-128 URL-safe characters) that makes a retried create safe to resend; a retry with the same key and payload replays the original result instead of creating a duplicate recurring definition. */
+                "Idempotency-Key"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2545,7 +2557,10 @@ export interface operations {
     create: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional client-generated key (16-128 URL-safe characters) that makes a retried create safe to resend; a retry with the same key and payload replays the original result instead of creating a duplicate transaction/balance effect. */
+                "Idempotency-Key"?: string;
+            };
             path?: never;
             cookie?: never;
         };
