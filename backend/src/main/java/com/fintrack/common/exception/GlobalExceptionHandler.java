@@ -3,6 +3,10 @@ package com.fintrack.common.exception;
 import com.fintrack.agent.exception.AgentFeatureUnavailableException;
 import com.fintrack.common.dto.ApiError;
 import com.fintrack.exchangerate.exception.ExchangeRateUnavailableException;
+import com.fintrack.idempotency.exception.IdempotencyConflictException;
+import com.fintrack.idempotency.exception.IdempotencyOperationInProgressException;
+import com.fintrack.idempotency.exception.InvalidIdempotencyKeyException;
+import com.fintrack.idempotency.exception.MissingIdempotencyKeyException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -119,6 +123,39 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.SERVICE_UNAVAILABLE)
                 .body(ApiError.of(503, "Service Unavailable", ex.getMessage(), req.getRequestURI()));
+    }
+
+    @ExceptionHandler(InvalidIdempotencyKeyException.class)
+    public ResponseEntity<ApiError> handleInvalidIdempotencyKey(
+            InvalidIdempotencyKeyException ex, HttpServletRequest req) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiError.of(400, "invalid_idempotency_key", ex.getMessage(), req.getRequestURI()));
+    }
+
+    @ExceptionHandler(MissingIdempotencyKeyException.class)
+    public ResponseEntity<ApiError> handleMissingIdempotencyKey(
+            MissingIdempotencyKeyException ex, HttpServletRequest req) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiError.of(400, "missing_idempotency_key", ex.getMessage(), req.getRequestURI()));
+    }
+
+    @ExceptionHandler(IdempotencyConflictException.class)
+    public ResponseEntity<ApiError> handleIdempotencyConflict(
+            IdempotencyConflictException ex, HttpServletRequest req) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ApiError.of(409, "idempotency_key_conflict", ex.getMessage(), req.getRequestURI()));
+    }
+
+    @ExceptionHandler(IdempotencyOperationInProgressException.class)
+    public ResponseEntity<ApiError> handleIdempotencyOperationInProgress(
+            IdempotencyOperationInProgressException ex, HttpServletRequest req) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .header("Retry-After", Long.toString(ex.getRetryAfterSeconds()))
+                .body(ApiError.of(409, "operation_in_progress", ex.getMessage(), req.getRequestURI()));
     }
 
     @ExceptionHandler(Exception.class)
