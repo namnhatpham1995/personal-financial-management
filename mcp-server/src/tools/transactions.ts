@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AxiosInstance } from "axios";
 import { mapApiError } from "../api-client.js";
@@ -17,7 +18,13 @@ type BatchTransactionResponse = components["schemas"]["BatchTransactionResponse"
 
 export async function createTransactionsBatch(api: AxiosInstance, params: unknown): Promise<ToolResult> {
   try {
-    const { data } = await api.post<BatchTransactionResponse>("/transactions/batch", params);
+    // The backend now unconditionally requires an Idempotency-Key header on this endpoint.
+    // Generating a fresh key per call is a stopgap only — it means a retried tool call is NOT
+    // deduplicated against the prior attempt. Task group 8 ("MCP write contract and error
+    // guidance") replaces this with a caller-controlled key retained across retries.
+    const { data } = await api.post<BatchTransactionResponse>("/transactions/batch", params, {
+      headers: { "Idempotency-Key": randomUUID() },
+    });
     return toToolResult(data);
   } catch (err) {
     return toErrorResult(mapApiError(err));
@@ -51,10 +58,13 @@ export function registerTransactionTools(server: McpServer, api: AxiosInstance):
 
   server.tool(
     "create_transactions_batch",
-    "Create up to 100 transactions independently. Each result reports CREATED, SKIPPED_DUPLICATE, " +
-      "or FAILED with its input row index. Requires a write-scoped API token. A TRANSFER row " +
-      "between accounts of different currencies needs destinationAmount (see create_transaction); " +
-      "a row missing it fails with status FAILED without affecting the other rows.",
+    "Create up to 100 transactions independently. Each row requires a clientRequestId (16-128 " +
+      "URL-safe characters) that makes a retried row safe to resend: reusing the same id and " +
+      "payload replays the original row result (status REPLAYED) instead of creating a duplicate " +
+      "transaction, while reusing it with a different payload reports status CONFLICT. Otherwise " +
+      "each result reports CREATED or FAILED with its input row index. Requires a write-scoped API " +
+      "token. A TRANSFER row between accounts of different currencies needs destinationAmount (see " +
+      "create_transaction); a row missing it fails with status FAILED without affecting the other rows.",
     createTransactionsBatchShape,
     (params) => createTransactionsBatch(api, params)
   );

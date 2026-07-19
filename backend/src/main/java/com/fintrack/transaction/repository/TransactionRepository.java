@@ -19,6 +19,9 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
 
     boolean existsByImportDedupKey(String importDedupKey);
 
+    /** User-scoped duplicate check backing the composite {@code uq_transactions_user_import_dedup_key} index. */
+    boolean existsByUserIdAndImportDedupKey(Long userId, String importDedupKey);
+
     boolean existsByUserIdAndAccountIdAndTransactionDateAndAmountAndTransactionTypeAndNote(
             Long userId, Long accountId, LocalDate transactionDate, BigDecimal amount,
             TransactionType transactionType, String note);

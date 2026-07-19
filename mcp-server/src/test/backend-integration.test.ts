@@ -285,12 +285,15 @@ describe.skipIf(!BACKEND_URL)("MCP tool <-> real backend", () => {
     const createdTransactionIdsByCurrency: Record<(typeof currencies)[number], number[]> = {} as never;
     for (const currency of currencies) {
       const batchResult = await createTransactionsBatch(api, {
-        transactions: months.map((month) => ({
-          transactionType: "EXPENSE",
-          amount: perCurrencyAmount[currency],
-          transactionDate: `${month}-10`,
-          accountId: accountsByCurrency[currency].id,
-          categoryId: category.id,
+        transactions: months.map((month, index) => ({
+          clientRequestId: `${currency}-${month}-batch-row-${index}`,
+          transaction: {
+            transactionType: "EXPENSE",
+            amount: perCurrencyAmount[currency],
+            transactionDate: `${month}-10`,
+            accountId: accountsByCurrency[currency].id,
+            categoryId: category.id,
+          },
         })),
       });
       expect(batchResult.isError).toBeFalsy();

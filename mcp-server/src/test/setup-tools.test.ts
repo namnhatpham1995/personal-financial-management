@@ -90,12 +90,17 @@ describe("setup MCP tools", () => {
     expect(result.content[0].text).not.toContain(secret);
   });
 
-  it("maps batch transaction creation to its dedicated endpoint", async () => {
+  it("maps batch transaction creation to its dedicated endpoint with a generated Idempotency-Key", async () => {
     const { api, handlers } = setupTools();
     api.post.mockResolvedValue({ data: { results: [{ rowIndex: 0, status: "CREATED" }] } });
     await handlers.get("create_transactions_batch")!({ transactions: [{
-      transactionType: "EXPENSE", amount: 12, transactionDate: "2026-01-01", accountId: 1,
+      clientRequestId: "row-request-id-0001",
+      transaction: { transactionType: "EXPENSE", amount: 12, transactionDate: "2026-01-01", accountId: 1 },
     }] });
-    expect(api.post).toHaveBeenCalledWith("/transactions/batch", expect.any(Object));
+    expect(api.post).toHaveBeenCalledWith(
+      "/transactions/batch",
+      expect.any(Object),
+      { headers: { "Idempotency-Key": expect.any(String) } }
+    );
   });
 });

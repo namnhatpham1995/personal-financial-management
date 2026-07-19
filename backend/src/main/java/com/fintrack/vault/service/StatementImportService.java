@@ -140,10 +140,11 @@ public class StatementImportService {
                         null,
                         null,
                         null,
-                        (String) row.get("description"),
-                        dedupKey   // importDedupKey — prevents duplicate on re-import
+                        (String) row.get("description")
                 );
-                transactionService.create(userId, txReq);
+                // dedupKey (import_dedup_key) — prevents duplicate on re-import; passed separately
+                // since CreateTransactionRequest carries no import fingerprint field.
+                transactionService.createWithImportDedupKey(userId, txReq, dedupKey);
                 created++;
             } catch (org.springframework.dao.DataIntegrityViolationException e) {
                 // Unique constraint on import_dedup_key — already imported, skip

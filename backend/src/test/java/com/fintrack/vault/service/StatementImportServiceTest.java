@@ -112,7 +112,7 @@ class StatementImportServiceTest {
 
         when(vaultDocumentRepository.findByIdAndUserIdAndStatus("staged-3", 1L, VaultDocumentStatus.STAGED))
                 .thenReturn(Optional.of(staged));
-        when(transactionService.create(eq(1L), any()))
+        when(transactionService.createWithImportDedupKey(eq(1L), any(), eq(dedupKey)))
                 .thenThrow(new org.springframework.dao.DataIntegrityViolationException("duplicate key"));
         when(vaultDocumentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -145,14 +145,15 @@ class StatementImportServiceTest {
 
         when(vaultDocumentRepository.findByIdAndUserIdAndStatus("staged-4", 1L, VaultDocumentStatus.STAGED))
                 .thenReturn(Optional.of(staged));
-        when(transactionService.create(eq(1L), any())).thenReturn(null);
+        when(transactionService.createWithImportDedupKey(eq(1L), any(), any())).thenReturn(null);
         when(vaultDocumentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         int created = importService.confirm(1L, "staged-4",
                 new com.fintrack.vault.web.dto.ConfirmImportRequest(List.of(key1, key2)));
 
         assertThat(created).isEqualTo(2);
-        verify(transactionService, times(2)).create(eq(1L), any());
+        verify(transactionService).createWithImportDedupKey(eq(1L), any(), eq(key1));
+        verify(transactionService).createWithImportDedupKey(eq(1L), any(), eq(key2));
     }
 
     @Test

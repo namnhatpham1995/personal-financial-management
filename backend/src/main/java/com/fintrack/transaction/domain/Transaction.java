@@ -64,8 +64,14 @@ public class Transaction {
     @Column(name = "source_document_id")
     private String sourceDocumentId;
 
-    /** SHA-256 dedup key for import idempotency — unique where not null. */
-    @Column(name = "import_dedup_key", unique = true, length = 255)
+    /**
+     * SHA-256 dedup key for import idempotency. Uniqueness is enforced only at the database level
+     * by the partial composite index {@code uq_transactions_user_import_dedup_key} on
+     * {@code (user_id, import_dedup_key)} (added in V15, made the sole uniqueness guard in V16) —
+     * not expressible as a bare {@code @Column(unique = true)}, which would (incorrectly) be
+     * global rather than per-user.
+     */
+    @Column(name = "import_dedup_key", length = 255)
     private String importDedupKey;
 
     /** Back-reference to the recurring definition that generated this transaction, if any. */

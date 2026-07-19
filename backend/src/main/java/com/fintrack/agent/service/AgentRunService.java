@@ -209,11 +209,10 @@ public class AgentRunService {
                     null,
                     null,
                     p.categoryId(),
-                    buildNote(p),
-                    dedupKey
+                    buildNote(p)
             );
             try {
-                var response = transactionService.create(userId, txReq);
+                var response = transactionService.createWithImportDedupKey(userId, txReq, dedupKey);
                 createdIds.add(response.id());
             } catch (DataIntegrityViolationException e) {
                 log.debug("Skipping already-committed proposal for run {} index {}", run.getId(), i);

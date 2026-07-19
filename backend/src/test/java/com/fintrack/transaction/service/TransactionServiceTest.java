@@ -61,7 +61,7 @@ class TransactionServiceTest {
     @Test
     void create_income_addsPositiveBalance() {
         BigDecimal amount = new BigDecimal("150.00");
-        var req = new CreateTransactionRequest(TransactionType.INCOME, amount, LocalDate.now(), 10L, null, null, null, null, null);
+        var req = new CreateTransactionRequest(TransactionType.INCOME, amount, LocalDate.now(), 10L, null, null, null, null);
         when(transactionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         transactionService.create(1L, req);
@@ -72,7 +72,7 @@ class TransactionServiceTest {
     @Test
     void create_expense_subtractsBalance() {
         BigDecimal amount = new BigDecimal("50.00");
-        var req = new CreateTransactionRequest(TransactionType.EXPENSE, amount, LocalDate.now(), 10L, null, null, null, null, null);
+        var req = new CreateTransactionRequest(TransactionType.EXPENSE, amount, LocalDate.now(), 10L, null, null, null, null);
         when(transactionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         transactionService.create(1L, req);
@@ -83,7 +83,7 @@ class TransactionServiceTest {
     @Test
     void create_transfer_debitsSourceCreditsDest() {
         BigDecimal amount = new BigDecimal("200.00");
-        var req = new CreateTransactionRequest(TransactionType.TRANSFER, amount, LocalDate.now(), 10L, 20L, null, null, null, null);
+        var req = new CreateTransactionRequest(TransactionType.TRANSFER, amount, LocalDate.now(), 10L, 20L, null, null, null);
         when(transactionRepository.save(any())).thenAnswer(inv -> {
             Transaction tx = inv.getArgument(0);
             tx.setTransferAccount(destAccount);
@@ -99,7 +99,7 @@ class TransactionServiceTest {
     @Test
     void create_transferWithNullDestination_throwsAndAdjustsNoBalance() {
         var req = new CreateTransactionRequest(TransactionType.TRANSFER, new BigDecimal("100.00"),
-                LocalDate.now(), 10L, null, null, null, null, null);
+                LocalDate.now(), 10L, null, null, null, null);
 
         assertThatThrownBy(() -> transactionService.create(1L, req))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -116,7 +116,7 @@ class TransactionServiceTest {
 
         TransactionResponse result = transactionService.create(1L,
                 new CreateTransactionRequest(TransactionType.EXPENSE, new BigDecimal("25.00"),
-                        LocalDate.now(), 10L, null, null, null, "Rent", null));
+                        LocalDate.now(), 10L, null, null, null, "Rent"));
 
         assertThat(result.warnings()).extracting("code").contains("account_balance_negative");
     }
@@ -131,7 +131,7 @@ class TransactionServiceTest {
 
         TransactionResponse result = transactionService.create(1L,
                 new CreateTransactionRequest(TransactionType.EXPENSE, BigDecimal.TEN,
-                        LocalDate.now(), 10L, null, null, null, "Coffee", null));
+                        LocalDate.now(), 10L, null, null, null, "Coffee"));
 
         assertThat(result.warnings()).extracting("code").contains("possible_duplicate_transaction");
     }
@@ -149,7 +149,7 @@ class TransactionServiceTest {
     @Test
     void create_calledDirectlyWithoutIdempotencyKey_stillWorks() {
         BigDecimal amount = new BigDecimal("42.00");
-        var req = new CreateTransactionRequest(TransactionType.INCOME, amount, LocalDate.now(), 10L, null, null, null, null, null);
+        var req = new CreateTransactionRequest(TransactionType.INCOME, amount, LocalDate.now(), 10L, null, null, null, null);
         when(transactionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         TransactionResponse result = transactionService.create(1L, req);
@@ -188,7 +188,7 @@ class TransactionServiceTest {
         destAccount.setCurrency("USD");
 
         var req = new CreateTransactionRequest(TransactionType.TRANSFER, BigDecimal.TEN,
-                LocalDate.now(), 10L, 20L, null, null, null, null);
+                LocalDate.now(), 10L, 20L, null, null, null);
 
         assertThatThrownBy(() -> transactionService.create(1L, req))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -203,7 +203,7 @@ class TransactionServiceTest {
         destAccount.setCurrency("USD");
 
         var req = new CreateTransactionRequest(TransactionType.TRANSFER, BigDecimal.TEN,
-                LocalDate.now(), 10L, 20L, new BigDecimal("10.00"), null, null, null);
+                LocalDate.now(), 10L, 20L, new BigDecimal("10.00"), null, null);
 
         assertThatThrownBy(() -> transactionService.create(1L, req))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -213,7 +213,7 @@ class TransactionServiceTest {
     @Test
     void create_nonTransferWithDestinationAmount_throws() {
         var req = new CreateTransactionRequest(TransactionType.INCOME, BigDecimal.TEN,
-                LocalDate.now(), 10L, null, new BigDecimal("10.00"), null, null, null);
+                LocalDate.now(), 10L, null, new BigDecimal("10.00"), null, null);
 
         assertThatThrownBy(() -> transactionService.create(1L, req))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -235,7 +235,7 @@ class TransactionServiceTest {
 
         transactionService.create(1L,
                 new CreateTransactionRequest(TransactionType.TRANSFER, sourceAmount,
-                        LocalDate.now(), 10L, 20L, destinationAmount, null, null, null));
+                        LocalDate.now(), 10L, 20L, destinationAmount, null, null));
 
         verify(accountService).adjustBalance(10L, sourceAmount.negate());
         verify(accountService).adjustBalance(20L, destinationAmount);

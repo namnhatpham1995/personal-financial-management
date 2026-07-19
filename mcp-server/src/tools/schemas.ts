@@ -71,17 +71,29 @@ export const updateTransactionShape = {
   note: z.string().max(2000).optional(),
 };
 
+/**
+ * Mirrors the backend's Idempotency-Key rules exactly (16-128 URL-safe characters) — a batch
+ * row's clientRequestId plays the same request-identity role per-row that the Idempotency-Key
+ * header plays for the whole batch request.
+ */
+export const clientRequestId = z.string().min(16).max(128).regex(
+  /^[A-Za-z0-9_-]+$/,
+  "clientRequestId must contain only letters, digits, '-', or '_'"
+);
+
 export const createTransactionsBatchShape = {
   transactions: z.array(z.object({
-    transactionType,
-    amount: z.number().positive(),
-    transactionDate: isoDate,
-    accountId: z.number().int(),
-    transferAccountId: z.number().int().optional(),
-    destinationAmount: z.number().positive().optional(),
-    categoryId: z.number().int().optional(),
-    note: z.string().max(2000).optional(),
-    importDedupKey: z.string().min(1).max(255).optional(),
+    clientRequestId,
+    transaction: z.object({
+      transactionType,
+      amount: z.number().positive(),
+      transactionDate: isoDate,
+      accountId: z.number().int(),
+      transferAccountId: z.number().int().optional(),
+      destinationAmount: z.number().positive().optional(),
+      categoryId: z.number().int().optional(),
+      note: z.string().max(2000).optional(),
+    }).strict(),
   }).strict()).min(1).max(100),
 };
 
@@ -166,7 +178,7 @@ type _CheckUpdateTransaction = AssertAssignable<
   z.infer<z.ZodObject<typeof updateTransactionShape>>
 >;
 type _CheckBatchTransactionRow = AssertAssignable<
-  components["schemas"]["CreateTransactionRequest"],
+  components["schemas"]["BatchTransactionRowRequest"],
   z.infer<typeof createTransactionsBatchShape.transactions>[number]
 >;
 type _CheckCreateAccount = AssertAssignable<
