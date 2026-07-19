@@ -106,7 +106,7 @@ describe("ReceiptRunDetailPage", () => {
     renderPage();
 
     await screen.findByRole("button", { name: "Approve" });
-    await user.click(screen.getByRole("button", { name: "Exclude this item" }));
+    await user.click(await screen.findByRole("button", { name: "Exclude this item" }));
 
     expect(screen.getByRole("button", { name: "Approve" })).toBeDisabled();
   });
