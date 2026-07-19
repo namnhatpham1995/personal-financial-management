@@ -3,6 +3,7 @@ import express, { type Express } from "express";
 import type { Server } from "node:http";
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from "@testcontainers/postgresql";
 import { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
+import { Pool } from "pg";
 import { createApiClient } from "../api-client.js";
 import { buildGraph, type CompiledRunGraph } from "../graph/graph.js";
 import { startRun, resumeRun } from "../graph/run-entrypoints.js";
@@ -82,9 +83,17 @@ describe("graph lifecycle", () => {
   }
 
   async function makeCheckpointer(): Promise<PostgresSaver> {
-    const checkpointer = PostgresSaver.fromConnString(pgContainer.getConnectionUri(), {
-      schema: "agent_checkpoints",
-    });
+    // Constructed manually (rather than via PostgresSaver.fromConnString) so we can attach a
+    // pool-level "error" listener. pg.Pool is an EventEmitter that emits "error" in the
+    // background when an idle client's connection is closed unexpectedly — which is exactly
+    // what happens when Testcontainers tears down the Postgres container in afterAll(), even
+    // after every checkpointer has already been end()'d. Node throws an uncaught exception for
+    // an "error" event with no listener, which is what surfaced as flaky CI failures here; an
+    // empty listener is the officially documented way to treat this as the benign teardown
+    // noise it is (https://node-postgres.com/apis/pool#error).
+    const pool = new Pool({ connectionString: pgContainer.getConnectionUri() });
+    pool.on("error", () => {});
+    const checkpointer = new PostgresSaver(pool, undefined, { schema: "agent_checkpoints" });
     await checkpointer.setup();
     checkpointers.push(checkpointer);
     return checkpointer;
