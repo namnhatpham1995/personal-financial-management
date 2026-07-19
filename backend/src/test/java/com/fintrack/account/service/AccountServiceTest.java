@@ -145,7 +145,7 @@ class AccountServiceTest {
         BigDecimal txNet = new BigDecimal("50.00");
         UpdateAccountRequest req = new UpdateAccountRequest(null, null, null, newInitial);
 
-        when(accountRepository.findByIdAndUserId(ACCOUNT_ID, USER_ID)).thenReturn(Optional.of(account));
+        when(accountRepository.findByIdAndUserIdForUpdate(ACCOUNT_ID, USER_ID)).thenReturn(Optional.of(account));
         when(accountRepository.computeBalanceFromTransactions(ACCOUNT_ID)).thenReturn(txNet);
         when(accountRepository.save(any())).thenReturn(account);
         when(accountMapper.toResponse(any())).thenReturn(stubResponse());

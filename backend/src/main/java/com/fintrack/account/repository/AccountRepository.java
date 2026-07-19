@@ -1,7 +1,9 @@
 package com.fintrack.account.repository;
 
 import com.fintrack.account.domain.Account;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,6 +18,18 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     List<Account> findAllByUserId(Long userId);
 
     Optional<Account> findByIdAndUserId(Long id, Long userId);
+
+    /**
+     * Owned-account lookup that acquires {@code PESSIMISTIC_WRITE} on the row for the duration
+     * of the caller's transaction. Used to serialize transaction update/delete balance effects,
+     * account initial-balance changes, and recomputation against each other (see openspec/
+     * changes/harden-idempotent-mutations/design.md Decision #3). Independent creates keep using
+     * {@link #atomicAdjustBalance}, which Postgres already serializes at the row level without an
+     * app-level lock.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT a FROM Account a WHERE a.id = :id AND a.user.id = :userId")
+    Optional<Account> findByIdAndUserIdForUpdate(@Param("id") Long id, @Param("userId") Long userId);
 
     boolean existsByIdAndUserId(Long id, Long userId);
 

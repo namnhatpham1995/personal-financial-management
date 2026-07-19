@@ -60,7 +60,16 @@ public class AccountService {
         if (request.currency() != null) {
             validateCurrency(request.currency());
         }
-        Account account = findOwned(userId, accountId);
+        // The initial-balance path reads (computeBalanceFromTransactions) then overwrites
+        // current_balance with an absolute value, so it must hold PESSIMISTIC_WRITE on the
+        // account row for the duration of that read-compute-write — otherwise a concurrently
+        // committing transaction create/update/delete's balance effect can be silently clobbered
+        // by this overwrite (see openspec/changes/harden-idempotent-mutations/design.md
+        // Decision #3). Non-initial-balance updates don't touch current_balance, but they share
+        // the same lookup for simplicity since the lock is scoped to this transaction only.
+        Account account = request.initialBalance() != null
+                ? findOwnedForUpdate(userId, accountId)
+                : findOwned(userId, accountId);
         accountMapper.updateEntity(request, account);
         if (request.initialBalance() != null) {
             // Recompute current balance so invariant holds: current = initial + Σ transactions
@@ -120,7 +129,8 @@ public class AccountService {
      */
     @Transactional
     public void recomputeBalance(Long userId, Long accountId) {
-        Account account = findOwned(userId, accountId);
+        // Same read-compute-write-under-lock reasoning as the initial-balance path in update().
+        Account account = findOwnedForUpdate(userId, accountId);
         BigDecimal computed = accountRepository.computeBalanceFromTransactions(accountId);
         account.setCurrentBalance(account.getInitialBalance().add(computed));
         accountRepository.save(account);
@@ -131,6 +141,17 @@ public class AccountService {
 
     public Account findOwned(Long userId, Long accountId) {
         return accountRepository.findByIdAndUserId(accountId, userId)
+                .orElseThrow(() -> ResourceNotFoundException.of("Account", accountId));
+    }
+
+    /**
+     * Owned-account lookup with {@code PESSIMISTIC_WRITE} held for the duration of the caller's
+     * transaction. Used by {@code TransactionService} to serialize update/delete balance effects
+     * against this account, and internally by initial-balance change / {@link #recomputeBalance}
+     * so their read-compute-write cannot be interleaved with a concurrent balance mutation.
+     */
+    public Account findOwnedForUpdate(Long userId, Long accountId) {
+        return accountRepository.findByIdAndUserIdForUpdate(accountId, userId)
                 .orElseThrow(() -> ResourceNotFoundException.of("Account", accountId));
     }
 
