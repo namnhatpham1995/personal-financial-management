@@ -29,8 +29,5 @@ public record CreateTransactionRequest(
 
         Long categoryId,
 
-        @Size(max = 2000) String note,
-
-        /** Optional: set by the import pipeline to prevent duplicate imports. */
-        String importDedupKey
+        @Size(max = 2000) String note
 ) {}

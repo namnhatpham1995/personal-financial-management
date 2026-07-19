@@ -3,7 +3,9 @@ package com.fintrack.transaction.web;
 import com.fintrack.common.domain.TransactionType;
 import com.fintrack.common.dto.PageResponse;
 import com.fintrack.common.security.UserPrincipal;
+import com.fintrack.idempotency.exception.MissingIdempotencyKeyException;
 import com.fintrack.idempotency.service.IdempotencyEnforcementGuard;
+import com.fintrack.idempotency.service.IdempotentBatchCoordinator;
 import com.fintrack.idempotency.service.IdempotentMutationExecutor;
 import com.fintrack.transaction.service.TransactionService;
 import com.fintrack.transaction.web.dto.CreateTransactionRequest;
@@ -35,6 +37,7 @@ public class TransactionController {
     private final TransactionService transactionService;
     private final IdempotentMutationExecutor idempotentMutationExecutor;
     private final IdempotencyEnforcementGuard idempotencyEnforcementGuard;
+    private final IdempotentBatchCoordinator idempotentBatchCoordinator;
 
     @PostMapping
     @Operation(summary = "Create a transaction (INCOME, EXPENSE, or TRANSFER)")
@@ -61,9 +64,20 @@ public class TransactionController {
     @Operation(summary = "Create transactions independently and return a result for every row")
     public ResponseEntity<BatchTransactionResponse> createBatch(
             @AuthenticationPrincipal UserPrincipal principal,
+            @Parameter(description = "Required client-generated key (16-128 URL-safe characters) "
+                    + "scoping the whole batch request; resubmitting the same key and payload "
+                    + "resumes an interrupted batch or replays the original per-row outcomes "
+                    + "instead of reprocessing already-completed rows.")
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             @Valid @RequestBody BatchTransactionRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(transactionService.createBatch(principal.getUserId(), request.transactions()));
+        if (idempotencyKey == null) {
+            throw new MissingIdempotencyKeyException(
+                    "Idempotency-Key header is required for batch transaction creation");
+        }
+        return idempotentBatchCoordinator.execute(principal.getUserId(), "transaction.batch", idempotencyKey,
+                request, BatchTransactionResponse.class,
+                () -> ResponseEntity.status(HttpStatus.CREATED)
+                        .body(transactionService.createBatch(principal.getUserId(), request.transactions())));
     }
 
     @GetMapping

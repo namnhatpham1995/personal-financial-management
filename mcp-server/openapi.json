@@ -198,7 +198,7 @@
         "properties" : {
           "transactions" : {
             "items" : {
-              "$ref" : "#/components/schemas/CreateTransactionRequest"
+              "$ref" : "#/components/schemas/BatchTransactionRowRequest"
             },
             "maxItems" : 100,
             "minItems" : 0,
@@ -219,12 +219,27 @@
         },
         "type" : "object"
       },
-      "BatchTransactionRowResult" : {
+      "BatchTransactionRowRequest" : {
         "properties" : {
-          "error" : {
+          "clientRequestId" : {
+            "maxLength" : 128,
+            "minLength" : 16,
+            "pattern" : "^[A-Za-z0-9_-]+$",
             "type" : "string"
           },
-          "importDedupKey" : {
+          "transaction" : {
+            "$ref" : "#/components/schemas/CreateTransactionRequest"
+          }
+        },
+        "required" : [ "clientRequestId", "transaction" ],
+        "type" : "object"
+      },
+      "BatchTransactionRowResult" : {
+        "properties" : {
+          "clientRequestId" : {
+            "type" : "string"
+          },
+          "error" : {
             "type" : "string"
           },
           "rowIndex" : {
@@ -232,7 +247,7 @@
             "type" : "integer"
           },
           "status" : {
-            "enum" : [ "CREATED", "SKIPPED_DUPLICATE", "FAILED" ],
+            "enum" : [ "CREATED", "REPLAYED", "CONFLICT", "FAILED" ],
             "type" : "string"
           },
           "transaction" : {
@@ -665,9 +680,6 @@
             "exclusiveMinimum" : false,
             "minimum" : 0.01,
             "type" : "number"
-          },
-          "importDedupKey" : {
-            "type" : "string"
           },
           "note" : {
             "maxLength" : 2000,
@@ -3228,6 +3240,15 @@
     "/api/v1/transactions/batch" : {
       "post" : {
         "operationId" : "createBatch",
+        "parameters" : [ {
+          "description" : "Required client-generated key (16-128 URL-safe characters) scoping the whole batch request; resubmitting the same key and payload resumes an interrupted batch or replays the original per-row outcomes instead of reprocessing already-completed rows.",
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "requestBody" : {
           "content" : {
             "application/json" : {

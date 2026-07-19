@@ -113,12 +113,15 @@ describe("tool input schemas reject malformed input before any API call", () => 
   it("create_transactions_batch accepts a row with destinationAmount", () => {
     const result = z.object(createTransactionsBatchShape).safeParse({
       transactions: [{
-        transactionType: "TRANSFER",
-        amount: 500,
-        destinationAmount: 14600000,
-        transactionDate: "2026-01-01",
-        accountId: 1,
-        transferAccountId: 2,
+        clientRequestId: "row-request-id-0001",
+        transaction: {
+          transactionType: "TRANSFER",
+          amount: 500,
+          destinationAmount: 14600000,
+          transactionDate: "2026-01-01",
+          accountId: 1,
+          transferAccountId: 2,
+        },
       }],
     });
     expect(result.success).toBe(true);
@@ -165,10 +168,16 @@ describe("tool input schemas reject malformed input before any API call", () => 
     expect(z.object(updateBudgetShape).safeParse({ id: 1, amountLimit: 120, period: "MONTHLY" }).success).toBe(true);
   });
 
-  it("batch transactions reject empty batches and unknown row fields", () => {
+  it("batch transactions reject empty batches, missing clientRequestId, and unknown row fields", () => {
     expect(z.object(createTransactionsBatchShape).safeParse({ transactions: [] }).success).toBe(false);
     expect(z.object(createTransactionsBatchShape).safeParse({ transactions: [{
-      transactionType: "EXPENSE", amount: 5, transactionDate: "2026-01-01", accountId: 1, unsafe: true,
+      transaction: { transactionType: "EXPENSE", amount: 5, transactionDate: "2026-01-01", accountId: 1 },
+    }] }).success).toBe(false);
+    expect(z.object(createTransactionsBatchShape).safeParse({ transactions: [{
+      clientRequestId: "row-request-id-0002",
+      transaction: {
+        transactionType: "EXPENSE", amount: 5, transactionDate: "2026-01-01", accountId: 1, unsafe: true,
+      },
     }] }).success).toBe(false);
   });
 

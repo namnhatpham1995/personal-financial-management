@@ -229,7 +229,7 @@ class AgentRunServiceTest {
                 Category.builder().id(inv.getArgument(1)).build());
         when(accountService.findOwned(eq(USER_ID), any())).thenAnswer(inv ->
                 Account.builder().id(inv.getArgument(1)).build());
-        when(transactionService.create(eq(USER_ID), any())).thenReturn(
+        when(transactionService.createWithImportDedupKey(eq(USER_ID), any(), any())).thenReturn(
                 new TransactionResponse(501L, null, null, null, null, null, null, null, null,
                         null, null, null, null, null, null, null, null, null, List.of()));
         when(agentRunRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -240,10 +240,9 @@ class AgentRunServiceTest {
 
         assertThat(result.status()).isEqualTo(AgentRunStatus.COMMITTED);
         assertThat(result.createdTransactionIds()).containsExactly(501L);
-        ArgumentCaptor<com.fintrack.transaction.web.dto.CreateTransactionRequest> captor =
-                ArgumentCaptor.forClass(com.fintrack.transaction.web.dto.CreateTransactionRequest.class);
-        verify(transactionService).create(eq(USER_ID), captor.capture());
-        assertThat(captor.getValue().importDedupKey()).isEqualTo("agent-run:10:0");
+        ArgumentCaptor<String> dedupKeyCaptor = ArgumentCaptor.forClass(String.class);
+        verify(transactionService).createWithImportDedupKey(eq(USER_ID), any(), dedupKeyCaptor.capture());
+        assertThat(dedupKeyCaptor.getValue()).isEqualTo("agent-run:10:0");
     }
 
     @Test

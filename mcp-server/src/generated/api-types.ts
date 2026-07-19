@@ -926,18 +926,22 @@ export interface components {
             tokenPrefix?: string;
         };
         BatchTransactionRequest: {
-            transactions: components["schemas"]["CreateTransactionRequest"][];
+            transactions: components["schemas"]["BatchTransactionRowRequest"][];
         };
         BatchTransactionResponse: {
             results?: components["schemas"]["BatchTransactionRowResult"][];
         };
+        BatchTransactionRowRequest: {
+            clientRequestId: string;
+            transaction: components["schemas"]["CreateTransactionRequest"];
+        };
         BatchTransactionRowResult: {
+            clientRequestId?: string;
             error?: string;
-            importDedupKey?: string;
             /** Format: int32 */
             rowIndex?: number;
             /** @enum {string} */
-            status?: "CREATED" | "SKIPPED_DUPLICATE" | "FAILED";
+            status?: "CREATED" | "REPLAYED" | "CONFLICT" | "FAILED";
             transaction?: components["schemas"]["TransactionResponse"];
         };
         BudgetHistoryDto: {
@@ -1098,7 +1102,6 @@ export interface components {
             /** Format: int64 */
             categoryId?: number;
             destinationAmount?: number;
-            importDedupKey?: string;
             note?: string;
             /** Format: date */
             transactionDate: string;
@@ -2584,7 +2587,10 @@ export interface operations {
     createBatch: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Required client-generated key (16-128 URL-safe characters) scoping the whole batch request; resubmitting the same key and payload resumes an interrupted batch or replays the original per-row outcomes instead of reprocessing already-completed rows. */
+                "Idempotency-Key"?: string;
+            };
             path?: never;
             cookie?: never;
         };

@@ -10,12 +10,15 @@ import com.fintrack.common.cache.CacheVersionService;
 import com.fintrack.common.domain.TransactionType;
 import com.fintrack.common.dto.PageResponse;
 import com.fintrack.common.exception.ResourceNotFoundException;
+import com.fintrack.idempotency.service.BatchRowOutcome;
+import com.fintrack.idempotency.service.IdempotentBatchRowExecutor;
 import com.fintrack.transaction.domain.Transaction;
 import com.fintrack.transaction.mapper.TransactionMapper;
 import com.fintrack.transaction.repository.TransactionRepository;
 import com.fintrack.transaction.repository.TransactionSpecification;
 import com.fintrack.transaction.web.dto.CreateTransactionRequest;
 import com.fintrack.transaction.web.dto.BatchTransactionResponse;
+import com.fintrack.transaction.web.dto.BatchTransactionRowRequest;
 import com.fintrack.transaction.web.dto.BatchTransactionRowResult;
 import com.fintrack.transaction.web.dto.TransactionResponse;
 import com.fintrack.transaction.web.dto.UpdateTransactionRequest;
@@ -25,11 +28,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 
@@ -52,7 +55,7 @@ public class TransactionService {
     private final TransactionMapper transactionMapper;
     private final CacheVersionService cacheVersionService;
     private final Validator validator;
-    private final PlatformTransactionManager transactionManager;
+    private final IdempotentBatchRowExecutor idempotentBatchRowExecutor;
 
     /**
      * Isolated create used by internal callers (receipt-ingestion agent commit, statement-import
@@ -63,7 +66,7 @@ public class TransactionService {
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public TransactionResponse create(Long userId, CreateTransactionRequest req) {
-        return createInternal(userId, req);
+        return createInternal(userId, req, null);
     }
 
     /**
@@ -75,14 +78,25 @@ public class TransactionService {
      */
     @Transactional
     public TransactionResponse createJoiningCallerTransaction(Long userId, CreateTransactionRequest req) {
-        return createInternal(userId, req);
+        return createInternal(userId, req, null);
     }
 
-    private TransactionResponse createInternal(Long userId, CreateTransactionRequest req) {
+    /**
+     * Isolated create used by internal ingestion callers (receipt-ingestion agent commit,
+     * statement-import confirmation) that need to attach an internal import-dedup fingerprint —
+     * something no public request can ever supply, since {@link CreateTransactionRequest} has no
+     * such field. Same isolation ({@code REQUIRES_NEW}) as {@link #create(Long, CreateTransactionRequest)}.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public TransactionResponse createWithImportDedupKey(Long userId, CreateTransactionRequest req, String importDedupKey) {
+        return createInternal(userId, req, importDedupKey);
+    }
+
+    private TransactionResponse createInternal(Long userId, CreateTransactionRequest req, String importDedupKey) {
         User user = userRepository.getReferenceById(userId);
         Account account = accountService.findOwned(userId, req.accountId());
         List<MutationWarning> warnings = new ArrayList<>();
-        if (req.importDedupKey() == null && transactionRepository
+        if (importDedupKey == null && transactionRepository
                 .existsByUserIdAndAccountIdAndTransactionDateAndAmountAndTransactionTypeAndNote(
                         userId, req.accountId(), req.transactionDate(), req.amount(), req.transactionType(), req.note())) {
             warnings.add(new MutationWarning("possible_duplicate_transaction",
@@ -96,7 +110,7 @@ public class TransactionService {
                 .amount(req.amount())
                 .transactionDate(req.transactionDate())
                 .note(req.note())
-                .importDedupKey(req.importDedupKey())
+                .importDedupKey(importDedupKey)
                 .build();
 
         if (req.categoryId() != null) {
@@ -133,49 +147,57 @@ public class TransactionService {
         return TransactionResponse.withWarnings(transactionMapper.toResponse(saved), warnings);
     }
 
-    /** Processes each row independently so one invalid import does not roll back valid rows. */
-    public BatchTransactionResponse createBatch(Long userId, List<CreateTransactionRequest> requests) {
+    /**
+     * Processes each row independently via {@link IdempotentBatchRowExecutor} — each row claims,
+     * runs, and commits in its own {@code REQUIRES_NEW} transaction, so one invalid or conflicting
+     * row never rolls back a sibling row. See {@code IdempotentBatchCoordinator} for the aggregate
+     * batch-level resumability wrapper this method runs inside of.
+     */
+    public BatchTransactionResponse createBatch(Long userId, List<BatchTransactionRowRequest> rows) {
         List<BatchTransactionRowResult> results = new ArrayList<>();
-        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-        for (int index = 0; index < requests.size(); index++) {
-            CreateTransactionRequest request = requests.get(index);
-            String dedupKey = request == null ? null : request.importDedupKey();
-            if (request == null) {
+        for (int index = 0; index < rows.size(); index++) {
+            BatchTransactionRowRequest row = rows.get(index);
+            if (row == null) {
                 results.add(failed(index, null, "Transaction row must not be null"));
                 continue;
             }
-            var violations = validator.validate(request);
+            String clientRequestId = row.clientRequestId();
+            var violations = validator.validate(row);
             if (!violations.isEmpty()) {
-                results.add(failed(index, dedupKey, validationMessage(violations)));
+                results.add(failed(index, clientRequestId, validationMessage(violations)));
                 continue;
             }
-            if (dedupKey != null && transactionRepository.existsByImportDedupKey(dedupKey)) {
-                results.add(new BatchTransactionRowResult(index, BatchTransactionRowResult.Status.SKIPPED_DUPLICATE,
-                        dedupKey, null, null));
-                continue;
-            }
-            try {
-                TransactionResponse response = transactionTemplate.execute(status -> create(userId, request));
-                results.add(new BatchTransactionRowResult(index, BatchTransactionRowResult.Status.CREATED,
-                        dedupKey, response, null));
-            } catch (RuntimeException ex) {
-                results.add(failed(index, dedupKey, safeMessage(ex)));
-            }
+
+            CreateTransactionRequest txReq = row.transaction();
+            BatchRowOutcome<TransactionResponse> outcome = idempotentBatchRowExecutor.execute(
+                    userId, clientRequestId, txReq, TransactionResponse.class,
+                    () -> ResponseEntity.status(HttpStatus.CREATED)
+                            .body(createInternal(userId, txReq, null)));
+
+            results.add(toRowResult(index, clientRequestId, outcome));
         }
         return new BatchTransactionResponse(results);
     }
 
-    private BatchTransactionRowResult failed(int index, String dedupKey, String error) {
-        return new BatchTransactionRowResult(index, BatchTransactionRowResult.Status.FAILED, dedupKey, null, error);
+    private BatchTransactionRowResult toRowResult(int index, String clientRequestId,
+                                                    BatchRowOutcome<TransactionResponse> outcome) {
+        return switch (outcome.kind()) {
+            case CREATED -> new BatchTransactionRowResult(index, BatchTransactionRowResult.Status.CREATED,
+                    clientRequestId, outcome.result(), null);
+            case REPLAYED -> new BatchTransactionRowResult(index, BatchTransactionRowResult.Status.REPLAYED,
+                    clientRequestId, outcome.result(), null);
+            case CONFLICT -> new BatchTransactionRowResult(index, BatchTransactionRowResult.Status.CONFLICT,
+                    clientRequestId, null, outcome.errorMessage());
+            case FAILED -> failed(index, clientRequestId, outcome.errorMessage());
+        };
+    }
+
+    private BatchTransactionRowResult failed(int index, String clientRequestId, String error) {
+        return new BatchTransactionRowResult(index, BatchTransactionRowResult.Status.FAILED, clientRequestId, null, error);
     }
 
     private String validationMessage(java.util.Set<? extends ConstraintViolation<?>> violations) {
         return violations.iterator().next().getMessage();
-    }
-
-    private String safeMessage(RuntimeException exception) {
-        String message = exception.getMessage();
-        return message == null || message.isBlank() ? "Transaction row could not be created" : message;
     }
 
     @Transactional(readOnly = true)
