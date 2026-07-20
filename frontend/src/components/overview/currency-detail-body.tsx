@@ -20,6 +20,8 @@ import {
 import { AccountDetailDialog } from "@/components/accounts/account-detail-dialog";
 import { CurrencySection } from "@/components/overview/currency-section";
 import { Button } from "@/components/ui/button";
+import { useIdempotencyKey } from "@/lib/use-idempotency-key";
+import { getIdempotencyErrorCode } from "@/lib/idempotency-error";
 
 interface CurrencyDetailBodyProps {
   currency: string;
@@ -45,6 +47,7 @@ export function CurrencyDetailBody({
   const qc = useQueryClient();
   const t = useTranslations("dashboard");
   const tAccounts = useTranslations("accounts");
+  const tCommon = useTranslations("common");
 
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
@@ -67,14 +70,28 @@ export function CurrencyDetailBody({
     qc.invalidateQueries({ queryKey: ["trend"] });
   };
 
+  const createIdempotency = useIdempotencyKey(null);
+
   const createMutation = useMutation({
-    mutationFn: (data: CreateAccountPayload) => accountService.create(data),
+    mutationFn: (data: CreateAccountPayload) =>
+      accountService.create(data, createIdempotency.resolve(data)),
     onSuccess: () => {
+      createIdempotency.clear();
       invalidateAccountViews();
       setShowCreateForm(false);
       toast.success(t("toast.accountCreated"));
     },
-    onError: () => toast.error(t("toast.accountCreateFailed")),
+    onError: (err) => {
+      const idempotencyCode = getIdempotencyErrorCode(err);
+      if (idempotencyCode === "idempotency_key_conflict") {
+        createIdempotency.clear();
+        toast.error(t("toast.accountCreateFailed"));
+      } else if (idempotencyCode === "operation_in_progress") {
+        toast.error(tCommon("operationInProgress"));
+      } else {
+        toast.error(t("toast.accountCreateFailed"));
+      }
+    },
   });
 
   const editMutation = useMutation({

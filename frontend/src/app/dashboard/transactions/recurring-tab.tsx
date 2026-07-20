@@ -15,6 +15,8 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useIdempotencyKey } from "@/lib/use-idempotency-key";
+import { getIdempotencyErrorCode } from "@/lib/idempotency-error";
 
 const schema = z.object({
   accountId: z.coerce.number(),
@@ -48,10 +50,28 @@ export function RecurringTab() {
     queryFn: accountService.list,
   });
 
+  const createIdempotency = useIdempotencyKey(null);
+
   const createMutation = useMutation({
-    mutationFn: (data: CreateRecurringPayload) => recurringService.create(data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["recurring"] }); setShowForm(false); toast.success(t("toast.created")); },
-    onError: () => toast.error(t("toast.createFailed")),
+    mutationFn: (data: CreateRecurringPayload) =>
+      recurringService.create(data, createIdempotency.resolve(data)),
+    onSuccess: () => {
+      createIdempotency.clear();
+      qc.invalidateQueries({ queryKey: ["recurring"] });
+      setShowForm(false);
+      toast.success(t("toast.created"));
+    },
+    onError: (err) => {
+      const idempotencyCode = getIdempotencyErrorCode(err);
+      if (idempotencyCode === "idempotency_key_conflict") {
+        createIdempotency.clear();
+        toast.error(t("toast.createFailed"));
+      } else if (idempotencyCode === "operation_in_progress") {
+        toast.error(tCommon("operationInProgress"));
+      } else {
+        toast.error(t("toast.createFailed"));
+      }
+    },
   });
 
   const pauseMutation = useMutation({
@@ -69,8 +89,17 @@ export function RecurringTab() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["recurring"] }); toast.success(t("toast.deleted")); },
   });
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } =
+  const { register, handleSubmit, reset, formState: { errors } } =
     useForm<FormValues>({ resolver: zodResolver(schema) });
+
+  const submitCreate = handleSubmit((v) => {
+    // Defense-in-depth against a double-click/double-submit race: react-hook-form's
+    // isSubmitting resolves almost instantly for a sync callback, so the disabled prop
+    // below relies on the mutation's own isPending — this guard covers the gap between
+    // the first click registering and that state flowing back into a re-render.
+    if (createMutation.isPending) return;
+    createMutation.mutate(v);
+  });
 
   return (
     <div className="space-y-6">
@@ -84,7 +113,7 @@ export function RecurringTab() {
         <Card className="p-5">
           <h2 className="mb-4 font-semibold tracking-tight text-foreground">{t("newRuleTitle")}</h2>
           <form
-            onSubmit={handleSubmit((v) => createMutation.mutate(v))}
+            onSubmit={submitCreate}
             className="grid grid-cols-1 gap-4 sm:grid-cols-2"
           >
             <Field label={t("fields.account")} error={errors.accountId?.message}>
@@ -115,7 +144,7 @@ export function RecurringTab() {
               <input {...register("note")} className={inputCls} />
             </Field>
             <div className="flex gap-2 sm:col-span-2">
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={createMutation.isPending}>
                 {tCommon("save")}
               </Button>
               <Button type="button" variant="secondary" onClick={() => setShowForm(false)}>

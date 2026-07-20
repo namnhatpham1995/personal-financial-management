@@ -97,7 +97,8 @@ describe("CurrencyDetailBody", () => {
 
     await waitFor(() => {
       expect(accountService.create).toHaveBeenCalledWith(
-        expect.objectContaining({ name: "Brokerage", currency: "EUR" })
+        expect.objectContaining({ name: "Brokerage", currency: "EUR" }),
+        expect.any(String)
       );
     });
   });

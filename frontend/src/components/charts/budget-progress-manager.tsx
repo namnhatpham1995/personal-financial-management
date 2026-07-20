@@ -14,6 +14,8 @@ import { budgetService, type Budget, type CreateBudgetPayload } from "@/services
 import { categoryService } from "@/services/category-service";
 import { BudgetProgressList } from "./budget-progress-list";
 import { Button } from "@/components/ui/button";
+import { useIdempotencyKey } from "@/lib/use-idempotency-key";
+import { getIdempotencyErrorCode } from "@/lib/idempotency-error";
 
 const inputCls =
   "w-full rounded-lg border border-border bg-card px-3 py-2 text-base text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-colors";
@@ -25,6 +27,7 @@ interface BudgetProgressManagerProps {
 
 export function BudgetProgressManager({ currency }: BudgetProgressManagerProps) {
   const t = useTranslations("budgets.manager");
+  const tCommon = useTranslations("common");
   const queryClient = useQueryClient();
   const [editingBudgetId, setEditingBudgetId] = useState<number | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -80,15 +83,29 @@ export function BudgetProgressManager({ currency }: BudgetProgressManagerProps) 
     queryClient.invalidateQueries({ queryKey: ["budgetProgress"] });
   };
 
+  const createIdempotency = useIdempotencyKey(null);
+
   const createMutation = useMutation({
-    mutationFn: (data: CreateBudgetPayload) => budgetService.create(data),
+    mutationFn: (data: CreateBudgetPayload) =>
+      budgetService.create(data, createIdempotency.resolve(data)),
     onSuccess: () => {
+      createIdempotency.clear();
       invalidateBudgets();
       setShowAddForm(false);
       setSelectedCategoryId("");
       toast.success(t("toast.limitSet"));
     },
-    onError: () => toast.error(t("toast.setFailed")),
+    onError: (err) => {
+      const idempotencyCode = getIdempotencyErrorCode(err);
+      if (idempotencyCode === "idempotency_key_conflict") {
+        createIdempotency.clear();
+        toast.error(t("toast.setFailed"));
+      } else if (idempotencyCode === "operation_in_progress") {
+        toast.error(tCommon("operationInProgress"));
+      } else {
+        toast.error(t("toast.setFailed"));
+      }
+    },
   });
 
   const updateMutation = useMutation({

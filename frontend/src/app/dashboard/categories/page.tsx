@@ -17,6 +17,8 @@ import {
 import { CategoryRow, type CategoryRowProps } from "./category-row";
 import { CategoryTypeGroup } from "./category-type-group";
 import { Button } from "@/components/ui/button";
+import { useIdempotencyKey } from "@/lib/use-idempotency-key";
+import { getIdempotencyErrorCode } from "@/lib/idempotency-error";
 
 function createSchema(t: (key: string) => string) {
   return z.object({
@@ -50,11 +52,26 @@ export default function CategoriesPage() {
     qc.invalidateQueries({ queryKey: ["categories"] });
   };
 
+  const createIdempotency = useIdempotencyKey(null);
+
   const createMutation = useMutation({
-    mutationFn: (data: CreateCategoryPayload) => categoryService.create(data),
-    onSuccess: () => { invalidateCategories(); setShowForm(false); toast.success(t("toast.created")); },
+    mutationFn: (data: CreateCategoryPayload) =>
+      categoryService.create(data, createIdempotency.resolve(data)),
+    onSuccess: () => {
+      createIdempotency.clear();
+      invalidateCategories();
+      setShowForm(false);
+      toast.success(t("toast.created"));
+    },
     onError: (err) => {
-      if (isAxiosError(err) && err.response?.status === 409) {
+      const idempotencyCode = getIdempotencyErrorCode(err);
+      if (idempotencyCode === "idempotency_key_conflict") {
+        createIdempotency.clear();
+        toast.error(t("toast.createFailed"));
+      } else if (idempotencyCode === "operation_in_progress") {
+        toast.error(tCommon("operationInProgress"));
+      } else if (isAxiosError(err) && err.response?.status === 409) {
+        createIdempotency.clear();
         toast.error(t("toast.duplicateName"));
       } else {
         toast.error(t("toast.createFailed"));

@@ -72,8 +72,10 @@ export const transactionService = {
       .get<PageResponse<Transaction>>("/transactions", { params: filters })
       .then((r) => r.data),
   get: (id: number) => apiClient.get<Transaction>(`/transactions/${id}`).then((r) => r.data),
-  create: (data: CreateTransactionPayload) =>
-    apiClient.post<Transaction>("/transactions", data).then((r) => r.data),
+  create: (data: CreateTransactionPayload, idempotencyKey: string) =>
+    apiClient
+      .post<Transaction>("/transactions", data, { headers: { "Idempotency-Key": idempotencyKey } })
+      .then((r) => r.data),
   update: (id: number, data: UpdateTransactionPayload) =>
     apiClient.put<Transaction>(`/transactions/${id}`, data).then((r) => r.data),
   delete: (id: number) => apiClient.delete(`/transactions/${id}`),

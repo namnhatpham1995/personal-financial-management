@@ -7,7 +7,9 @@
     "cancel": "Abbrechen",
     "delete": "Löschen",
     "edit": "Bearbeiten",
-    "close": "Schließen"
+    "close": "Schließen",
+    "operationInProgress": "Ihre letzte Anfrage wird noch verarbeitet — bitte warten Sie einen Moment und versuchen Sie es erneut.",
+    "requestConflict": "Diese Anfrage konnte so nicht abgeschlossen werden. Bitte versuchen Sie es erneut."
   },
   "settings": {
     "title": "Einstellungen",
@@ -382,7 +384,10 @@
       "importRows": "{count, plural, one {# Zeile importieren} other {# Zeilen importieren}}",
       "parsingFile": "Datei wird gelesen…",
       "uploadPrompt": "Kontoauszug hochladen",
-      "fileTypesHint": "CSV- oder OFX/QFX-Dateien"
+      "fileTypesHint": "CSV- oder OFX/QFX-Dateien",
+      "loadingRows": "Analysierte Zeilen werden geladen…",
+      "rowsLoadFailed": "Die analysierten Zeilen aus diesem Upload konnten nicht geladen werden.",
+      "retryLoadingRows": "Erneut versuchen"
     },
     "ingestion": {
       "notIngested": "Nicht erfasst",
@@ -449,6 +454,11 @@
       "lastUsed": "Zuletzt verwendet {date}",
       "never": "nie",
       "revokeAria": "{tokenName} widerrufen"
+    },
+    "recovery": {
+      "title": "Möglicherweise existiert bereits ein Token",
+      "body": "Diese Anfrage hat möglicherweise bereits ein Token erstellt. Prüfen Sie die Liste unten oder widerrufen Sie es und erstellen Sie ein neues.",
+      "tryAgain": "Erneut versuchen"
     }
   },
   "receipts": {

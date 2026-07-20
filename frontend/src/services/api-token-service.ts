@@ -26,7 +26,9 @@ export interface CreatedApiToken {
 
 export const apiTokenService = {
   list: () => apiClient.get<ApiToken[]>("/tokens").then((r) => r.data),
-  create: (data: CreateApiTokenPayload) =>
-    apiClient.post<CreatedApiToken>("/tokens", data).then((r) => r.data),
+  create: (data: CreateApiTokenPayload, idempotencyKey: string) =>
+    apiClient
+      .post<CreatedApiToken>("/tokens", data, { headers: { "Idempotency-Key": idempotencyKey } })
+      .then((r) => r.data),
   revoke: (id: number) => apiClient.delete(`/tokens/${id}`),
 };
