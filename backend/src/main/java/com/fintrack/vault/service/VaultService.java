@@ -26,24 +26,45 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class VaultService {
 
+    private static final String OPERATION_NAME = "vault.upload";
+
     private final VaultDocumentRepository vaultDocumentRepository;
     private final GridFsFileStore gridFsFileStore;
     private final AgentRunRepository agentRunRepository;
+    private final VaultUploadIdempotencyCoordinator idempotencyCoordinator;
 
-    /** Upload a binary file (receipt image or statement file) and create a VaultDocument. */
-    public VaultDocumentResponse upload(Long userId, VaultDocumentType type, MultipartFile file)
-            throws IOException {
-        String fileId = gridFsFileStore.store(file, userId);
-        VaultDocument doc = VaultDocument.builder()
-                .userId(userId)
-                .type(type)
-                .status(VaultDocumentStatus.ACTIVE)
-                .source("manual")
-                .capturedAt(Instant.now())
-                .gridFsFileId(fileId)
-                .originalFilename(file.getOriginalFilename())
-                .build();
-        return toResponse(vaultDocumentRepository.save(doc), null);
+    /**
+     * Upload a binary file (receipt image or statement file) and create a VaultDocument.
+     * Requires an {@code Idempotency-Key} (per the document-vault spec, uploads SHALL require
+     * one) — same-key/same-file retries replay the original document without a second binary;
+     * same-key/different-file retries return a typed 409.
+     */
+    public VaultUploadOutcome<VaultDocumentResponse> upload(Long userId, VaultDocumentType type, MultipartFile file,
+                                                              String rawIdempotencyKey) throws IOException {
+        Map<String, String> nonFileParams = Map.of("type", type.name());
+        byte[] fileBytes = file.getBytes();
+
+        return idempotencyCoordinator.execute(
+                userId,
+                OPERATION_NAME,
+                rawIdempotencyKey,
+                nonFileParams,
+                fileBytes,
+                operationId -> gridFsFileStore.store(file, userId, operationId),
+                gridFsFileId -> {
+                    VaultDocument doc = VaultDocument.builder()
+                            .userId(userId)
+                            .type(type)
+                            .status(VaultDocumentStatus.ACTIVE)
+                            .source("manual")
+                            .capturedAt(Instant.now())
+                            .gridFsFileId(gridFsFileId)
+                            .originalFilename(file.getOriginalFilename())
+                            .build();
+                    VaultDocument saved = vaultDocumentRepository.save(doc);
+                    return new VaultUploadResult<>(saved.getId(), toResponse(saved, null));
+                },
+                vaultDocumentId -> toResponse(findOwned(userId, vaultDocumentId), latestIngestionStatus(userId, vaultDocumentId)));
     }
 
     /** Create a VaultDocument from structured data (no binary), e.g. a manual receipt. */

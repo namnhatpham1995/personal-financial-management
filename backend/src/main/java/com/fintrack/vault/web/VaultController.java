@@ -1,10 +1,12 @@
 package com.fintrack.vault.web;
 
 import com.fintrack.common.security.UserPrincipal;
+import com.fintrack.idempotency.exception.MissingIdempotencyKeyException;
 import com.fintrack.vault.domain.VaultDocumentType;
 import com.fintrack.vault.service.VaultService;
 import com.fintrack.vault.web.dto.VaultDocumentResponse;
 import com.fintrack.vault.web.dto.VaultSearchRequest;
+import io.swagger.v3.oas.annotations.Parameter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,15 +29,26 @@ public class VaultController {
 
     private final VaultService vaultService;
 
-    /** Upload a receipt image or statement file. */
+    /** Upload a receipt image or statement file. Requires an {@code Idempotency-Key} header. */
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<VaultDocumentResponse> upload(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam VaultDocumentType type,
-            @RequestParam("file") MultipartFile file
+            @RequestParam("file") MultipartFile file,
+            @Parameter(required = true, description = "Client-generated key (16-128 URL-safe characters) "
+                    + "required for every vault upload; a retry with the same key and file replays the "
+                    + "original document instead of storing a duplicate binary.")
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey
     ) throws IOException {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(vaultService.upload(principal.getUserId(), type, file));
+        if (idempotencyKey == null) {
+            throw new MissingIdempotencyKeyException("Idempotency-Key header is required for vault uploads");
+        }
+        var outcome = vaultService.upload(principal.getUserId(), type, file, idempotencyKey);
+        ResponseEntity.BodyBuilder builder = ResponseEntity.status(HttpStatus.CREATED);
+        if (outcome.replayed()) {
+            builder = builder.header("Idempotency-Replayed", "true");
+        }
+        return builder.body(outcome.response());
     }
 
     @GetMapping

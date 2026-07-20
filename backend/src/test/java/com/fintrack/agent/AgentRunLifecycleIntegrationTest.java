@@ -79,7 +79,8 @@ class AgentRunLifecycleIntegrationTest {
         MvcResult result = mockMvc.perform(multipart("/api/vault/upload")
                         .file(file)
                         .param("type", "RECEIPT")
-                        .header("Authorization", "Bearer " + jwt))
+                        .header("Authorization", "Bearer " + jwt)
+                        .header("Idempotency-Key", java.util.UUID.randomUUID().toString()))
                 .andExpect(status().isCreated())
                 .andReturn();
         return objectMapper.readTree(result.getResponse().getContentAsString()).get("id").asText();

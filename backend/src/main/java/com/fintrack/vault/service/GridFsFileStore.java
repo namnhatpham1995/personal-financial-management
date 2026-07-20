@@ -33,6 +33,20 @@ public class GridFsFileStore {
     }
 
     /**
+     * Stores a binary file tagged with the owning {@code VaultOperation}'s id, so a stale-operation
+     * recovery sweep can find and delete an orphaned binary belonging to a specific operation.
+     */
+    public String store(MultipartFile file, Long userId, String operationId) throws IOException {
+        ObjectId id = gridFsTemplate.store(
+                file.getInputStream(),
+                file.getOriginalFilename(),
+                file.getContentType(),
+                new org.bson.Document("userId", userId).append("operationId", operationId)
+        );
+        return id.toHexString();
+    }
+
+    /**
      * Loads a GridFS resource scoped to {@code userId}. Returns null if not found
      * or if the file belongs to a different user (prevents cross-user access).
      */

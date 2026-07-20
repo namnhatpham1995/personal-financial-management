@@ -32,18 +32,28 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class StatementImportService {
 
+    private static final String OPERATION_NAME = "statement.upload";
+
     private final VaultDocumentRepository vaultDocumentRepository;
     private final GridFsFileStore gridFsFileStore;
     private final CsvStatementParser csvParser;
     private final OfxStatementParser ofxParser;
     private final TransactionService transactionService;
+    private final VaultUploadIdempotencyCoordinator idempotencyCoordinator;
 
     /**
      * Parses the uploaded file, stores the binary in GridFS, and creates a STAGED
      * VaultDocument whose payload holds the parsed rows for user review.
      * Returns the vault document id so the caller can fetch staged rows.
+     *
+     * <p>Requires an {@code Idempotency-Key} (per the statement-import spec, uploads SHALL
+     * require one) — same-key/same-account/same-file retries replay the original staged document
+     * id without a second binary or staged document; same-key/different-file (or account)
+     * retries return a typed 409. Parsing happens before the binary is even claimed, so a
+     * malformed file fails fast without touching GridFS or Mongo.
      */
-    public String upload(Long userId, Long accountId, MultipartFile file) throws IOException {
+    public VaultUploadOutcome<String> upload(Long userId, Long accountId, MultipartFile file,
+                                              String rawIdempotencyKey) throws IOException {
         String filename = file.getOriginalFilename() != null
                 ? file.getOriginalFilename().toLowerCase() : "";
 
@@ -57,8 +67,6 @@ public class StatementImportService {
             source = "csv";
         }
 
-        String fileId = gridFsFileStore.store(file, userId);
-
         // Serialize rows into a JSON-compatible list of maps for the payload
         List<Map<String, Object>> rowMaps = rows.stream()
                 .map(r -> Map.<String, Object>of(
@@ -70,18 +78,31 @@ public class StatementImportService {
                 ))
                 .toList();
 
-        VaultDocument staged = VaultDocument.builder()
-                .userId(userId)
-                .type(VaultDocumentType.STATEMENT)
-                .status(VaultDocumentStatus.STAGED)
-                .source(source)
-                .capturedAt(Instant.now())
-                .gridFsFileId(fileId)
-                .originalFilename(file.getOriginalFilename())
-                .payload(Map.of("accountId", accountId, "rows", rowMaps))
-                .build();
+        Map<String, String> nonFileParams = Map.of("accountId", String.valueOf(accountId));
+        byte[] fileBytes = file.getBytes();
 
-        return vaultDocumentRepository.save(staged).getId();
+        return idempotencyCoordinator.execute(
+                userId,
+                OPERATION_NAME,
+                rawIdempotencyKey,
+                nonFileParams,
+                fileBytes,
+                operationId -> gridFsFileStore.store(file, userId, operationId),
+                gridFsFileId -> {
+                    VaultDocument staged = VaultDocument.builder()
+                            .userId(userId)
+                            .type(VaultDocumentType.STATEMENT)
+                            .status(VaultDocumentStatus.STAGED)
+                            .source(source)
+                            .capturedAt(Instant.now())
+                            .gridFsFileId(gridFsFileId)
+                            .originalFilename(file.getOriginalFilename())
+                            .payload(Map.of("accountId", accountId, "rows", rowMaps))
+                            .build();
+                    String documentId = vaultDocumentRepository.save(staged).getId();
+                    return new VaultUploadResult<>(documentId, documentId);
+                },
+                vaultDocumentId -> vaultDocumentId);
     }
 
     /** Returns the staged rows for user review before confirmation. */

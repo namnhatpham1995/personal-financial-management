@@ -1,9 +1,11 @@
 package com.fintrack.vault.web;
 
 import com.fintrack.common.security.UserPrincipal;
+import com.fintrack.idempotency.exception.MissingIdempotencyKeyException;
 import com.fintrack.vault.service.StatementImportService;
 import com.fintrack.vault.web.dto.ConfirmImportRequest;
 import com.fintrack.vault.web.dto.StagedRowResponse;
+import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -28,16 +30,27 @@ public class StatementImportController {
      * Upload a CSV or OFX statement file.
      * Parses it, stores the binary in GridFS, and creates a STAGED vault document.
      * Returns the vault document id so the client can fetch rows for review.
+     * Requires an {@code Idempotency-Key} header.
      */
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Map<String, String>> upload(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam Long accountId,
-            @RequestParam("file") MultipartFile file
+            @RequestParam("file") MultipartFile file,
+            @Parameter(required = true, description = "Client-generated key (16-128 URL-safe characters) "
+                    + "required for every statement upload; a retry with the same key, account, and file "
+                    + "replays the original staged document instead of storing a duplicate binary.")
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey
     ) throws IOException {
-        String documentId = importService.upload(principal.getUserId(), accountId, file);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(Map.of("documentId", documentId));
+        if (idempotencyKey == null) {
+            throw new MissingIdempotencyKeyException("Idempotency-Key header is required for statement uploads");
+        }
+        var outcome = importService.upload(principal.getUserId(), accountId, file, idempotencyKey);
+        ResponseEntity.BodyBuilder builder = ResponseEntity.status(HttpStatus.CREATED);
+        if (outcome.replayed()) {
+            builder = builder.header("Idempotency-Replayed", "true");
+        }
+        return builder.body(Map.of("documentId", outcome.response()));
     }
 
     /** Returns staged rows parsed from the uploaded file, ready for user review. */
