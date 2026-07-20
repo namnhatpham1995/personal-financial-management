@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import { Upload, X, Download, Receipt } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
+import { useIdempotencyKey } from "@/lib/use-idempotency-key";
+import { getIdempotencyErrorCode } from "@/lib/idempotency-error";
 
 interface Props {
   transactionId?: number;
@@ -27,9 +29,21 @@ export function ReceiptUploadViewer({ transactionId, documentId, onLinked }: Pro
     enabled: !!documentId,
   });
 
+  const tCommon = useTranslations("common");
+  // File objects don't serialize meaningfully via JSON.stringify (they'd all collapse to
+  // "{}"), so the idempotency payload is a stable fingerprint of file identity instead —
+  // good enough to detect "this is the same upload attempt" vs. "a genuinely new file".
+  const uploadIdempotency = useIdempotencyKey(null);
+
   const upload = useMutation({
-    mutationFn: (file: File) => vaultService.upload("RECEIPT", file),
+    mutationFn: (file: File) =>
+      vaultService.upload(
+        "RECEIPT",
+        file,
+        uploadIdempotency.resolve({ name: file.name, size: file.size, lastModified: file.lastModified })
+      ),
     onSuccess: async (doc) => {
+      uploadIdempotency.clear();
       toast.success(t("toast.uploaded"));
       if (transactionId) {
         const linked = await vaultService.linkToTransaction(doc.id, transactionId);
@@ -39,7 +53,17 @@ export function ReceiptUploadViewer({ transactionId, documentId, onLinked }: Pro
       }
       qc.invalidateQueries({ queryKey: ["vault"] });
     },
-    onError: () => toast.error(t("toast.uploadFailed")),
+    onError: (err) => {
+      const idempotencyCode = getIdempotencyErrorCode(err);
+      if (idempotencyCode === "idempotency_key_conflict") {
+        uploadIdempotency.clear();
+        toast.error(t("toast.uploadFailed"));
+      } else if (idempotencyCode === "operation_in_progress") {
+        toast.error(tCommon("operationInProgress"));
+      } else {
+        toast.error(t("toast.uploadFailed"));
+      }
+    },
   });
 
   const handleFile = (file: File) => {

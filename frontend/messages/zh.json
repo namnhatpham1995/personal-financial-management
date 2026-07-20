@@ -7,7 +7,9 @@
     "cancel": "取消",
     "delete": "删除",
     "edit": "编辑",
-    "close": "关闭"
+    "close": "关闭",
+    "operationInProgress": "上一个请求仍在处理中——请稍候再试。",
+    "requestConflict": "该请求未能按原样完成,请重试。"
   },
   "settings": {
     "title": "设置",
@@ -382,7 +384,10 @@
       "importRows": "{count, plural, other {导入 # 行}}",
       "parsingFile": "正在解析文件…",
       "uploadPrompt": "上传银行对账单",
-      "fileTypesHint": "CSV 或 OFX/QFX 文件"
+      "fileTypesHint": "CSV 或 OFX/QFX 文件",
+      "loadingRows": "正在加载解析出的行…",
+      "rowsLoadFailed": "无法加载此次上传解析出的行。",
+      "retryLoadingRows": "重试"
     },
     "ingestion": {
       "notIngested": "尚未导入",
@@ -449,6 +454,11 @@
       "lastUsed": "最后使用 {date}",
       "never": "从未使用",
       "revokeAria": "吊销 {tokenName}"
+    },
+    "recovery": {
+      "title": "可能已存在令牌",
+      "body": "该请求可能已经创建了令牌。请检查下方列表,或吊销后重新创建。",
+      "tryAgain": "重试"
     }
   },
   "receipts": {

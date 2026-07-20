@@ -12,6 +12,8 @@ import { FeaturedBalanceCard } from "@/components/accounts/featured-balance-card
 import { CurrencyDetailBody } from "@/components/overview/currency-detail-body";
 import { CurrencySummaryCard } from "@/components/overview/currency-summary-card";
 import { OverallStatistics } from "@/components/overview/overall-statistics";
+import { useIdempotencyKey } from "@/lib/use-idempotency-key";
+import { getIdempotencyErrorCode } from "@/lib/idempotency-error";
 
 const RANGE_OPTIONS = [
   { label: "1M", months: 1 },
@@ -34,6 +36,7 @@ function readStoredMainCurrency(): string | null {
 export default function DashboardPage() {
   const qc = useQueryClient();
   const t = useTranslations("dashboard");
+  const tCommon = useTranslations("common");
   const [months, setMonths] = useState(6);
   const [mainCurrencyOverride, setMainCurrencyOverride] = useState<string | null>(() =>
     readStoredMainCurrency()
@@ -112,16 +115,30 @@ export default function DashboardPage() {
 
   const bucketsByCurrency = new Map(balancesByCurrency.map((bucket) => [bucket.currency, bucket]));
 
+  const createIdempotency = useIdempotencyKey(null);
+
   const createMutation = useMutation({
-    mutationFn: (data: CreateAccountPayload) => accountService.create(data),
+    mutationFn: (data: CreateAccountPayload) =>
+      accountService.create(data, createIdempotency.resolve(data)),
     onSuccess: () => {
+      createIdempotency.clear();
       qc.invalidateQueries({ queryKey: ["accounts"] });
       qc.invalidateQueries({ queryKey: ["balances"] });
       qc.invalidateQueries({ queryKey: ["balancesSummary"] });
       setShowCreateForm(false);
       toast.success(t("toast.accountCreated"));
     },
-    onError: () => toast.error(t("toast.accountCreateFailed")),
+    onError: (err) => {
+      const idempotencyCode = getIdempotencyErrorCode(err);
+      if (idempotencyCode === "idempotency_key_conflict") {
+        createIdempotency.clear();
+        toast.error(t("toast.accountCreateFailed"));
+      } else if (idempotencyCode === "operation_in_progress") {
+        toast.error(tCommon("operationInProgress"));
+      } else {
+        toast.error(t("toast.accountCreateFailed"));
+      }
+    },
   });
 
   return (

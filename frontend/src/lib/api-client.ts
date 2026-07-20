@@ -1,4 +1,11 @@
-import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
+import axios, { AxiosError, InternalAxiosRequestConfig, isAxiosError } from "axios";
+import {
+  acquireRefreshLock,
+  isRefreshLockFresh,
+  readRefreshLock,
+  releaseRefreshLock,
+  waitForTokensFromOtherTab,
+} from "@/lib/cross-tab-refresh-lock";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
@@ -62,6 +69,15 @@ const AUTH_ENDPOINTS = ["/auth/login", "/auth/register", "/auth/refresh"];
 const isAuthEndpoint = (url: string | undefined) =>
   !!url && AUTH_ENDPOINTS.some((endpoint) => url.endsWith(endpoint));
 
+/** Backend's typed 409 for a concurrent-refresh race inside its grace window. */
+const isRefreshAlreadyRotated = (err: unknown): boolean => {
+  if (!isAxiosError(err) || err.response?.status !== 409) return false;
+  const data = err.response.data as { error?: { code?: string }; code?: string } | undefined;
+  return (data?.error?.code ?? data?.code) === "refresh_already_rotated";
+};
+
+const REFRESH_RACE_RECHECK_DELAY_MS = 300;
+
 apiClient.interceptors.response.use(
   (r) => r,
   async (error: AxiosError) => {
@@ -81,13 +97,30 @@ apiClient.interceptors.response.use(
     }
 
     original._retry = true;
+
+    // Cross-tab coordination: another tab may already be mid-refresh. Rather than also
+    // calling /auth/refresh (racing it against the backend's single-use refresh token),
+    // wait for that tab to publish new tokens and retry with those.
+    if (isRefreshLockFresh(readRefreshLock())) {
+      const tokenFromOtherTab = await waitForTokensFromOtherTab();
+      if (tokenFromOtherTab) {
+        original.headers.Authorization = `Bearer ${tokenFromOtherTab}`;
+        return apiClient(original);
+      }
+      // Timed out waiting — the lock-holder likely crashed or closed. Fall through and
+      // refresh ourselves rather than staying stuck.
+    }
+
     isRefreshing = true;
+    acquireRefreshLock();
 
     const refreshToken = localStorage.getItem("refreshToken");
+    const tokenBeforeRefresh = localStorage.getItem("accessToken");
     if (!refreshToken) {
       processQueue(error, null);
       redirectToLoginIfProtected();
       isRefreshing = false;
+      releaseRefreshLock();
       return Promise.reject(error);
     }
 
@@ -100,11 +133,34 @@ apiClient.interceptors.response.use(
       original.headers.Authorization = `Bearer ${data.accessToken}`;
       return apiClient(original);
     } catch (refreshError) {
+      if (isRefreshAlreadyRotated(refreshError)) {
+        // Someone else (another tab, or a request that beat us to it) rotated the
+        // refresh token first, inside the backend's grace window — not a lost session.
+        // Re-read current tokens; if they've moved on, use them instead of logging out.
+        const retryWithCurrentTokenIfRotated = (): boolean => {
+          const currentToken = localStorage.getItem("accessToken");
+          if (!currentToken || currentToken === tokenBeforeRefresh) return false;
+          processQueue(null, currentToken);
+          original.headers.Authorization = `Bearer ${currentToken}`;
+          return true;
+        };
+
+        if (retryWithCurrentTokenIfRotated()) {
+          return apiClient(original);
+        }
+        // Give the winner a brief moment to finish writing tokens, then check once more
+        // before accepting this as a genuinely lost session.
+        await new Promise((resolve) => setTimeout(resolve, REFRESH_RACE_RECHECK_DELAY_MS));
+        if (retryWithCurrentTokenIfRotated()) {
+          return apiClient(original);
+        }
+      }
       processQueue(refreshError, null);
       redirectToLoginIfProtected();
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;
+      releaseRefreshLock();
     }
   }
 );

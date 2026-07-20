@@ -1,13 +1,15 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { vaultService, StagedRow } from "@/services/vault-service";
+import { useEffect, useRef, useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { vaultService } from "@/services/vault-service";
 import { toast } from "sonner";
-import { Upload, CheckSquare, Square, Loader2 } from "lucide-react";
+import { Upload, CheckSquare, Square, Loader2, TriangleAlert } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { cn, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useIdempotencyKey } from "@/lib/use-idempotency-key";
+import { getIdempotencyErrorCode } from "@/lib/idempotency-error";
 
 interface Props {
   accountId: number;
@@ -18,37 +20,92 @@ type Step = "upload" | "review" | "done";
 
 export function StatementImportWizard({ accountId, onComplete }: Props) {
   const t = useTranslations("vault.importWizard");
+  const tCommon = useTranslations("common");
   const locale = useLocale();
   const fileRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<Step>("upload");
   const [documentId, setDocumentId] = useState<string | null>(null);
-  const [rows, setRows] = useState<StagedRow[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [createdCount, setCreatedCount] = useState(0);
 
+  // Upload mutation is scoped to the file upload only — it just records the new
+  // document id. Loading/retrying the staged rows is the rows query's job below,
+  // so a failed rows fetch never re-triggers (or appears coupled to) the upload.
+  const uploadIdempotency = useIdempotencyKey(null);
+
   const uploadMut = useMutation({
-    mutationFn: (file: File) => vaultService.importUpload(accountId, file),
-    onSuccess: async (docId) => {
+    mutationFn: (file: File) =>
+      vaultService.importUpload(
+        accountId,
+        file,
+        uploadIdempotency.resolve({ accountId, name: file.name, size: file.size, lastModified: file.lastModified })
+      ),
+    onSuccess: (docId) => {
+      uploadIdempotency.clear();
       setDocumentId(docId);
-      const staged = await vaultService.getImportRows(docId);
-      setRows(staged);
-      setSelected(new Set(staged.map((r) => r.dedupKey)));
       setStep("review");
     },
-    onError: () => toast.error(t("toast.parseFailed")),
+    onError: (err) => {
+      const idempotencyCode = getIdempotencyErrorCode(err);
+      if (idempotencyCode === "idempotency_key_conflict") {
+        uploadIdempotency.clear();
+        toast.error(t("toast.parseFailed"));
+      } else if (idempotencyCode === "operation_in_progress") {
+        toast.error(tCommon("operationInProgress"));
+      } else {
+        toast.error(t("toast.parseFailed"));
+      }
+    },
   });
 
+  // Staged rows are fetched independently of the upload, keyed on the resulting
+  // documentId — this is what makes a rows-load failure retryable (via refetch())
+  // without re-uploading the file.
+  const rowsQuery = useQuery({
+    queryKey: ["vault-import-rows", documentId],
+    queryFn: () => vaultService.getImportRows(documentId!),
+    enabled: !!documentId,
+    retry: false,
+  });
+
+  useEffect(() => {
+    if (rowsQuery.data) {
+      setSelected(new Set(rowsQuery.data.map((r) => r.dedupKey)));
+    }
+  }, [rowsQuery.data]);
+
+  const confirmIdempotency = useIdempotencyKey(null);
+
   const confirmMut = useMutation({
-    mutationFn: () =>
-      vaultService.confirmImport(documentId!, Array.from(selected)),
+    mutationFn: () => {
+      const selectedKeys = Array.from(selected);
+      return vaultService.confirmImport(
+        documentId!,
+        selectedKeys,
+        confirmIdempotency.resolve({ documentId, selectedKeys })
+      );
+    },
     onSuccess: (n) => {
+      confirmIdempotency.clear();
       setCreatedCount(n);
       setStep("done");
       toast.success(t("imported", { count: n }));
       onComplete?.(n);
     },
-    onError: () => toast.error(t("toast.importFailed")),
+    onError: (err) => {
+      const idempotencyCode = getIdempotencyErrorCode(err);
+      if (idempotencyCode === "idempotency_key_conflict") {
+        confirmIdempotency.clear();
+        toast.error(t("toast.importFailed"));
+      } else if (idempotencyCode === "operation_in_progress") {
+        toast.error(tCommon("operationInProgress"));
+      } else {
+        toast.error(t("toast.importFailed"));
+      }
+    },
   });
+
+  const rows = rowsQuery.data ?? [];
 
   const toggleAll = () => {
     if (selected.size === rows.length) {
@@ -78,7 +135,6 @@ export function StatementImportWizard({ accountId, onComplete }: Props) {
         <button
           onClick={() => {
             setStep("upload");
-            setRows([]);
             setSelected(new Set());
             setDocumentId(null);
           }}
@@ -91,6 +147,27 @@ export function StatementImportWizard({ accountId, onComplete }: Props) {
   }
 
   if (step === "review") {
+    if (rowsQuery.isPending) {
+      return (
+        <div className="flex flex-col items-center gap-3 py-8 text-center">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">{t("loadingRows")}</p>
+        </div>
+      );
+    }
+
+    if (rowsQuery.isError) {
+      return (
+        <div className="flex flex-col items-center gap-3 py-8 text-center">
+          <TriangleAlert className="h-6 w-6 text-destructive" />
+          <p className="text-sm text-foreground">{t("rowsLoadFailed")}</p>
+          <Button size="sm" variant="secondary" onClick={() => rowsQuery.refetch()}>
+            {t("retryLoadingRows")}
+          </Button>
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">

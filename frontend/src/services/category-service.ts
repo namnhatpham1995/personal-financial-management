@@ -19,8 +19,10 @@ export interface UpdateCategoryPayload {
 
 export const categoryService = {
   list: () => apiClient.get<Category[]>("/categories").then((r) => r.data),
-  create: (data: CreateCategoryPayload) =>
-    apiClient.post<Category>("/categories", data).then((r) => r.data),
+  create: (data: CreateCategoryPayload, idempotencyKey: string) =>
+    apiClient
+      .post<Category>("/categories", data, { headers: { "Idempotency-Key": idempotencyKey } })
+      .then((r) => r.data),
   update: (id: number, data: UpdateCategoryPayload) =>
     apiClient.put<Category>(`/categories/${id}`, data).then((r) => r.data),
   delete: (id: number) => apiClient.delete(`/categories/${id}`),

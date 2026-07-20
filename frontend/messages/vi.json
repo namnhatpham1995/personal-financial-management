@@ -7,7 +7,9 @@
     "cancel": "Hủy",
     "delete": "Xóa",
     "edit": "Sửa",
-    "close": "Đóng"
+    "close": "Đóng",
+    "operationInProgress": "Yêu cầu trước vẫn đang xử lý — vui lòng đợi giây lát rồi thử lại.",
+    "requestConflict": "Không thể hoàn tất yêu cầu đó. Vui lòng thử lại."
   },
   "settings": {
     "title": "Cài đặt",
@@ -382,7 +384,10 @@
       "importRows": "{count, plural, other {Nhập # dòng}}",
       "parsingFile": "Đang đọc tệp…",
       "uploadPrompt": "Tải lên sao kê ngân hàng",
-      "fileTypesHint": "Tệp CSV hoặc OFX/QFX"
+      "fileTypesHint": "Tệp CSV hoặc OFX/QFX",
+      "loadingRows": "Đang tải các dòng đã phân tích…",
+      "rowsLoadFailed": "Không thể tải các dòng đã phân tích từ tệp này.",
+      "retryLoadingRows": "Thử lại"
     },
     "ingestion": {
       "notIngested": "Chưa nhập vào hệ thống",
@@ -449,6 +454,11 @@
       "lastUsed": "Dùng lần cuối {date}",
       "never": "chưa từng",
       "revokeAria": "Thu hồi {tokenName}"
+    },
+    "recovery": {
+      "title": "Có thể token đã được tạo",
+      "body": "Yêu cầu đó có thể đã tạo token rồi. Kiểm tra danh sách bên dưới, hoặc thu hồi và tạo token mới.",
+      "tryAgain": "Thử lại"
     }
   },
   "receipts": {

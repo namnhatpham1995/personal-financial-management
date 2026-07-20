@@ -17,6 +17,8 @@ import type { TransactionFormValues } from "./transaction-form";
 import { RecurringTab } from "./recurring-tab";
 import { TransactionTable } from "@/components/transactions/transaction-table";
 import { Button } from "@/components/ui/button";
+import { useIdempotencyKey } from "@/lib/use-idempotency-key";
+import { getIdempotencyErrorCode } from "@/lib/idempotency-error";
 
 const inputCls =
   "w-full rounded-md border border-border bg-card px-3.5 py-2.5 text-base text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-colors";
@@ -99,10 +101,28 @@ function HistoryTab() {
     qc.invalidateQueries({ queryKey: ["balances"] });
   };
 
+  const createIdempotency = useIdempotencyKey(null);
+
   const createMutation = useMutation({
-    mutationFn: (data: TransactionFormValues) => transactionService.create(data),
-    onSuccess: () => { invalidateAfterMutation(); closeForm(); toast.success(t("toast.added")); },
-    onError: () => toast.error(t("toast.createFailed")),
+    mutationFn: (data: TransactionFormValues) =>
+      transactionService.create(data, createIdempotency.resolve(data)),
+    onSuccess: () => {
+      createIdempotency.clear();
+      invalidateAfterMutation();
+      closeForm();
+      toast.success(t("toast.added"));
+    },
+    onError: (err) => {
+      const idempotencyCode = getIdempotencyErrorCode(err);
+      if (idempotencyCode === "idempotency_key_conflict") {
+        createIdempotency.clear();
+        toast.error(t("toast.createFailed"));
+      } else if (idempotencyCode === "operation_in_progress") {
+        toast.error(tCommon("operationInProgress"));
+      } else {
+        toast.error(t("toast.createFailed"));
+      }
+    },
   });
 
   const updateMutation = useMutation({

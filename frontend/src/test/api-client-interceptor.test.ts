@@ -210,4 +210,128 @@ describe("real interceptor: no stuck refresh state", () => {
     await expect(withTimeout(second)).rejects.toBeTruthy();
     expect(localStorage.getItem("accessToken")).toBeNull();
   });
+
+  it("replays every queued request with the new token once the single refresh completes (task 7.6)", async () => {
+    setTokens("acc-123", "ref-456");
+    vi.spyOn(axios, "post").mockResolvedValue({
+      data: { accessToken: "new-acc", refreshToken: "new-ref" },
+    });
+    const originalAdapter = apiClient.defaults.adapter;
+    const adapterSpy = vi
+      .fn()
+      .mockResolvedValue({ data: "ok", status: 200, statusText: "OK", headers: {}, config: {} });
+    apiClient.defaults.adapter = adapterSpy;
+    const rejected = getRejectedHandler();
+
+    try {
+      const first = rejected(makeAxios401("/a"));
+      const second = rejected(makeAxios401("/b"));
+      const third = rejected(makeAxios401("/c"));
+
+      await withTimeout(Promise.all([first, second, third]));
+
+      expect(adapterSpy).toHaveBeenCalledTimes(3);
+      for (const call of adapterSpy.mock.calls) {
+        expect(call[0].headers.Authorization).toBe("Bearer new-acc");
+      }
+    } finally {
+      apiClient.defaults.adapter = originalAdapter;
+    }
+  });
+});
+
+describe("real interceptor: refresh_already_rotated (task 7.6)", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
+  });
+
+  function makeRotatedConflict(): AxiosError {
+    return {
+      isAxiosError: true,
+      name: "AxiosError",
+      message: "Request failed with status code 409",
+      response: {
+        status: 409,
+        data: { error: { code: "refresh_already_rotated" } },
+        statusText: "Conflict",
+        headers: {},
+        config: {} as never,
+      },
+      config: {} as never,
+      toJSON: () => ({}),
+    } as AxiosError;
+  }
+
+  it("does not fire a duplicate refresh call and falls back to session-lost handling when tokens never change", async () => {
+    setTokens("acc-123", "ref-456");
+    const postSpy = vi.spyOn(axios, "post").mockRejectedValue(makeRotatedConflict());
+    const rejected = getRejectedHandler();
+
+    await expect(withTimeout(rejected(makeAxios401("/dashboard-data")), 2000)).rejects.toBeTruthy();
+
+    // Exactly one refresh attempt — the 409 is not treated as "retry refresh again".
+    expect(postSpy).toHaveBeenCalledTimes(1);
+    expect(localStorage.getItem("accessToken")).toBeNull();
+  });
+
+  it("retries the original request with the newer token when another tab rotated first, instead of treating the session as lost", async () => {
+    setTokens("acc-123", "ref-456");
+    vi.spyOn(axios, "post").mockImplementation(async () => {
+      // Simulate another tab winning the refresh race and publishing new tokens
+      // before this tab's grace-window recheck runs.
+      setTokens("acc-999", "ref-999");
+      throw makeRotatedConflict();
+    });
+    const originalAdapter = apiClient.defaults.adapter;
+    const adapterSpy = vi
+      .fn()
+      .mockResolvedValue({ data: "ok", status: 200, statusText: "OK", headers: {}, config: {} });
+    apiClient.defaults.adapter = adapterSpy;
+    const rejected = getRejectedHandler();
+
+    try {
+      await withTimeout(rejected(makeAxios401("/dashboard-data")), 2000);
+
+      expect(adapterSpy).toHaveBeenCalledTimes(1);
+      expect(adapterSpy.mock.calls[0][0].headers.Authorization).toBe("Bearer acc-999");
+    } finally {
+      apiClient.defaults.adapter = originalAdapter;
+    }
+  });
+});
+
+describe("real interceptor: Idempotency-Key survives a 401-triggered replay (task 7.6)", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
+  });
+
+  it("preserves the Idempotency-Key header on the original request unchanged through the refresh-and-retry path", async () => {
+    setTokens("acc-123", "ref-456");
+    vi.spyOn(axios, "post").mockResolvedValue({
+      data: { accessToken: "new-acc", refreshToken: "new-ref" },
+    });
+    const originalAdapter = apiClient.defaults.adapter;
+    const adapterSpy = vi
+      .fn()
+      .mockResolvedValue({ data: "ok", status: 200, statusText: "OK", headers: {}, config: {} });
+    apiClient.defaults.adapter = adapterSpy;
+    const rejected = getRejectedHandler();
+
+    const error = makeAxios401("/accounts");
+    (error.config as unknown as { headers: Record<string, string> }).headers["Idempotency-Key"] =
+      "key-abc-123";
+
+    try {
+      await withTimeout(rejected(error), 2000);
+
+      expect(adapterSpy).toHaveBeenCalledTimes(1);
+      const sentConfig = adapterSpy.mock.calls[0][0];
+      expect(sentConfig.headers["Idempotency-Key"]).toBe("key-abc-123");
+      expect(sentConfig.headers.Authorization).toBe("Bearer new-acc");
+    } finally {
+      apiClient.defaults.adapter = originalAdapter;
+    }
+  });
 });

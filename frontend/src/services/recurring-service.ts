@@ -34,8 +34,12 @@ export interface CreateRecurringPayload {
 
 export const recurringService = {
   list: () => apiClient.get<RecurringTransaction[]>("/recurring-transactions").then((r) => r.data),
-  create: (data: CreateRecurringPayload) =>
-    apiClient.post<RecurringTransaction>("/recurring-transactions", data).then((r) => r.data),
+  create: (data: CreateRecurringPayload, idempotencyKey: string) =>
+    apiClient
+      .post<RecurringTransaction>("/recurring-transactions", data, {
+        headers: { "Idempotency-Key": idempotencyKey },
+      })
+      .then((r) => r.data),
   pause: (id: number) =>
     apiClient.post<RecurringTransaction>(`/recurring-transactions/${id}/pause`).then((r) => r.data),
   resume: (id: number) =>

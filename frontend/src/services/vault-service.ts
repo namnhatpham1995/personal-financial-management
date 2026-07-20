@@ -36,11 +36,13 @@ export interface PageResponse<T> {
 
 export const vaultService = {
   /** Upload a receipt or statement binary. Returns the new vault document. */
-  async upload(type: VaultDocumentType, file: File): Promise<VaultDocument> {
+  async upload(type: VaultDocumentType, file: File, idempotencyKey: string): Promise<VaultDocument> {
     const form = new FormData();
     form.append("type", type);
     form.append("file", file);
-    const { data } = await apiClient.post<VaultDocument>("/vault/upload", form);
+    const { data } = await apiClient.post<VaultDocument>("/vault/upload", form, {
+      headers: { "Idempotency-Key": idempotencyKey },
+    });
     return data;
   },
 
@@ -82,11 +84,13 @@ export const vaultService = {
 
   // ── statement import ──────────────────────────────────────────────────────
 
-  async importUpload(accountId: number, file: File): Promise<string> {
+  async importUpload(accountId: number, file: File, idempotencyKey: string): Promise<string> {
     const form = new FormData();
     form.append("accountId", String(accountId));
     form.append("file", file);
-    const { data } = await apiClient.post<{ documentId: string }>("/vault/import/upload", form);
+    const { data } = await apiClient.post<{ documentId: string }>("/vault/import/upload", form, {
+      headers: { "Idempotency-Key": idempotencyKey },
+    });
     return data.documentId;
   },
 
@@ -97,11 +101,13 @@ export const vaultService = {
 
   async confirmImport(
     documentId: string,
-    selectedDedupKeys: string[]
+    selectedDedupKeys: string[],
+    idempotencyKey: string
   ): Promise<number> {
     const { data } = await apiClient.post<{ created: number }>(
       `/vault/import/${documentId}/confirm`,
-      { selectedDedupKeys }
+      { selectedDedupKeys },
+      { headers: { "Idempotency-Key": idempotencyKey } }
     );
     return data.created;
   },

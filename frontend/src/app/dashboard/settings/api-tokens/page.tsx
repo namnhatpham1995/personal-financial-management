@@ -15,6 +15,8 @@ import {
 import { CreatedTokenBanner } from "./created-token-banner";
 import { TokenRow } from "./token-row";
 import { Button } from "@/components/ui/button";
+import { useIdempotencyKey } from "@/lib/use-idempotency-key";
+import { getIdempotencyErrorCode } from "@/lib/idempotency-error";
 
 function createSchema(t: (key: string) => string) {
   return z.object({
@@ -36,6 +38,7 @@ export default function ApiTokensPage() {
   const [showForm, setShowForm] = useState(false);
   const [confirmRevokeId, setConfirmRevokeId] = useState<number | null>(null);
   const [createdPlaintext, setCreatedPlaintext] = useState<string | null>(null);
+  const [ambiguousCreate, setAmbiguousCreate] = useState(false);
 
   const { data: tokens = [], isLoading } = useQuery({
     queryKey: ["api-tokens"],
@@ -44,15 +47,39 @@ export default function ApiTokensPage() {
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["api-tokens"] });
 
+  const createIdempotency = useIdempotencyKey(null);
+
   const createMutation = useMutation({
-    mutationFn: (data: CreateApiTokenPayload) => apiTokenService.create(data),
+    mutationFn: (data: CreateApiTokenPayload) =>
+      apiTokenService.create(data, createIdempotency.resolve(data)),
     onSuccess: (created) => {
+      createIdempotency.clear();
+      setAmbiguousCreate(false);
       invalidate();
       setShowForm(false);
       setCreatedPlaintext(created.plaintextToken);
     },
-    onError: () => toast.error(t("toast.createFailed")),
+    onError: (err) => {
+      const idempotencyCode = getIdempotencyErrorCode(err);
+      if (idempotencyCode === "idempotency_key_conflict") {
+        // Ambiguous delivery: the create may have already succeeded server-side on an
+        // earlier attempt with this same key. Never auto-retry (that could mint a second
+        // token) — surface guidance and let the user decide, after refreshing the list so
+        // they can see whether a token from this attempt is already there.
+        setAmbiguousCreate(true);
+        invalidate();
+      } else if (idempotencyCode === "operation_in_progress") {
+        toast.error(tCommon("operationInProgress"));
+      } else {
+        toast.error(t("toast.createFailed"));
+      }
+    },
   });
+
+  const startNewAttempt = () => {
+    createIdempotency.clear();
+    setAmbiguousCreate(false);
+  };
 
   const revokeMutation = useMutation({
     mutationFn: (id: number) => apiTokenService.revoke(id),
@@ -83,6 +110,18 @@ export default function ApiTokensPage() {
           plaintextToken={createdPlaintext}
           onDismiss={() => setCreatedPlaintext(null)}
         />
+      )}
+
+      {ambiguousCreate && (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-5">
+          <p className="font-medium text-foreground">{t("recovery.title")}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{t("recovery.body")}</p>
+          <div className="mt-3">
+            <Button type="button" size="sm" variant="secondary" onClick={startNewAttempt}>
+              {t("recovery.tryAgain")}
+            </Button>
+          </div>
+        </div>
       )}
 
       {showForm && (

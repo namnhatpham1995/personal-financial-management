@@ -34,8 +34,10 @@ export interface AccountDeletePreview {
 export const accountService = {
   list: () => apiClient.get<Account[]>("/accounts").then((r) => r.data),
   get: (id: number) => apiClient.get<Account>(`/accounts/${id}`).then((r) => r.data),
-  create: (data: CreateAccountPayload) =>
-    apiClient.post<Account>("/accounts", data).then((r) => r.data),
+  create: (data: CreateAccountPayload, idempotencyKey: string) =>
+    apiClient
+      .post<Account>("/accounts", data, { headers: { "Idempotency-Key": idempotencyKey } })
+      .then((r) => r.data),
   update: (id: number, data: UpdateAccountPayload) =>
     apiClient.put<Account>(`/accounts/${id}`, data).then((r) => r.data),
   deletePreview: (id: number) =>

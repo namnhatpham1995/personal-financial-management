@@ -7,7 +7,9 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "edit": "Edit",
-    "close": "Close"
+    "close": "Close",
+    "operationInProgress": "Still processing your last request — please wait a moment and try again.",
+    "requestConflict": "That request couldn't be completed as sent. Please try again."
   },
   "settings": {
     "title": "Settings",
@@ -382,7 +384,10 @@
       "importRows": "{count, plural, one {Import # row} other {Import # rows}}",
       "parsingFile": "Parsing file…",
       "uploadPrompt": "Upload bank statement",
-      "fileTypesHint": "CSV or OFX/QFX files"
+      "fileTypesHint": "CSV or OFX/QFX files",
+      "loadingRows": "Loading parsed rows…",
+      "rowsLoadFailed": "Couldn't load the parsed rows from this upload.",
+      "retryLoadingRows": "Retry"
     },
     "ingestion": {
       "notIngested": "Not ingested",
@@ -449,6 +454,11 @@
       "lastUsed": "Last used {date}",
       "never": "never",
       "revokeAria": "Revoke {tokenName}"
+    },
+    "recovery": {
+      "title": "A token may already exist",
+      "body": "That request may have already created a token. Check the list below, or revoke it and create a new one.",
+      "tryAgain": "Try again"
     }
   },
   "receipts": {
