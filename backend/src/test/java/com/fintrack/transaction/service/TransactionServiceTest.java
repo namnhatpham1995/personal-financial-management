@@ -252,7 +252,7 @@ class TransactionServiceTest {
                 .id(5L).account(account).transactionType(TransactionType.INCOME)
                 .amount(oldAmount).transactionDate(LocalDate.now()).build();
 
-        when(transactionRepository.findByIdAndUserId(5L, 1L)).thenReturn(Optional.of(existing));
+        when(transactionRepository.findByIdAndUserIdForUpdate(5L, 1L)).thenReturn(Optional.of(existing));
         when(transactionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         var req = new UpdateTransactionRequest(newAmount, null, null, null, null);
@@ -271,7 +271,7 @@ class TransactionServiceTest {
                 .id(5L).account(account).transactionType(TransactionType.INCOME)
                 .amount(amount).transactionDate(LocalDate.now()).build();
 
-        when(transactionRepository.findByIdAndUserId(5L, 1L)).thenReturn(Optional.of(existing));
+        when(transactionRepository.findByIdAndUserIdForUpdate(5L, 1L)).thenReturn(Optional.of(existing));
         when(transactionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         // Same amount — no balance change expected
@@ -292,7 +292,7 @@ class TransactionServiceTest {
                 .amount(new BigDecimal("500.00")).destinationAmount(new BigDecimal("14600000.00"))
                 .transactionDate(LocalDate.now()).build();
 
-        when(transactionRepository.findByIdAndUserId(6L, 1L)).thenReturn(Optional.of(existing));
+        when(transactionRepository.findByIdAndUserIdForUpdate(6L, 1L)).thenReturn(Optional.of(existing));
 
         var req = new UpdateTransactionRequest(new BigDecimal("600.00"), null, null, null, null);
 
@@ -315,7 +315,7 @@ class TransactionServiceTest {
                 .id(6L).account(account).transferAccount(destAccount).transactionType(TransactionType.TRANSFER)
                 .amount(oldAmount).destinationAmount(oldDestAmount).transactionDate(LocalDate.now()).build();
 
-        when(transactionRepository.findByIdAndUserId(6L, 1L)).thenReturn(Optional.of(existing));
+        when(transactionRepository.findByIdAndUserIdForUpdate(6L, 1L)).thenReturn(Optional.of(existing));
         when(transactionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         var req = new UpdateTransactionRequest(newAmount, newDestAmount, null, null, null);
@@ -335,7 +335,7 @@ class TransactionServiceTest {
                 .id(6L).account(account).transferAccount(destAccount).transactionType(TransactionType.TRANSFER)
                 .amount(new BigDecimal("100.00")).transactionDate(LocalDate.now()).build();
 
-        when(transactionRepository.findByIdAndUserId(6L, 1L)).thenReturn(Optional.of(existing));
+        when(transactionRepository.findByIdAndUserIdForUpdate(6L, 1L)).thenReturn(Optional.of(existing));
 
         var req = new UpdateTransactionRequest(new BigDecimal("120.00"), new BigDecimal("120.00"), null, null, null);
 
@@ -353,7 +353,7 @@ class TransactionServiceTest {
                 .id(7L).account(account).transactionType(TransactionType.INCOME)
                 .amount(amount).build();
 
-        when(transactionRepository.findByIdAndUserId(7L, 1L)).thenReturn(Optional.of(existing));
+        when(transactionRepository.findByIdAndUserIdForUpdate(7L, 1L)).thenReturn(Optional.of(existing));
 
         transactionService.delete(1L, 7L);
 
@@ -368,7 +368,7 @@ class TransactionServiceTest {
                 .id(8L).account(account).transactionType(TransactionType.EXPENSE)
                 .amount(amount).build();
 
-        when(transactionRepository.findByIdAndUserId(8L, 1L)).thenReturn(Optional.of(existing));
+        when(transactionRepository.findByIdAndUserIdForUpdate(8L, 1L)).thenReturn(Optional.of(existing));
 
         transactionService.delete(1L, 8L);
 
@@ -385,7 +385,7 @@ class TransactionServiceTest {
                 .id(9L).account(account).transferAccount(destAccount).transactionType(TransactionType.TRANSFER)
                 .amount(amount).destinationAmount(destinationAmount).build();
 
-        when(transactionRepository.findByIdAndUserId(9L, 1L)).thenReturn(Optional.of(existing));
+        when(transactionRepository.findByIdAndUserIdForUpdate(9L, 1L)).thenReturn(Optional.of(existing));
 
         transactionService.delete(1L, 9L);
 

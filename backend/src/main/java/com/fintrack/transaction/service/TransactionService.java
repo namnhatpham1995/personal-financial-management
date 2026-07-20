@@ -233,7 +233,12 @@ public class TransactionService {
 
     @Transactional
     public TransactionResponse update(Long userId, Long txId, UpdateTransactionRequest req) {
-        Transaction tx = findOwned(userId, txId);
+        // Lock the transaction row first (before any account row), per the lock-ordering rule in
+        // openspec/changes/harden-idempotent-mutations/design.md Decision #3, so this can never
+        // form a lock-ordering cycle with delete() or another update() on the same transaction.
+        // If a concurrent delete won the race and already committed, this lookup finds no row
+        // and throws the same 404 a normal missing-transaction request would.
+        Transaction tx = findOwnedForUpdate(userId, txId);
         BigDecimal oldAmount = tx.getAmount();
         BigDecimal oldDestinationAmount = tx.getDestinationAmount();
         boolean isCrossCurrencyTransfer = tx.getTransactionType() == TransactionType.TRANSFER
@@ -262,6 +267,10 @@ public class TransactionService {
         boolean amountsChanged = finalAmount.compareTo(oldAmount) != 0
                 || amountsDiffer(finalDestinationAmount, oldDestinationAmount);
         if (amountsChanged) {
+            // UpdateTransactionRequest carries no accountId/transferAccountId — the affected
+            // accounts never change across an update, only their amounts do — so locking the
+            // transaction's current account(s) covers both the reversal and the reapplication.
+            lockAffectedAccounts(userId, tx);
             // Reverse old balance effect, apply new
             reverseBalanceDelta(tx, oldAmount, oldDestinationAmount);
             tx.setAmount(finalAmount);
@@ -281,7 +290,9 @@ public class TransactionService {
 
     @Transactional
     public void delete(Long userId, Long txId) {
-        Transaction tx = findOwned(userId, txId);
+        // Same lock-ordering rule as update(): transaction row first, then account row(s).
+        Transaction tx = findOwnedForUpdate(userId, txId);
+        lockAffectedAccounts(userId, tx);
         reverseBalanceDelta(tx, tx.getAmount(), tx.getDestinationAmount());
         transactionRepository.delete(tx);
         cacheVersionService.bump(userId);
@@ -337,5 +348,29 @@ public class TransactionService {
     public Transaction findOwned(Long userId, Long txId) {
         return transactionRepository.findByIdAndUserId(txId, userId)
                 .orElseThrow(() -> ResourceNotFoundException.of("Transaction", txId));
+    }
+
+    /** Same as {@link #findOwned} but holds {@code PESSIMISTIC_WRITE} on the transaction row. */
+    private Transaction findOwnedForUpdate(Long userId, Long txId) {
+        return transactionRepository.findByIdAndUserIdForUpdate(txId, userId)
+                .orElseThrow(() -> ResourceNotFoundException.of("Transaction", txId));
+    }
+
+    /**
+     * Locks every account affected by {@code tx} (its own account, plus the transfer destination
+     * for TRANSFER) in ascending id order, so two concurrent operations touching the same pair of
+     * accounts in opposite source/destination order can never form a lock-ordering deadlock cycle.
+     * Callers only need the side effect of acquiring the locks — {@code AccountService.adjustBalance}
+     * (invoked afterwards by {@code applyBalanceDelta}/{@code reverseBalanceDelta}) re-fetches the
+     * row for its own atomic increment, which is safe to do while this transaction already holds
+     * the lock.
+     */
+    private void lockAffectedAccounts(Long userId, Transaction tx) {
+        List<Long> accountIds = new ArrayList<>();
+        accountIds.add(tx.getAccount().getId());
+        if (tx.getTransactionType() == TransactionType.TRANSFER && tx.getTransferAccount() != null) {
+            accountIds.add(tx.getTransferAccount().getId());
+        }
+        accountIds.stream().distinct().sorted().forEach(id -> accountService.findOwnedForUpdate(userId, id));
     }
 }
