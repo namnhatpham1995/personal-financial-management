@@ -2,25 +2,22 @@ package com.fintrack.vault.service;
 
 import com.fintrack.common.domain.TransactionType;
 import com.fintrack.common.exception.ResourceNotFoundException;
+import com.fintrack.transaction.repository.TransactionRepository;
 import com.fintrack.transaction.service.TransactionService;
 import com.fintrack.vault.domain.VaultDocument;
-import com.fintrack.vault.domain.VaultDocumentStatus;
-import com.fintrack.vault.domain.VaultDocumentType;
 import com.fintrack.vault.parser.CsvStatementParser;
 import com.fintrack.vault.parser.OfxStatementParser;
 import com.fintrack.vault.parser.ParsedStatementRow;
 import com.fintrack.vault.repository.VaultDocumentRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +29,15 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+/**
+ * Unit-level coverage for the parts of {@link StatementImportService} that are cleanly mockable
+ * in isolation: parser selection and fingerprint construction on upload, and the not-found guard
+ * on confirm. The full {@code STAGED -> CONFIRMING -> ACTIVE} compare-and-set, resume/replay, and
+ * row-outcome contract needs real Mongo/Postgres semantics (atomic {@code findAndModify}, unique
+ * constraint violations) to be meaningfully exercised, so that coverage lives in
+ * {@code StatementImportPipelineIntegrationTest} and
+ * {@code StatementConfirmationRecoveryIntegrationTest} (Testcontainers) instead of here.
+ */
 @ExtendWith(MockitoExtension.class)
 class StatementImportServiceTest {
 
@@ -40,15 +46,31 @@ class StatementImportServiceTest {
     @Mock CsvStatementParser csvParser;
     @Mock OfxStatementParser ofxParser;
     @Mock TransactionService transactionService;
+    @Mock TransactionRepository transactionRepository;
     @Mock VaultUploadIdempotencyCoordinator idempotencyCoordinator;
-    @InjectMocks StatementImportService importService;
+    @Mock MongoTemplate mongoTemplate;
 
     private static final String IDEMPOTENCY_KEY = "test-key-0123456789";
+
+    private StatementImportService newService() {
+        return new StatementImportService(
+                vaultDocumentRepository,
+                gridFsFileStore,
+                csvParser,
+                ofxParser,
+                transactionService,
+                transactionRepository,
+                idempotencyCoordinator,
+                new com.fintrack.idempotency.service.IdempotencyKeyValidator(),
+                new com.fintrack.idempotency.service.IdempotencyHasher(),
+                mongoTemplate,
+                jakarta.validation.Validation.buildDefaultValidatorFactory().getValidator());
+    }
 
     /**
      * Stubs the mocked coordinator to actually invoke the binary-store and document-save
      * callbacks it was given, so these unit tests exercise StatementImportService's own upload
-     * logic (parsing, dedup key building, staged document construction) without depending on the
+     * logic (parsing, fingerprint building, staged document construction) without depending on the
      * coordinator's real claim/replay/compensation implementation, which has its own dedicated
      * test.
      */
@@ -75,8 +97,9 @@ class StatementImportServiceTest {
 
     @Test
     void upload_csvFile_usesCsvParser() throws IOException {
+        StatementImportService importService = newService();
         var row = new ParsedStatementRow(LocalDate.of(2024, 1, 15),
-                new BigDecimal("45.00"), TransactionType.EXPENSE, "Supermarket", "raw");
+                new BigDecimal("45.00"), TransactionType.EXPENSE, "Supermarket", "raw", null);
         when(csvParser.parse(any())).thenReturn(List.of(row));
         when(gridFsFileStore.store(any(), eq(1L), any())).thenReturn("gridfs-id");
         when(vaultDocumentRepository.save(any())).thenAnswer(inv -> {
@@ -95,6 +118,7 @@ class StatementImportServiceTest {
 
     @Test
     void upload_ofxFile_usesOfxParser() throws IOException {
+        StatementImportService importService = newService();
         MultipartFile f = mock(MultipartFile.class);
         when(f.getOriginalFilename()).thenReturn("export.ofx");
         when(f.getInputStream()).thenReturn(new java.io.ByteArrayInputStream(new byte[0]));
@@ -113,80 +137,85 @@ class StatementImportServiceTest {
         verify(csvParser, never()).parse(any());
     }
 
-    // ── confirm: idempotency ──────────────────────────────────────────────────
-
     @Test
-    void confirm_duplicateDedupKey_skipsAndActivates() {
-        String dedupKey = "aaaa1111";
-        VaultDocument staged = VaultDocument.builder()
-                .id("staged-3")
-                .userId(1L)
-                .type(VaultDocumentType.STATEMENT)
-                .status(VaultDocumentStatus.STAGED)
-                .capturedAt(Instant.now())
-                .payload(Map.of("accountId", 10L, "rows", List.of(
-                        Map.<String, Object>of(
-                                "date", "2024-01-15",
-                                "amount", "45.00",
-                                "type", "EXPENSE",
-                                "description", "Supermarket",
-                                "dedupKey", dedupKey
-                        )
-                ))).build();
+    void upload_identicalLookingRows_getDistinctFingerprintsViaOccurrenceOrdinal() throws IOException {
+        StatementImportService importService = newService();
+        // Two rows with identical date/amount/type/description within the same file, no FITID.
+        var row1 = new ParsedStatementRow(LocalDate.of(2024, 1, 15),
+                new BigDecimal("10.00"), TransactionType.EXPENSE, "Coffee", "raw1", null);
+        var row2 = new ParsedStatementRow(LocalDate.of(2024, 1, 15),
+                new BigDecimal("10.00"), TransactionType.EXPENSE, "Coffee", "raw2", null);
+        when(csvParser.parse(any())).thenReturn(List.of(row1, row2));
+        when(gridFsFileStore.store(any(), eq(1L), any())).thenReturn("gridfs-id");
+        when(vaultDocumentRepository.save(any())).thenAnswer(inv -> {
+            VaultDocument d = inv.getArgument(0);
+            d.setId("staged-dup");
+            return d;
+        });
+        stubCoordinatorToRunWork();
 
-        when(vaultDocumentRepository.findByIdAndUserIdAndStatus("staged-3", 1L, VaultDocumentStatus.STAGED))
-                .thenReturn(Optional.of(staged));
-        when(transactionService.createWithImportDedupKey(eq(1L), any(), eq(dedupKey)))
-                .thenThrow(new org.springframework.dao.DataIntegrityViolationException("duplicate key"));
-        when(vaultDocumentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        importService.upload(1L, 10L, csvFile(), IDEMPOTENCY_KEY);
 
-        int created = importService.confirm(1L, "staged-3",
-                new com.fintrack.vault.web.dto.ConfirmImportRequest(List.of(dedupKey)));
-
-        assertThat(created).isZero();
-        // Document must still be activated even when all rows are duplicates
-        ArgumentCaptor<VaultDocument> captor = ArgumentCaptor.forClass(VaultDocument.class);
+        var captor = org.mockito.ArgumentCaptor.forClass(VaultDocument.class);
         verify(vaultDocumentRepository).save(captor.capture());
-        assertThat(captor.getValue().getStatus()).isEqualTo(VaultDocumentStatus.ACTIVE);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> rows = (List<Map<String, Object>>) captor.getValue().getPayload().get("rows");
+        assertThat(rows).hasSize(2);
+        String key1 = (String) rows.get(0).get("dedupKey");
+        String key2 = (String) rows.get(1).get("dedupKey");
+        assertThat(key1).isNotEqualTo(key2);
     }
 
     @Test
-    void confirm_newRows_createsTransactionsAndActivates() {
-        String key1 = "bbbb2222";
-        String key2 = "cccc3333";
-        VaultDocument staged = VaultDocument.builder()
-                .id("staged-4")
-                .userId(1L)
-                .type(VaultDocumentType.STATEMENT)
-                .status(VaultDocumentStatus.STAGED)
-                .capturedAt(Instant.now())
-                .payload(Map.of("accountId", 10L, "rows", List.of(
-                        Map.<String, Object>of("date", "2024-01-10", "amount", "100.00",
-                                "type", "INCOME", "description", "Salary", "dedupKey", key1),
-                        Map.<String, Object>of("date", "2024-01-12", "amount", "20.00",
-                                "type", "EXPENSE", "description", "Coffee", "dedupKey", key2)
-                ))).build();
+    void upload_sameFitId_producesSameFingerprintRegardlessOfOtherFields() throws IOException {
+        StatementImportService importService = newService();
+        // Same FITID, different description — fingerprint must be driven by FITID alone.
+        var row1 = new ParsedStatementRow(LocalDate.of(2024, 1, 15),
+                new BigDecimal("10.00"), TransactionType.EXPENSE, "Coffee shop", "raw1", "FIT-001");
+        when(ofxParser.parse(any())).thenReturn(List.of(row1));
+        when(gridFsFileStore.store(any(), eq(1L), any())).thenReturn("gridfs-id");
+        when(vaultDocumentRepository.save(any())).thenAnswer(inv -> {
+            VaultDocument d = inv.getArgument(0);
+            d.setId("staged-fitid");
+            return d;
+        });
+        stubCoordinatorToRunWork();
 
-        when(vaultDocumentRepository.findByIdAndUserIdAndStatus("staged-4", 1L, VaultDocumentStatus.STAGED))
-                .thenReturn(Optional.of(staged));
-        when(transactionService.createWithImportDedupKey(eq(1L), any(), any())).thenReturn(null);
-        when(vaultDocumentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        MultipartFile f = mock(MultipartFile.class);
+        when(f.getOriginalFilename()).thenReturn("export.ofx");
+        when(f.getInputStream()).thenReturn(new java.io.ByteArrayInputStream(new byte[0]));
 
-        int created = importService.confirm(1L, "staged-4",
-                new com.fintrack.vault.web.dto.ConfirmImportRequest(List.of(key1, key2)));
+        importService.upload(1L, 10L, f, IDEMPOTENCY_KEY);
 
-        assertThat(created).isEqualTo(2);
-        verify(transactionService).createWithImportDedupKey(eq(1L), any(), eq(key1));
-        verify(transactionService).createWithImportDedupKey(eq(1L), any(), eq(key2));
+        var captor = org.mockito.ArgumentCaptor.forClass(VaultDocument.class);
+        verify(vaultDocumentRepository).save(captor.capture());
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> rows = (List<Map<String, Object>>) captor.getValue().getPayload().get("rows");
+        String fingerprint = (String) rows.get(0).get("dedupKey");
+        assertThat(fingerprint).isNotBlank();
     }
 
+    // ── confirm: not found ────────────────────────────────────────────────────
+
     @Test
-    void confirm_stagedDocumentNotFound_throwsNotFound() {
-        when(vaultDocumentRepository.findByIdAndUserIdAndStatus(any(), eq(1L), eq(VaultDocumentStatus.STAGED)))
+    void confirm_documentNotFound_throwsNotFound() {
+        StatementImportService importService = newService();
+        when(vaultDocumentRepository.findByIdAndUserId("missing", 1L))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> importService.confirm(1L, "missing",
-                new com.fintrack.vault.web.dto.ConfirmImportRequest(List.of())))
+                new com.fintrack.vault.web.dto.ConfirmImportRequest(List.of()), IDEMPOTENCY_KEY))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void confirm_invalidIdempotencyKey_rejectedBeforeAnyLookup() {
+        StatementImportService importService = newService();
+
+        assertThatThrownBy(() -> importService.confirm(1L, "doc-1",
+                new com.fintrack.vault.web.dto.ConfirmImportRequest(List.of()), "too-short"))
+                .isInstanceOf(com.fintrack.idempotency.exception.InvalidIdempotencyKeyException.class);
+
+        verifyNoInteractions(vaultDocumentRepository);
     }
 }

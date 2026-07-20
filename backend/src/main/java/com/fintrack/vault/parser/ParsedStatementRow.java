@@ -14,5 +14,12 @@ public record ParsedStatementRow(
         BigDecimal amount,
         TransactionType type,
         String description,
-        String rawLine
+        String rawLine,
+        /**
+         * OFX {@code FITID} — a stable, source-assigned row identity. Null for CSV rows (CSV has
+         * no such concept) and for OFX rows whose block omits it. When present, the statement-row
+         * fingerprint is built from this alone (see {@code StatementImportService}) instead of the
+         * occurrence-ordinal fallback fingerprint.
+         */
+        String fitId
 ) {}

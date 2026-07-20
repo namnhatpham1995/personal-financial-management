@@ -420,6 +420,29 @@
         "required" : [ "selectedDedupKeys" ],
         "type" : "object"
       },
+      "ConfirmImportResponse" : {
+        "properties" : {
+          "created" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "duplicate" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "failed" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "rows" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RowResult"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
       "ConvertResponse" : {
         "properties" : {
           "amount" : {
@@ -1135,6 +1158,24 @@
         "required" : [ "email", "firstName", "lastName", "password" ],
         "type" : "object"
       },
+      "RowResult" : {
+        "properties" : {
+          "dedupKey" : {
+            "type" : "string"
+          },
+          "error" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "transactionId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "SortObject" : {
         "properties" : {
           "ascending" : {
@@ -1473,7 +1514,7 @@
             "type" : "string"
           },
           "status" : {
-            "enum" : [ "STAGED", "ACTIVE" ],
+            "enum" : [ "STAGED", "CONFIRMING", "ACTIVE" ],
             "type" : "string"
           },
           "transactionId" : {
@@ -3504,6 +3545,14 @@
           "schema" : {
             "type" : "string"
           }
+        }, {
+          "description" : "Client-generated key (16-128 URL-safe characters) required for every statement confirmation; a retry with the same key and the same selected-row set resumes or replays the durable per-row result instead of 404ing or creating duplicate transactions. A different selected-row set under the same key returns 409.",
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
         } ],
         "requestBody" : {
           "content" : {
@@ -3520,11 +3569,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "additionalProperties" : {
-                    "format" : "int32",
-                    "type" : "integer"
-                  },
-                  "type" : "object"
+                  "$ref" : "#/components/schemas/ConfirmImportResponse"
                 }
               }
             },

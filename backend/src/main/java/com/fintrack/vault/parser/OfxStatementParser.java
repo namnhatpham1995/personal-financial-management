@@ -60,6 +60,10 @@ public class OfxStatementParser {
         String trnAmt = extract(block, "TRNAMT");
         String memo = extractOrDefault(block, "MEMO",
                 extractOrDefault(block, "NAME", ""));
+        // Real banks nearly always emit FITID, but treat it as optional — a blank/missing value
+        // falls back to the occurrence-ordinal fingerprint in StatementImportService.
+        String fitIdRaw = extractOrDefault(block, "FITID", "");
+        String fitId = fitIdRaw.isBlank() ? null : fitIdRaw.trim();
 
         // OFX dates may be yyyyMMddHHmmss — truncate to 8 chars
         LocalDate date = LocalDate.parse(dtPosted.substring(0, 8), OFX_DATE);
@@ -77,7 +81,7 @@ public class OfxStatementParser {
             type = "CREDIT".equalsIgnoreCase(trnType) ? TransactionType.INCOME : TransactionType.INCOME;
         }
 
-        return new ParsedStatementRow(date, amount, type, memo.trim(), block.trim());
+        return new ParsedStatementRow(date, amount, type, memo.trim(), block.trim(), fitId);
     }
 
     private String extract(String block, String tag) {

@@ -111,6 +111,7 @@ class StatementImportPipelineIntegrationTest {
 
         mockMvc.perform(post("/api/vault/import/" + documentId + "/confirm")
                         .header("Authorization", "Bearer " + jwt)
+                        .header("Idempotency-Key", "statement-confirm-key-0123456789")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(java.util.Map.of("selectedDedupKeys", dedupKeys))))
                 .andExpect(status().isOk())
@@ -168,6 +169,7 @@ class StatementImportPipelineIntegrationTest {
 
         mockMvc.perform(post("/api/vault/import/" + documentId + "/confirm")
                         .header("Authorization", "Bearer " + jwt)
+                        .header("Idempotency-Key", "statement-confirm-key-0123456789")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(java.util.Map.of("selectedDedupKeys", dedupKeys))))
                 .andExpect(status().isOk())
