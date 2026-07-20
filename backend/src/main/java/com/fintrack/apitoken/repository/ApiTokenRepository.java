@@ -18,4 +18,7 @@ public interface ApiTokenRepository extends JpaRepository<ApiToken, Long> {
     List<ApiToken> findAllByUserIdOrderByCreatedAtDesc(Long userId);
 
     Optional<ApiToken> findByIdAndUserId(Long id, Long userId);
+
+    /** Backs the per-user PAT-creation idempotency binding (unique partial index in V15). */
+    Optional<ApiToken> findByUserIdAndIdempotencyKeyHash(Long userId, String idempotencyKeyHash);
 }

@@ -51,6 +51,17 @@ public class ApiToken {
     @Column(name = "last_used_at")
     private Instant lastUsedAt;
 
+    /**
+     * SHA-256 hex hash of the client-supplied {@code Idempotency-Key} used at creation, when one
+     * was supplied. Null for tokens created without a key. Never the raw key.
+     */
+    @Column(name = "idempotency_key_hash", length = 64)
+    private String idempotencyKeyHash;
+
+    /** Canonical hash of the creation request settings (name/scope/expiry), paired with {@link #idempotencyKeyHash}. */
+    @Column(name = "request_hash", length = 64)
+    private String requestHash;
+
     public boolean isExpired() {
         return Instant.now().isAfter(expiresAt);
     }

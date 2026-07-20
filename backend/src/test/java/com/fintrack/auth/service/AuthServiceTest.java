@@ -38,6 +38,7 @@ class AuthServiceTest {
     @Mock JwtService jwtService;
     @Mock UserDetailsServiceImpl userDetailsService;
     @Mock AppProperties appProperties;
+    @Mock jakarta.persistence.EntityManager entityManager;
 
     @InjectMocks AuthService authService;
 

@@ -2483,7 +2483,10 @@ export interface operations {
     create_1: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional client-generated key (16-128 URL-safe characters) that makes a retried create safe to resend; because the plaintext token can never be persisted or replayed, a retry with this key always gets a typed 409 with the original token's metadata instead of creating a second token. */
+                "Idempotency-Key"?: string;
+            };
             path?: never;
             cookie?: never;
         };

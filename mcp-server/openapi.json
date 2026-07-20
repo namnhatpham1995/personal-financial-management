@@ -3027,6 +3027,15 @@
       },
       "post" : {
         "operationId" : "create_1",
+        "parameters" : [ {
+          "description" : "Optional client-generated key (16-128 URL-safe characters) that makes a retried create safe to resend; because the plaintext token can never be persisted or replayed, a retry with this key always gets a typed 409 with the original token's metadata instead of creating a second token.",
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "requestBody" : {
           "content" : {
             "application/json" : {
