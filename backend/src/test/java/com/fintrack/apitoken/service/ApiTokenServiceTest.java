@@ -29,6 +29,7 @@ class ApiTokenServiceTest {
 
     @Mock ApiTokenRepository apiTokenRepository;
     @Mock UserRepository userRepository;
+    @Mock ApiTokenWriter apiTokenWriter;
 
     @InjectMocks ApiTokenService apiTokenService;
 
@@ -36,7 +37,7 @@ class ApiTokenServiceTest {
     void create_success_returnsPlaintextOncePrefixedAndStoresOnlyHash() {
         User user = User.builder().id(1L).email("a@b.com").build();
         when(userRepository.getReferenceById(1L)).thenReturn(user);
-        when(apiTokenRepository.save(any(ApiToken.class))).thenAnswer(inv -> {
+        when(apiTokenWriter.save(any(ApiToken.class))).thenAnswer(inv -> {
             ApiToken t = inv.getArgument(0);
             t.setId(10L);
             return t;
@@ -50,7 +51,7 @@ class ApiTokenServiceTest {
         assertThat(response.token().id()).isEqualTo(10L);
 
         ArgumentCaptor<ApiToken> captor = ArgumentCaptor.forClass(ApiToken.class);
-        verify(apiTokenRepository).save(captor.capture());
+        verify(apiTokenWriter).save(captor.capture());
         ApiToken saved = captor.getValue();
         assertThat(saved.getTokenHash()).isNotEqualTo(response.plaintextToken());
         assertThat(saved.getTokenHash()).isNotBlank();
@@ -61,7 +62,7 @@ class ApiTokenServiceTest {
         // Two independently generated tokens must not collide in hash (sanity: distinct raw -> distinct hash)
         User user = User.builder().id(1L).email("a@b.com").build();
         when(userRepository.getReferenceById(1L)).thenReturn(user);
-        when(apiTokenRepository.save(any(ApiToken.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(apiTokenWriter.save(any(ApiToken.class))).thenAnswer(inv -> inv.getArgument(0));
 
         CreatedApiTokenResponse first = apiTokenService.create(1L,
                 new CreateApiTokenRequest("Token A", ApiTokenScope.READ, 30));

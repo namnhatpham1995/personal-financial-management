@@ -1,6 +1,9 @@
 package com.fintrack.common.exception;
 
 import com.fintrack.agent.exception.AgentFeatureUnavailableException;
+import com.fintrack.apitoken.exception.ApiTokenIdempotencyConflictException;
+import com.fintrack.apitoken.web.dto.ApiTokenConflictError;
+import com.fintrack.auth.exception.RefreshAlreadyRotatedException;
 import com.fintrack.common.dto.ApiError;
 import com.fintrack.exchangerate.exception.ExchangeRateUnavailableException;
 import com.fintrack.idempotency.exception.IdempotencyConflictException;
@@ -156,6 +159,22 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.CONFLICT)
                 .header("Retry-After", Long.toString(ex.getRetryAfterSeconds()))
                 .body(ApiError.of(409, "operation_in_progress", ex.getMessage(), req.getRequestURI()));
+    }
+
+    @ExceptionHandler(RefreshAlreadyRotatedException.class)
+    public ResponseEntity<ApiError> handleRefreshAlreadyRotated(
+            RefreshAlreadyRotatedException ex, HttpServletRequest req) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ApiError.of(409, "refresh_already_rotated", ex.getMessage(), req.getRequestURI()));
+    }
+
+    @ExceptionHandler(ApiTokenIdempotencyConflictException.class)
+    public ResponseEntity<ApiTokenConflictError> handleApiTokenIdempotencyConflict(
+            ApiTokenIdempotencyConflictException ex, HttpServletRequest req) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ApiTokenConflictError.of(ex.getMessage(), req.getRequestURI(), ex.getExistingToken()));
     }
 
     @ExceptionHandler(Exception.class)

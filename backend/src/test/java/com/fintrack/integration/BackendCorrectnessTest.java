@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -225,11 +226,11 @@ class BackendCorrectnessTest {
         assertThat(updated.getCurrentBalance()).isEqualByComparingTo(expected);
     }
 
-    // ── Task 3.3: Refresh-token reuse detection ───────────────────────────────
+    // ── Task 5.1-5.2: Refresh-token reuse detection ───────────────────────────
 
     @Test
-    void refreshToken_reuseIsRejected_andTokenLineageRevoked() throws Exception {
-        String tokenJson = registerAndLogin("correctness3.3@test.com");
+    void refreshToken_reuseInsideGraceWindow_isRefreshAlreadyRotated_withNoFamilyRevocation() throws Exception {
+        String tokenJson = registerAndLogin("correctness5.1@test.com");
         var tokenNode = objectMapper.readTree(tokenJson);
         String refreshToken = tokenNode.get("refreshToken").asText();
         Long userId = tokenNode.get("user").get("id").asLong();
@@ -242,13 +243,48 @@ class BackendCorrectnessTest {
                 .andReturn().getResponse().getContentAsString();
         assertThat(firstRefreshResponse).contains("accessToken");
 
-        // Second use of the SAME token: must be rejected (token was rotated/revoked)
+        // Second use of the SAME token immediately after: benign concurrent-rotation replay
+        // (lost-response retry / racing tab), inside the ten-second grace window — a typed 409,
+        // not a theft-detection lockout, and the freshly minted successor stays valid.
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("refreshToken", refreshToken))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("refresh_already_rotated"));
+
+        // The successor minted by the winning rotation remains active — no family revocation.
+        long activeTokens = refreshTokenRepository.findAll().stream()
+                .filter(rt -> rt.getUser().getId().equals(userId) && !rt.isRevoked())
+                .count();
+        assertThat(activeTokens).isEqualTo(1);
+    }
+
+    @Test
+    void refreshToken_replayOutsideGraceWindow_revokesFamilyAndRejects() throws Exception {
+        String tokenJson = registerAndLogin("correctness5.2@test.com");
+        var tokenNode = objectMapper.readTree(tokenJson);
+        String refreshToken = tokenNode.get("refreshToken").asText();
+        Long userId = tokenNode.get("user").get("id").asLong();
+
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("refreshToken", refreshToken))))
+                .andExpect(status().isOk());
+
+        // Simulate the grace window having elapsed without a real sleep.
+        var rotated = refreshTokenRepository.findAll().stream()
+                .filter(rt -> rt.getUser().getId().equals(userId) && rt.isRevoked() && rt.getRotatedAt() != null)
+                .findFirst().orElseThrow();
+        rotated.setRotatedAt(java.time.Instant.now().minusSeconds(30));
+        refreshTokenRepository.save(rotated);
+
         mockMvc.perform(post("/api/v1/auth/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("refreshToken", refreshToken))))
                 .andExpect(status().isUnauthorized());
 
-        // All tokens for this user should now be revoked (lineage invalidation)
+        // All tokens for this user, including the successor, are now revoked (family lineage
+        // invalidation — theft-detection posture for an out-of-window replay).
         long activeTokens = refreshTokenRepository.findAll().stream()
                 .filter(rt -> rt.getUser().getId().equals(userId) && !rt.isRevoked())
                 .count();

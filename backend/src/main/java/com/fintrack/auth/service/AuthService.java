@@ -3,6 +3,7 @@ package com.fintrack.auth.service;
 import com.fintrack.auth.domain.RefreshToken;
 import com.fintrack.auth.domain.Role;
 import com.fintrack.auth.domain.User;
+import com.fintrack.auth.exception.RefreshAlreadyRotatedException;
 import com.fintrack.auth.repository.RefreshTokenRepository;
 import com.fintrack.auth.repository.RoleRepository;
 import com.fintrack.auth.repository.UserRepository;
@@ -13,6 +14,7 @@ import com.fintrack.common.config.AppProperties;
 import com.fintrack.common.exception.ConflictException;
 import com.fintrack.common.exception.ResourceNotFoundException;
 import com.fintrack.common.security.UserPrincipal;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -40,8 +42,12 @@ public class AuthService {
     private final JwtService jwtService;
     private final UserDetailsServiceImpl userDetailsService;
     private final AppProperties appProperties;
+    private final EntityManager entityManager;
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
+    /** Concurrency grace window for benign racing rotations (design.md Decision #5). */
+    private static final long REFRESH_GRACE_WINDOW_SECONDS = 10;
 
     @Transactional
     public TokenResponse register(RegisterRequest request) {
@@ -74,22 +80,55 @@ public class AuthService {
         return issueTokens(user);
     }
 
-    @Transactional(noRollbackFor = BadCredentialsException.class)
+    @Transactional(noRollbackFor = {BadCredentialsException.class, RefreshAlreadyRotatedException.class})
     public TokenResponse refresh(String rawRefreshToken) {
         String hash = hashToken(rawRefreshToken);
         RefreshToken stored = refreshTokenRepository.findByTokenHash(hash)
                 .orElseThrow(() -> new BadCredentialsException("Invalid refresh token"));
 
-        if (!stored.isValid()) {
-            // Revoke all tokens for this user on detected reuse of expired/revoked token
+        if (stored.isExpired()) {
             refreshTokenRepository.revokeAllByUserId(stored.getUser().getId());
             throw new BadCredentialsException("Refresh token is expired or revoked");
         }
 
-        // Rotate: revoke the old token, issue a fresh pair
-        stored.setRevoked(true);
-        refreshTokenRepository.save(stored);
-        return issueTokens(stored.getUser());
+        Instant now = Instant.now();
+        int consumed = refreshTokenRepository.consumeIfNotRevoked(stored.getId(), now);
+        if (consumed == 1) {
+            // Won the rotation race: keep the in-memory entity in sync with the row we just
+            // updated (a @Modifying query does not refresh already-loaded instances) before the
+            // follow-up save that links the successor.
+            stored.setRevoked(true);
+            stored.setRotatedAt(now);
+            IssuedTokens issued = issueTokensInternal(stored.getUser());
+            stored.setSuccessorId(issued.refreshToken().getId());
+            refreshTokenRepository.save(stored);
+            return issued.response();
+        }
+
+        // Lost the race, or the row was already revoked before this call even started. `stored`
+        // is a managed entity already sitting in this transaction's persistence context — Hibernate
+        // returns the same session-cached instance (identity map) for any subsequent find/query on
+        // this id rather than overwriting it from a fresh SELECT, so a plain re-query would still
+        // see this session's original (pre-block) snapshot. EntityManager.refresh forces an actual
+        // re-read from the database, picking up the winner's committed rotatedAt/revoked state.
+        entityManager.refresh(stored);
+
+        if (stored.getRotatedAt() != null && !stored.getRotatedAt().plusSeconds(REFRESH_GRACE_WINDOW_SECONDS).isBefore(now)) {
+            // A concurrent request rotated this token moments ago — expected benign concurrency
+            // (lost-response retry or a second racing tab), not a theft signal.
+            throw new RefreshAlreadyRotatedException("Refresh token was already rotated by a concurrent request");
+        }
+
+        if (stored.getRotatedAt() == null) {
+            // Revoked directly rather than via rotation (e.g. logout). The spec does not carve
+            // out a refresh-vs-logout race scenario; logout is a deliberate user action, not a
+            // theft signal, so it does not trigger family-wide revocation here.
+            throw new BadCredentialsException("Refresh token is expired or revoked");
+        }
+
+        // Rotated well outside the grace window and now being replayed: theft-detection posture.
+        refreshTokenRepository.revokeAllByUserId(stored.getUser().getId());
+        throw new BadCredentialsException("Refresh token is expired or revoked");
     }
 
     @Transactional(readOnly = true)
@@ -140,17 +179,25 @@ public class AuthService {
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
     private TokenResponse issueTokens(User user) {
+        return issueTokensInternal(user).response();
+    }
+
+    /** Pairs the returned {@link TokenResponse} with the persisted successor entity so callers
+     *  that need the new row's id (refresh rotation lineage) don't have to re-look it up by hash. */
+    private record IssuedTokens(TokenResponse response, RefreshToken refreshToken) {}
+
+    private IssuedTokens issueTokensInternal(User user) {
         UserPrincipal principal = new UserPrincipal(user);
         String accessToken = jwtService.generateAccessToken(principal, user.getId());
         String rawRefresh = generateRawRefreshToken();
-        persistRefreshToken(user, rawRefresh);
+        RefreshToken saved = persistRefreshToken(user, rawRefresh);
 
         String fullName = user.getFullName() != null ? user.getFullName() : "";
         int spaceIdx = fullName.indexOf(' ');
         String firstName = spaceIdx > 0 ? fullName.substring(0, spaceIdx) : fullName;
         String lastName  = spaceIdx > 0 ? fullName.substring(spaceIdx + 1) : "";
 
-        return TokenResponse.of(
+        TokenResponse response = TokenResponse.of(
                 accessToken,
                 rawRefresh,
                 appProperties.getJwt().getAccessTokenExpiryMs(),
@@ -161,16 +208,17 @@ public class AuthService {
                 user.getPreferredLanguage(),
                 user.getLastSeenChangelogVersion()
         );
+        return new IssuedTokens(response, saved);
     }
 
-    private void persistRefreshToken(User user, String rawToken) {
+    private RefreshToken persistRefreshToken(User user, String rawToken) {
         Instant expiresAt = Instant.now().plusMillis(appProperties.getJwt().getRefreshTokenExpiryMs());
         RefreshToken rt = RefreshToken.builder()
                 .user(user)
                 .tokenHash(hashToken(rawToken))
                 .expiresAt(expiresAt)
                 .build();
-        refreshTokenRepository.save(rt);
+        return refreshTokenRepository.save(rt);
     }
 
     private static String generateRawRefreshToken() {
