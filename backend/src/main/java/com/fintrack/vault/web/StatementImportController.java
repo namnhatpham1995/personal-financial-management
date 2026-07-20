@@ -4,6 +4,7 @@ import com.fintrack.common.security.UserPrincipal;
 import com.fintrack.idempotency.exception.MissingIdempotencyKeyException;
 import com.fintrack.vault.service.StatementImportService;
 import com.fintrack.vault.web.dto.ConfirmImportRequest;
+import com.fintrack.vault.web.dto.ConfirmImportResponse;
 import com.fintrack.vault.web.dto.StagedRowResponse;
 import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.Valid;
@@ -63,17 +64,25 @@ public class StatementImportController {
     }
 
     /**
-     * Confirm selected rows: inserts them as PostgreSQL transactions and activates the vault doc.
-     * Duplicate rows (already imported) are silently skipped.
-     * Returns how many new transactions were created.
+     * Confirm selected rows: normalizes them into PostgreSQL transactions and activates the vault
+     * document. Requires an {@code Idempotency-Key}; a same-key/same-selection retry resumes or
+     * replays the durable per-row result instead of 404ing or duplicating transactions, and a
+     * same-key/different-selection retry returns a typed 409.
      */
     @PostMapping("/{documentId}/confirm")
-    public Map<String, Integer> confirm(
+    public ConfirmImportResponse confirm(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable String documentId,
-            @Valid @RequestBody ConfirmImportRequest request
+            @Valid @RequestBody ConfirmImportRequest request,
+            @Parameter(required = true, description = "Client-generated key (16-128 URL-safe characters) "
+                    + "required for every statement confirmation; a retry with the same key and the same "
+                    + "selected-row set resumes or replays the durable per-row result instead of 404ing or "
+                    + "creating duplicate transactions. A different selected-row set under the same key returns 409.")
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey
     ) {
-        int created = importService.confirm(principal.getUserId(), documentId, request);
-        return Map.of("created", created);
+        if (idempotencyKey == null) {
+            throw new MissingIdempotencyKeyException("Idempotency-Key header is required for statement confirmation");
+        }
+        return importService.confirm(principal.getUserId(), documentId, request, idempotencyKey);
     }
 }

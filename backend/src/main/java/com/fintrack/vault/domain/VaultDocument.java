@@ -49,4 +49,27 @@ public class VaultDocument {
     private Long transactionId;
 
     private String originalFilename;
+
+    // ── Statement confirmation state (STAGED -> CONFIRMING -> ACTIVE) ──────────────────────
+    // See StatementImportService for the compare-and-set transition and resume/replay contract.
+
+    /** SHA-256 hash of the Idempotency-Key that claimed the current/most recent confirmation attempt. */
+    private String confirmationKeyHash;
+
+    /**
+     * SHA-256 hash of the confirmation operation name plus the canonical (sorted) selected-row
+     * dedup keys. Used to detect the same key being reused with a different row selection.
+     */
+    private String confirmationRequestHash;
+
+    private Instant confirmationStartedAt;
+
+    private Instant confirmationCompletedAt;
+
+    /**
+     * Durable per-row outcome, keyed by row dedup key, for the current/most recent confirmation
+     * attempt. Populated incrementally as each selected row is processed so a resumed or replayed
+     * confirmation never reprocesses an already-decided row.
+     */
+    private Map<String, RowOutcome> confirmationRowOutcomes;
 }

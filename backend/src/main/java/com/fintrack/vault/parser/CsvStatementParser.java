@@ -86,7 +86,7 @@ public class CsvStatementParser {
             }
         }
 
-        return new ParsedStatementRow(date, amount, type, description, rec.toString());
+        return new ParsedStatementRow(date, amount, type, description, rec.toString(), null);
     }
 
     private LocalDate parseDate(String raw) {

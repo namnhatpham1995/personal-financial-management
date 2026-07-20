@@ -1009,6 +1009,15 @@ export interface components {
         ConfirmImportRequest: {
             selectedDedupKeys: string[];
         };
+        ConfirmImportResponse: {
+            /** Format: int32 */
+            created?: number;
+            /** Format: int32 */
+            duplicate?: number;
+            /** Format: int32 */
+            failed?: number;
+            rows?: components["schemas"]["RowResult"][];
+        };
         ConvertResponse: {
             amount?: number;
             /** Format: date-time */
@@ -1274,6 +1283,13 @@ export interface components {
             lastName: string;
             password: string;
         };
+        RowResult: {
+            dedupKey?: string;
+            error?: string;
+            status?: string;
+            /** Format: int64 */
+            transactionId?: number;
+        };
         SortObject: {
             ascending?: boolean;
             direction?: string;
@@ -1400,7 +1416,7 @@ export interface components {
             };
             source?: string;
             /** @enum {string} */
-            status?: "STAGED" | "ACTIVE";
+            status?: "STAGED" | "CONFIRMING" | "ACTIVE";
             /** Format: int64 */
             transactionId?: number;
             /** @enum {string} */
@@ -2765,7 +2781,10 @@ export interface operations {
     confirm: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Client-generated key (16-128 URL-safe characters) required for every statement confirmation; a retry with the same key and the same selected-row set resumes or replays the durable per-row result instead of 404ing or creating duplicate transactions. A different selected-row set under the same key returns 409. */
+                "Idempotency-Key": string;
+            };
             path: {
                 documentId: string;
             };
@@ -2783,9 +2802,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": {
-                        [key: string]: number;
-                    };
+                    "*/*": components["schemas"]["ConfirmImportResponse"];
                 };
             };
         };
