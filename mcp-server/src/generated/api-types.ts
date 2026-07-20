@@ -2733,7 +2733,10 @@ export interface operations {
             query: {
                 accountId: number;
             };
-            header?: never;
+            header: {
+                /** @description Client-generated key (16-128 URL-safe characters) required for every statement upload; a retry with the same key, account, and file replays the original staged document instead of storing a duplicate binary. */
+                "Idempotency-Key": string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2840,7 +2843,10 @@ export interface operations {
             query: {
                 type: "RECEIPT" | "STATEMENT";
             };
-            header?: never;
+            header: {
+                /** @description Client-generated key (16-128 URL-safe characters) required for every vault upload; a retry with the same key and file replays the original document instead of storing a duplicate binary. */
+                "Idempotency-Key": string;
+            };
             path?: never;
             cookie?: never;
         };

@@ -90,7 +90,8 @@ class StatementImportPipelineIntegrationTest {
         MvcResult uploadResult = mockMvc.perform(multipart("/api/vault/import/upload")
                         .file(file)
                         .param("accountId", accountId)
-                        .header("Authorization", "Bearer " + jwt))
+                        .header("Authorization", "Bearer " + jwt)
+                        .header("Idempotency-Key", "statement-upload-key-0123456789"))
                 .andExpect(status().isCreated())
                 .andReturn();
         String documentId = objectMapper.readTree(uploadResult.getResponse().getContentAsString())
@@ -147,7 +148,8 @@ class StatementImportPipelineIntegrationTest {
         MvcResult uploadResult = mockMvc.perform(multipart("/api/vault/import/upload")
                         .file(file)
                         .param("accountId", accountId)
-                        .header("Authorization", "Bearer " + jwt))
+                        .header("Authorization", "Bearer " + jwt)
+                        .header("Idempotency-Key", "statement-upload-key-0123456789"))
                 .andExpect(status().isCreated())
                 .andReturn();
         String documentId = objectMapper.readTree(uploadResult.getResponse().getContentAsString())

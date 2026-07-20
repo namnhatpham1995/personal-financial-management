@@ -40,7 +40,29 @@ class StatementImportServiceTest {
     @Mock CsvStatementParser csvParser;
     @Mock OfxStatementParser ofxParser;
     @Mock TransactionService transactionService;
+    @Mock VaultUploadIdempotencyCoordinator idempotencyCoordinator;
     @InjectMocks StatementImportService importService;
+
+    private static final String IDEMPOTENCY_KEY = "test-key-0123456789";
+
+    /**
+     * Stubs the mocked coordinator to actually invoke the binary-store and document-save
+     * callbacks it was given, so these unit tests exercise StatementImportService's own upload
+     * logic (parsing, dedup key building, staged document construction) without depending on the
+     * coordinator's real claim/replay/compensation implementation, which has its own dedicated
+     * test.
+     */
+    @SuppressWarnings("unchecked")
+    private void stubCoordinatorToRunWork() throws IOException {
+        when(idempotencyCoordinator.execute(any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenAnswer(inv -> {
+                    VaultUploadBinaryStore binaryStore = inv.getArgument(5);
+                    VaultUploadDocumentSave<Object> documentSave = inv.getArgument(6);
+                    String gridFsFileId = binaryStore.storeBinary("op-1");
+                    VaultUploadResult<Object> result = documentSave.saveDocument(gridFsFileId);
+                    return new VaultUploadOutcome<>(result.response(), false);
+                });
+    }
 
     private MultipartFile csvFile() throws IOException {
         MultipartFile f = mock(MultipartFile.class);
@@ -56,16 +78,17 @@ class StatementImportServiceTest {
         var row = new ParsedStatementRow(LocalDate.of(2024, 1, 15),
                 new BigDecimal("45.00"), TransactionType.EXPENSE, "Supermarket", "raw");
         when(csvParser.parse(any())).thenReturn(List.of(row));
-        when(gridFsFileStore.store(any(), eq(1L))).thenReturn("gridfs-id");
+        when(gridFsFileStore.store(any(), eq(1L), any())).thenReturn("gridfs-id");
         when(vaultDocumentRepository.save(any())).thenAnswer(inv -> {
             VaultDocument d = inv.getArgument(0);
             d.setId("staged-1");
             return d;
         });
+        stubCoordinatorToRunWork();
 
-        String docId = importService.upload(1L, 10L, csvFile());
+        VaultUploadOutcome<String> outcome = importService.upload(1L, 10L, csvFile(), IDEMPOTENCY_KEY);
 
-        assertThat(docId).isEqualTo("staged-1");
+        assertThat(outcome.response()).isEqualTo("staged-1");
         verify(csvParser).parse(any());
         verify(ofxParser, never()).parse(any());
     }
@@ -76,14 +99,15 @@ class StatementImportServiceTest {
         when(f.getOriginalFilename()).thenReturn("export.ofx");
         when(f.getInputStream()).thenReturn(new java.io.ByteArrayInputStream(new byte[0]));
         when(ofxParser.parse(any())).thenReturn(List.of());
-        when(gridFsFileStore.store(any(), eq(1L))).thenReturn("g");
+        when(gridFsFileStore.store(any(), eq(1L), any())).thenReturn("g");
         when(vaultDocumentRepository.save(any())).thenAnswer(inv -> {
             VaultDocument d = inv.getArgument(0);
             d.setId("staged-2");
             return d;
         });
+        stubCoordinatorToRunWork();
 
-        importService.upload(1L, 10L, f);
+        importService.upload(1L, 10L, f, IDEMPOTENCY_KEY);
 
         verify(ofxParser).parse(any());
         verify(csvParser, never()).parse(any());

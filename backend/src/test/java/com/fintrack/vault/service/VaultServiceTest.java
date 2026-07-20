@@ -36,6 +36,7 @@ class VaultServiceTest {
     @Mock VaultDocumentRepository vaultDocumentRepository;
     @Mock GridFsFileStore gridFsFileStore;
     @Mock AgentRunRepository agentRunRepository;
+    @Mock VaultUploadIdempotencyCoordinator idempotencyCoordinator;
     @InjectMocks VaultService vaultService;
 
     private VaultDocument makeDoc(String id, Long userId) {
@@ -109,17 +110,39 @@ class VaultServiceTest {
     void upload_storesFileAndCreatesDocument() throws IOException {
         MultipartFile file = mock(MultipartFile.class);
         when(file.getOriginalFilename()).thenReturn("receipt.jpg");
-        when(gridFsFileStore.store(any(), eq(1L))).thenReturn("gridfs-xyz");
+        when(file.getBytes()).thenReturn(new byte[0]);
+        when(gridFsFileStore.store(any(), eq(1L), any())).thenReturn("gridfs-xyz");
         when(vaultDocumentRepository.save(any())).thenAnswer(inv -> {
             VaultDocument d = inv.getArgument(0);
             d.setId("new-doc");
             return d;
         });
+        stubCoordinatorToRunWork();
 
-        VaultDocumentResponse resp = vaultService.upload(1L, VaultDocumentType.RECEIPT, file);
+        VaultUploadOutcome<VaultDocumentResponse> outcome =
+                vaultService.upload(1L, VaultDocumentType.RECEIPT, file, "test-key-0123456789");
 
-        assertThat(resp.id()).isEqualTo("new-doc");
-        assertThat(resp.hasBinary()).isTrue();
+        assertThat(outcome.replayed()).isFalse();
+        assertThat(outcome.response().id()).isEqualTo("new-doc");
+        assertThat(outcome.response().hasBinary()).isTrue();
+    }
+
+    /**
+     * Stubs the mocked coordinator to actually invoke the binary-store and document-save
+     * callbacks it was given, so this unit test exercises VaultService's own upload logic
+     * (GridFS tagging + document construction) without depending on the coordinator's real
+     * claim/replay/compensation implementation, which has its own dedicated test.
+     */
+    @SuppressWarnings("unchecked")
+    private void stubCoordinatorToRunWork() throws IOException {
+        when(idempotencyCoordinator.execute(any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenAnswer(inv -> {
+                    VaultUploadBinaryStore binaryStore = inv.getArgument(5);
+                    VaultUploadDocumentSave<Object> documentSave = inv.getArgument(6);
+                    String gridFsFileId = binaryStore.storeBinary("op-1");
+                    VaultUploadResult<Object> result = documentSave.saveDocument(gridFsFileId);
+                    return new VaultUploadOutcome<>(result.response(), false);
+                });
     }
 
     // ── list ──────────────────────────────────────────────────────────────────

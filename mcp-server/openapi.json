@@ -3451,6 +3451,14 @@
             "format" : "int64",
             "type" : "integer"
           }
+        }, {
+          "description" : "Client-generated key (16-128 URL-safe characters) required for every statement upload; a retry with the same key, account, and file replays the original staged document instead of storing a duplicate binary.",
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
         } ],
         "requestBody" : {
           "content" : {
@@ -3600,6 +3608,14 @@
           "required" : true,
           "schema" : {
             "enum" : [ "RECEIPT", "STATEMENT" ],
+            "type" : "string"
+          }
+        }, {
+          "description" : "Client-generated key (16-128 URL-safe characters) required for every vault upload; a retry with the same key and file replays the original document instead of storing a duplicate binary.",
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : true,
+          "schema" : {
             "type" : "string"
           }
         } ],
