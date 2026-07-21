@@ -1,5 +1,6 @@
 package com.fintrack.common.config;
 
+import com.fintrack.idempotency.domain.IdempotencyMode;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -17,6 +18,7 @@ public class AppProperties {
     private ExchangeRate exchangeRate = new ExchangeRate();
     private Pat pat = new Pat();
     private Agent agent = new Agent();
+    private Idempotency idempotency = new Idempotency();
 
     @Getter
     @Setter
@@ -70,5 +72,20 @@ public class AppProperties {
         private String serviceUrl = "";
         /** TTL of the per-run scoped token minted for the agent service (bounds a run). */
         private long tokenExpiryMs = 900_000L; // 15 min
+    }
+
+    @Getter
+    @Setter
+    public static class Idempotency {
+        /**
+         * Rollout mode for the {@code Idempotency-Key} header requirement on protected create
+         * endpoints (see design.md Migration Plan step 5). Defaults to OBSERVE: missing keys are
+         * allowed through — identical behavior to the pre-rollout baseline — but recorded via
+         * metrics/logs so an operator can confirm official clients are sending keys before
+         * deliberately opting into ENFORCE. Flipping this to ENFORCE for third-party API/MCP
+         * callers outside this repo is an operator/product decision this default must not make
+         * unilaterally.
+         */
+        private IdempotencyMode mode = IdempotencyMode.OBSERVE;
     }
 }

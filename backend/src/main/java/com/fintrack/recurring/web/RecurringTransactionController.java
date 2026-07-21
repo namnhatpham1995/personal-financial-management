@@ -41,7 +41,7 @@ public class RecurringTransactionController {
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             @Valid @RequestBody CreateRecurringRequest request) {
         if (idempotencyKey == null) {
-            idempotencyEnforcementGuard.requireKeyOrThrow(idempotencyKey);
+            idempotencyEnforcementGuard.requireKeyOrThrow("recurring.create", idempotencyKey);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(recurringService.create(principal.getUserId(), request));
         }

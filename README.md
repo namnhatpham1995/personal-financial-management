@@ -144,6 +144,14 @@ The design-token gate fails the build if any `.tsx`/`.ts` file uses raw Tailwind
 
 Full interactive docs available at `/swagger-ui.html` when the backend is running.
 
+### Idempotent Mutations
+
+Every protected create/mutate endpoint (accounts, categories, budgets, recurring transactions, transactions, transaction batches, API tokens, vault/statement uploads, statement confirmation) accepts a caller-supplied `Idempotency-Key` header. Retrying with the same key and the same payload replays the original response (`Idempotency-Replayed: true` header, no side effect repeated); the same key with a different payload gets a typed `409` conflict; a key still owned by a concurrent in-flight request returns a `409` with `Retry-After`. Completed claims are retained for **seven days**, after which a repeated key is treated as new.
+
+PAT creation and refresh-token rotation are protected the same way, but their responses carry a secret that is never persisted — a same-key retry always gets a typed `409` conflict with non-secret recovery guidance instead of a replayed body, rather than risk re-exposing (or silently withholding) a credential.
+
+Whether the header is *required* is controlled by `app.idempotency.mode` (`ACCEPT | OBSERVE | ENFORCE`), defaulting to `OBSERVE` — a missing key is still allowed through, but recorded via metrics/logs so an operator can confirm real clients already send it before flipping to `ENFORCE` (which rejects a missing key with `400` before any side effect). See [`docs/system-architecture.md`](docs/system-architecture.md#idempotency--replay-safety) for the full claim-store design, retention/cleanup jobs, and observability details.
+
 ## Receipt Ingestion Agent
 
 An LLM-driven agent (`agent-service/`, TypeScript + LangGraph.js) turns a Vault receipt into

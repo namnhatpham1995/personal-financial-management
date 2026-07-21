@@ -1,9 +1,11 @@
 package com.fintrack.idempotency.service;
 
+import com.fintrack.audit.support.AuditReplaySignal;
 import com.fintrack.idempotency.domain.IdempotencyOperation;
 import com.fintrack.idempotency.domain.IdempotencyOperationState;
 import com.fintrack.idempotency.repository.IdempotencyOperationRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,12 +24,15 @@ import java.util.function.Supplier;
  * class, so the claim+business-logic+completion sequence must be reached through a real
  * inter-bean call to get transactional semantics.
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class IdempotencyClaimRunner {
 
     private final IdempotencyOperationRepository repository;
     private final IdempotencyResponseCodec responseCodec;
+    private final AuditReplaySignal auditReplaySignal;
+    private final IdempotencyMetrics metrics;
 
     /**
      * Attempts to claim {@code (userId, operation, keyHash)}. If this call wins the claim, runs
@@ -55,6 +60,8 @@ public class IdempotencyClaimRunner {
         if (claimed == 0) {
             return Optional.empty();
         }
+        metrics.claimed(operation);
+        log.debug("Idempotency claim won: operation={}", operation);
 
         // Not caught on purpose: propagating rolls back the claim row together with any partial
         // business-mutation writes made in this same transaction.
@@ -71,6 +78,11 @@ public class IdempotencyClaimRunner {
         // Explicit save (rather than relying solely on JPA dirty-checking) documents intent: this
         // is the completion write, not an incidental flush.
         repository.save(op);
+
+        // This is the ORIGINAL, freshly-claimed request — attach a non-secret correlation
+        // reference (the operation row's own id) so the resulting audit event can be tied back to
+        // this idempotency record without ever storing the raw key or request/response body.
+        auditReplaySignal.setOperationReference(String.valueOf(op.getId()));
 
         return Optional.of(response);
     }

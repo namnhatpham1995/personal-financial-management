@@ -5,6 +5,7 @@ import com.fintrack.idempotency.domain.IdempotencyOperationState;
 import com.fintrack.idempotency.exception.IdempotencyConflictException;
 import com.fintrack.idempotency.repository.IdempotencyOperationRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,12 +18,14 @@ import java.util.Optional;
  * aggregate batch-operation record. Deliberately three separate calls rather than one transaction
  * spanning row processing — see {@link IdempotentBatchCoordinator} for why.
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 class BatchAggregateOperationStore {
 
     private final IdempotencyOperationRepository repository;
     private final IdempotencyResponseCodec responseCodec;
+    private final IdempotencyMetrics metrics;
 
     /**
      * @return the stored replay response if a COMPLETED row already exists for this key with a
@@ -41,9 +44,13 @@ class BatchAggregateOperationStore {
 
         IdempotencyOperation op = existing.get();
         if (!op.getRequestHash().equals(requestHash)) {
+            metrics.conflicted(operation);
+            log.warn("Idempotency batch payload conflict: operation={}", operation);
             throw new IdempotencyConflictException(
                     "Idempotency-Key was already used to complete a batch with a different payload");
         }
+        metrics.replayed(operation);
+        log.debug("Idempotency batch replay: operation={}", operation);
         return Optional.of(responseCodec.toReplayResponse(op, responseBodyType));
     }
 
@@ -55,7 +62,11 @@ class BatchAggregateOperationStore {
      */
     @Transactional
     void claimIfAbsent(Long userId, String operation, String keyHash, String requestHash, Instant expiresAt) {
-        repository.claim(userId, operation, keyHash, requestHash, expiresAt);
+        int claimed = repository.claim(userId, operation, keyHash, requestHash, expiresAt);
+        if (claimed == 1) {
+            metrics.claimed(operation);
+            log.debug("Idempotency batch claim won: operation={}", operation);
+        }
     }
 
     /**
@@ -64,7 +75,7 @@ class BatchAggregateOperationStore {
      * row processing is itself idempotent/deterministic, so the content converges.
      */
     @Transactional
-    <T> void complete(Long userId, String operation, String keyHash, ResponseEntity<T> response, Instant expiresAt) {
+    <T> Long complete(Long userId, String operation, String keyHash, ResponseEntity<T> response, Instant expiresAt) {
         IdempotencyOperation op = repository.findByUserIdAndOperationAndKeyHash(userId, operation, keyHash)
                 .orElseThrow(() -> new IllegalStateException(
                         "Idempotency claim row for operation=" + operation + " not found during batch completion"));
@@ -74,5 +85,6 @@ class BatchAggregateOperationStore {
         op.setCompletedAt(Instant.now());
         op.setExpiresAt(expiresAt);
         repository.save(op);
+        return op.getId();
     }
 }

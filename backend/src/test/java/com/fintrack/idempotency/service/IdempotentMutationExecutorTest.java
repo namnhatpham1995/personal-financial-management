@@ -1,11 +1,13 @@
 package com.fintrack.idempotency.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fintrack.audit.support.AuditReplaySignal;
 import com.fintrack.auth.domain.User;
 import com.fintrack.idempotency.domain.IdempotencyOperation;
 import com.fintrack.idempotency.domain.IdempotencyOperationState;
 import com.fintrack.idempotency.exception.IdempotencyConflictException;
 import com.fintrack.idempotency.repository.IdempotencyOperationRepository;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -59,8 +61,10 @@ class IdempotentMutationExecutorTest {
 
     @BeforeEach
     void setUp() {
-        IdempotencyClaimRunner claimRunner = new IdempotencyClaimRunner(repository, responseCodec);
-        executor = new IdempotentMutationExecutor(validator, hasher, repository, claimRunner, responseCodec);
+        AuditReplaySignal auditReplaySignal = new AuditReplaySignal();
+        IdempotencyMetrics metrics = new IdempotencyMetrics(new SimpleMeterRegistry());
+        IdempotencyClaimRunner claimRunner = new IdempotencyClaimRunner(repository, responseCodec, auditReplaySignal, metrics);
+        executor = new IdempotentMutationExecutor(validator, hasher, repository, claimRunner, responseCodec, auditReplaySignal, metrics);
 
         lenient().when(repository.claim(anyLong(), anyString(), anyString(), anyString(), any(Instant.class)))
                 .thenAnswer(inv -> {

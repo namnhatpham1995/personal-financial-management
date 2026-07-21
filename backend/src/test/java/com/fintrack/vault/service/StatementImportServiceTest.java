@@ -1,5 +1,6 @@
 package com.fintrack.vault.service;
 
+import com.fintrack.audit.support.AuditReplaySignal;
 import com.fintrack.common.domain.TransactionType;
 import com.fintrack.common.exception.ResourceNotFoundException;
 import com.fintrack.transaction.repository.TransactionRepository;
@@ -9,6 +10,7 @@ import com.fintrack.vault.parser.CsvStatementParser;
 import com.fintrack.vault.parser.OfxStatementParser;
 import com.fintrack.vault.parser.ParsedStatementRow;
 import com.fintrack.vault.repository.VaultDocumentRepository;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -64,7 +66,9 @@ class StatementImportServiceTest {
                 new com.fintrack.idempotency.service.IdempotencyKeyValidator(),
                 new com.fintrack.idempotency.service.IdempotencyHasher(),
                 mongoTemplate,
-                jakarta.validation.Validation.buildDefaultValidatorFactory().getValidator());
+                jakarta.validation.Validation.buildDefaultValidatorFactory().getValidator(),
+                new AuditReplaySignal(),
+                new VaultOperationMetrics(new SimpleMeterRegistry()));
     }
 
     /**

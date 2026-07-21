@@ -1,11 +1,13 @@
 package com.fintrack.idempotency.service;
 
+import com.fintrack.audit.support.AuditReplaySignal;
 import com.fintrack.idempotency.domain.IdempotencyOperation;
 import com.fintrack.idempotency.domain.IdempotencyOperationState;
 import com.fintrack.idempotency.exception.IdempotencyConflictException;
 import com.fintrack.idempotency.exception.IdempotencyOperationInProgressException;
 import com.fintrack.idempotency.repository.IdempotencyOperationRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +32,7 @@ import java.util.function.Supplier;
  *       operation past the poll bound returns a typed in-progress error with retry guidance.
  * </ol>
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class IdempotentMutationExecutor {
@@ -51,6 +54,8 @@ public class IdempotentMutationExecutor {
     private final IdempotencyOperationRepository repository;
     private final IdempotencyClaimRunner claimRunner;
     private final IdempotencyResponseCodec responseCodec;
+    private final AuditReplaySignal auditReplaySignal;
+    private final IdempotencyMetrics metrics;
 
     /**
      * @param userId              owner of the operation; part of the claim scope.
@@ -100,13 +105,22 @@ public class IdempotentMutationExecutor {
 
             if (existing.getState() == IdempotencyOperationState.COMPLETED) {
                 if (!existing.getRequestHash().equals(requestHash)) {
+                    metrics.conflicted(operation);
+                    log.warn("Idempotency payload conflict: operation={}", operation);
                     throw new IdempotencyConflictException(
                             "Idempotency-Key was already used to complete a request with a different payload");
                 }
+                // Same key, same payload, already completed: this is a pure replay of the
+                // original business effect — the audit interceptor must not record it again.
+                metrics.replayed(operation);
+                log.debug("Idempotency replay: operation={}", operation);
+                auditReplaySignal.markReplayed();
                 return responseCodec.toReplayResponse(existing, responseBodyType);
             }
 
             if (Instant.now().isAfter(deadline)) {
+                metrics.inProgress(operation);
+                log.warn("Idempotency in-progress (poll bound exceeded): operation={}", operation);
                 throw new IdempotencyOperationInProgressException(
                         "Another request with this Idempotency-Key is still being processed; retry shortly",
                         Math.max(1, POLL_INTERVAL.toSeconds()));

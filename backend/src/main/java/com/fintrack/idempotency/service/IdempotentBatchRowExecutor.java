@@ -6,6 +6,7 @@ import com.fintrack.idempotency.exception.IdempotencyConflictException;
 import com.fintrack.idempotency.exception.InvalidIdempotencyKeyException;
 import com.fintrack.idempotency.repository.IdempotencyOperationRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +28,7 @@ import java.util.function.Supplier;
  * mode — malformed {@code clientRequestId}, changed-payload conflict, still-processing after the
  * poll bound, or a business-logic exception — becomes a {@link BatchRowOutcome} instead.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class IdempotentBatchRowExecutor {
@@ -45,6 +47,7 @@ public class IdempotentBatchRowExecutor {
     private final IdempotencyOperationRepository repository;
     private final BatchRowClaimRunner claimRunner;
     private final IdempotencyResponseCodec responseCodec;
+    private final IdempotencyMetrics metrics;
 
     /**
      * @param userId              owner of the row; part of the claim scope.
@@ -104,11 +107,15 @@ public class IdempotentBatchRowExecutor {
                 IdempotencyOperation existing = existingOpt.get();
                 if (existing.getState() == IdempotencyOperationState.COMPLETED) {
                     if (!existing.getRequestHash().equals(requestHash)) {
+                        metrics.conflicted(ROW_OPERATION);
+                        log.warn("Idempotency batch row payload conflict: operation={}", ROW_OPERATION);
                         return BatchRowOutcome.conflict(
                                 "clientRequestId was already used to complete a row with a different payload");
                     }
                     try {
                         ResponseEntity<T> replay = responseCodec.toReplayResponse(existing, responseBodyType);
+                        metrics.replayed(ROW_OPERATION);
+                        log.debug("Idempotency batch row replay: operation={}", ROW_OPERATION);
                         return BatchRowOutcome.replayed(replay.getBody());
                     } catch (IdempotencyConflictException e) {
                         return BatchRowOutcome.failed(e.getMessage());
@@ -117,6 +124,8 @@ public class IdempotentBatchRowExecutor {
             }
 
             if (Instant.now().isAfter(deadline)) {
+                metrics.inProgress(ROW_OPERATION);
+                log.warn("Idempotency batch row in-progress (poll bound exceeded): operation={}", ROW_OPERATION);
                 return BatchRowOutcome.failed(
                         "Another request with this clientRequestId is still being processed; retry shortly");
             }

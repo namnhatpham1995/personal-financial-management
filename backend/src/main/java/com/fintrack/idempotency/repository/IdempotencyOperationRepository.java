@@ -31,4 +31,28 @@ public interface IdempotencyOperationRepository extends JpaRepository<Idempotenc
 
     Optional<IdempotencyOperation> findByUserIdAndOperationAndKeyHash(
             Long userId, String operation, String keyHash);
+
+    /**
+     * Bounded cleanup delete: removes only {@code COMPLETED} rows whose {@code expires_at} is
+     * already past {@code cutoff}, capped at {@code limit} rows per call.
+     *
+     * <p>{@code PROCESSING} rows are deliberately never matched, regardless of age — a
+     * still-{@code PROCESSING} row past its own {@code expires_at} signals a stuck/abandoned claim
+     * (e.g. the process that won it died before completing), which is a condition a human should
+     * investigate, not something a background sweep silently deletes. See
+     * {@link com.fintrack.idempotency.service.IdempotencyOperationCleanupScheduler}.
+     *
+     * @return the number of rows actually deleted (0 to {@code limit}).
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = """
+            DELETE FROM idempotency_operations
+            WHERE id IN (
+                SELECT id FROM idempotency_operations
+                WHERE state = 'COMPLETED' AND expires_at < :cutoff
+                ORDER BY id
+                LIMIT :limit
+            )
+            """, nativeQuery = true)
+    int deleteExpiredCompleted(@Param("cutoff") Instant cutoff, @Param("limit") int limit);
 }

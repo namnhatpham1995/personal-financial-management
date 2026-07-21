@@ -3,6 +3,7 @@ package com.fintrack.audit.web;
 import com.fintrack.audit.domain.AuditLog;
 import com.fintrack.audit.domain.AuditLogRepository;
 import com.fintrack.audit.service.AuditLogWriter;
+import com.fintrack.audit.support.AuditReplaySignal;
 import com.fintrack.common.ratelimit.AuthRateLimitFilter;
 import com.fintrack.common.security.JwtAuthenticationFilter;
 import com.fintrack.common.security.UserPrincipal;
@@ -60,6 +61,7 @@ class ActivityControllerTest {
     @Autowired MockMvc mockMvc;
     @MockBean AuditLogRepository auditLogRepository;
     @MockBean AuditLogWriter auditLogWriter; // satisfies ActivityAuditInterceptor dependency in WebMvcConfig
+    @MockBean AuditReplaySignal auditReplaySignal; // satisfies ActivityAuditInterceptor dependency in WebMvcConfig
 
     @AfterEach
     void clearSecurityContext() {

@@ -22,16 +22,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Covers tasks.md 2.2's enforcement coverage requirement for the interim
- * {@code IdempotencyEnforcementGuard} placeholder: when {@code fintrack.idempotency.require-key}
- * is turned on, a protected create endpoint called without an {@code Idempotency-Key} header
- * returns the typed 400 instead of falling back to unprotected direct execution. The property
- * defaults to {@code false} everywhere else, so this is the only test that exercises enforcement.
+ * Covers tasks.md 2.2/9.5's enforcement coverage requirement for
+ * {@code IdempotencyEnforcementGuard}: when {@code app.idempotency.mode} is set to {@code ENFORCE},
+ * a protected create endpoint called without an {@code Idempotency-Key} header returns the typed
+ * 400 instead of falling back to unprotected direct execution. The property defaults to
+ * {@code OBSERVE} everywhere else, so this is the only test that exercises enforcement.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 @Testcontainers
-@TestPropertySource(properties = "fintrack.idempotency.require-key=true")
+@TestPropertySource(properties = "app.idempotency.mode=ENFORCE")
 class IdempotencyEnforcementIntegrationTest {
 
     @Container
