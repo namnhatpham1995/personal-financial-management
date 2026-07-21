@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import axios, { isAxiosError } from "axios";
 import { describe, expect, it } from "vitest";
 import { createApiClient } from "../api-client.js";
@@ -138,12 +139,14 @@ describe.skipIf(!BACKEND_URL)("MCP tool <-> real backend", () => {
     const api = createApiClient({ apiUrl: BACKEND_URL!, apiToken: pat });
 
     const accountResult = await createAccount(api, {
+      idempotencyKey: randomUUID(),
       name: `MCP setup account ${suffix}`,
       accountType: "BANK",
       currency: "EUR",
       initialBalance: 250,
     });
     const categoryResult = await createCategory(api, {
+      idempotencyKey: randomUUID(),
       name: `MCP setup category ${suffix}`,
       transactionType: "EXPENSE",
     });
@@ -154,6 +157,7 @@ describe.skipIf(!BACKEND_URL)("MCP tool <-> real backend", () => {
     const category = JSON.parse(categoryResult.content[0].text) as { id: number; name: string };
 
     const budgetResult = await createBudget(api, {
+      idempotencyKey: randomUUID(),
       categoryId: category.id,
       period: "MONTHLY",
       amountLimit: 500,
@@ -174,6 +178,7 @@ describe.skipIf(!BACKEND_URL)("MCP tool <-> real backend", () => {
     expect(budget.amountLimit).toBe(500);
 
     const transactionResult = await createTransaction(api, {
+      idempotencyKey: randomUUID(),
       transactionType: "EXPENSE",
       amount: 25,
       transactionDate: "2026-01-15",
@@ -242,6 +247,7 @@ describe.skipIf(!BACKEND_URL)("MCP tool <-> real backend", () => {
     const accountsByCurrency: Record<(typeof currencies)[number], { id: number }> = {} as never;
     for (const currency of currencies) {
       const result = await createAccount(api, {
+        idempotencyKey: randomUUID(),
         name: `Persona ${currency} account ${suffix}`,
         accountType: "BANK",
         currency,
@@ -252,6 +258,7 @@ describe.skipIf(!BACKEND_URL)("MCP tool <-> real backend", () => {
     }
 
     const categoryResult = await createCategory(api, {
+      idempotencyKey: randomUUID(),
       name: `Persona groceries ${suffix}`,
       transactionType: "EXPENSE",
     });
@@ -265,6 +272,7 @@ describe.skipIf(!BACKEND_URL)("MCP tool <-> real backend", () => {
     };
     for (const currency of currencies) {
       const result = await createBudget(api, {
+        idempotencyKey: randomUUID(),
         categoryId: category.id,
         period: "MONTHLY",
         amountLimit: budgetLimitByCurrency[currency],
@@ -285,6 +293,7 @@ describe.skipIf(!BACKEND_URL)("MCP tool <-> real backend", () => {
     const createdTransactionIdsByCurrency: Record<(typeof currencies)[number], number[]> = {} as never;
     for (const currency of currencies) {
       const batchResult = await createTransactionsBatch(api, {
+        idempotencyKey: randomUUID(),
         transactions: months.map((month, index) => ({
           clientRequestId: `${currency}-${month}-batch-row-${index}`,
           transaction: {
@@ -357,6 +366,7 @@ describe.skipIf(!BACKEND_URL)("MCP tool <-> real backend", () => {
     const api = createApiClient({ apiUrl: BACKEND_URL!, apiToken: pat });
 
     const eurAccountResult = await createAccount(api, {
+      idempotencyKey: randomUUID(),
       name: `Transfer EUR account ${suffix}`,
       accountType: "BANK",
       currency: "EUR",
@@ -366,6 +376,7 @@ describe.skipIf(!BACKEND_URL)("MCP tool <-> real backend", () => {
     const eurAccount = JSON.parse(eurAccountResult.content[0].text) as { id: number };
 
     const vndAccountResult = await createAccount(api, {
+      idempotencyKey: randomUUID(),
       name: `Transfer VND account ${suffix}`,
       accountType: "BANK",
       currency: "VND",
@@ -378,6 +389,7 @@ describe.skipIf(!BACKEND_URL)("MCP tool <-> real backend", () => {
     // which could carry sensitive details) — so the retry guidance for this field lives in
     // create_transaction's static tool description, not in the error text itself.
     const missingDestination = await createTransaction(api, {
+      idempotencyKey: randomUUID(),
       transactionType: "TRANSFER",
       amount: 500,
       transactionDate: "2026-06-01",
@@ -388,6 +400,7 @@ describe.skipIf(!BACKEND_URL)("MCP tool <-> real backend", () => {
     expect(missingDestination.content[0].text).toContain("400");
 
     const created = await createTransaction(api, {
+      idempotencyKey: randomUUID(),
       transactionType: "TRANSFER",
       amount: 500,
       destinationAmount: 14_600_000,
@@ -398,5 +411,171 @@ describe.skipIf(!BACKEND_URL)("MCP tool <-> real backend", () => {
     expect(created.isError).toBeFalsy();
     const transfer = JSON.parse(created.content[0].text) as { destinationAmount: number };
     expect(transfer.destinationAmount).toBe(14_600_000);
+  });
+
+  /**
+   * Task 8.5: proves caller-controlled replay actually works end to end against the real
+   * backend, not just that the MCP layer forwards a header. Same tool, same idempotencyKey,
+   * same payload, called twice — must create exactly one transaction and apply its balance
+   * effect exactly once.
+   */
+  it("replays create_transaction safely when the same idempotencyKey and payload are resubmitted", async () => {
+    const suffix = Date.now();
+    const email = `mcp-replay-${suffix}@test.com`;
+    const backend = axios.create({ baseURL: `${BACKEND_URL}/api/v1` });
+
+    const registerResponse = await unwrapAxiosErrors(() =>
+      backend.post("/auth/register", {
+        email,
+        password: "pass1234",
+        firstName: "MCP",
+        lastName: "Replay",
+      })
+    );
+    const jwt: string = registerResponse.data.accessToken;
+
+    const tokenResponse = await unwrapAxiosErrors(() =>
+      backend.post(
+        "/tokens",
+        { name: "MCP Replay Token", scope: "WRITE", expiryDays: 30 },
+        { headers: { Authorization: `Bearer ${jwt}` } }
+      )
+    );
+    const pat: string = tokenResponse.data.plaintextToken;
+    const api = createApiClient({ apiUrl: BACKEND_URL!, apiToken: pat });
+
+    const accountResult = await createAccount(api, {
+      idempotencyKey: randomUUID(),
+      name: `Replay account ${suffix}`,
+      accountType: "BANK",
+      currency: "EUR",
+      initialBalance: 1_000,
+    });
+    expect(accountResult.isError).toBeFalsy();
+    const account = JSON.parse(accountResult.content[0].text) as { id: number };
+
+    const idempotencyKey = randomUUID();
+    const transactionPayload = {
+      idempotencyKey,
+      transactionType: "EXPENSE" as const,
+      amount: 40,
+      transactionDate: "2026-04-01",
+      accountId: account.id,
+    };
+
+    const first = await createTransaction(api, transactionPayload);
+    expect(first.isError).toBeFalsy();
+    const second = await createTransaction(api, transactionPayload);
+    expect(second.isError).toBeFalsy();
+
+    const firstTransaction = JSON.parse(first.content[0].text) as { id: number };
+    const secondTransaction = JSON.parse(second.content[0].text) as { id: number };
+    expect(secondTransaction.id).toBe(firstTransaction.id);
+
+    const listResult = await unwrapAxiosErrors(() =>
+      api.get(`/transactions?accountId=${account.id}&size=100`)
+    );
+    const page = listResult.data as { content: Array<{ id: number }> };
+    expect(page.content.filter((t) => t.id === firstTransaction.id)).toHaveLength(1);
+
+    const accountsResult = await unwrapAxiosErrors(() => api.get("/accounts"));
+    const accounts = accountsResult.data as Array<{ id: number; currentBalance: number }>;
+    const refreshedAccount = accounts.find((a) => a.id === account.id)!;
+    expect(refreshedAccount.currentBalance).toBe(1_000 - 40);
+  });
+
+  /**
+   * Task 8.5 batch equivalent: same batch-level idempotencyKey and same row clientRequestIds
+   * resubmitted must produce exactly one set of transactions and one balance effect, not a
+   * duplicate per retried call.
+   */
+  it("replays create_transactions_batch safely when the same batch key and rows are resubmitted", async () => {
+    const suffix = Date.now();
+    const email = `mcp-batch-replay-${suffix}@test.com`;
+    const backend = axios.create({ baseURL: `${BACKEND_URL}/api/v1` });
+
+    const registerResponse = await unwrapAxiosErrors(() =>
+      backend.post("/auth/register", {
+        email,
+        password: "pass1234",
+        firstName: "MCP",
+        lastName: "BatchReplay",
+      })
+    );
+    const jwt: string = registerResponse.data.accessToken;
+
+    const tokenResponse = await unwrapAxiosErrors(() =>
+      backend.post(
+        "/tokens",
+        { name: "MCP Batch Replay Token", scope: "WRITE", expiryDays: 30 },
+        { headers: { Authorization: `Bearer ${jwt}` } }
+      )
+    );
+    const pat: string = tokenResponse.data.plaintextToken;
+    const api = createApiClient({ apiUrl: BACKEND_URL!, apiToken: pat });
+
+    const accountResult = await createAccount(api, {
+      idempotencyKey: randomUUID(),
+      name: `Batch replay account ${suffix}`,
+      accountType: "BANK",
+      currency: "EUR",
+      initialBalance: 1_000,
+    });
+    expect(accountResult.isError).toBeFalsy();
+    const account = JSON.parse(accountResult.content[0].text) as { id: number };
+
+    const batchIdempotencyKey = randomUUID();
+    const batchPayload = {
+      idempotencyKey: batchIdempotencyKey,
+      transactions: [
+        {
+          clientRequestId: `batch-replay-row-0-${suffix}`,
+          transaction: {
+            transactionType: "EXPENSE" as const,
+            amount: 15,
+            transactionDate: "2026-04-01",
+            accountId: account.id,
+          },
+        },
+        {
+          clientRequestId: `batch-replay-row-1-${suffix}`,
+          transaction: {
+            transactionType: "EXPENSE" as const,
+            amount: 25,
+            transactionDate: "2026-04-02",
+            accountId: account.id,
+          },
+        },
+      ],
+    };
+
+    const first = await createTransactionsBatch(api, batchPayload);
+    expect(first.isError).toBeFalsy();
+    const second = await createTransactionsBatch(api, batchPayload);
+    expect(second.isError).toBeFalsy();
+
+    const firstBatch = JSON.parse(first.content[0].text) as {
+      results: Array<{ status: string; transaction: { id: number } | null }>;
+    };
+    const secondBatch = JSON.parse(second.content[0].text) as {
+      results: Array<{ status: string; transaction: { id: number } | null }>;
+    };
+    expect(firstBatch.results.every((r) => r.status === "CREATED")).toBe(true);
+    const firstIds = firstBatch.results.map((r) => r.transaction!.id).sort();
+    const secondIds = secondBatch.results.map((r) => r.transaction!.id).sort();
+    expect(secondIds).toEqual(firstIds);
+
+    const listResult = await unwrapAxiosErrors(() =>
+      api.get(`/transactions?accountId=${account.id}&size=100`)
+    );
+    const page = listResult.data as { content: Array<{ id: number }> };
+    for (const id of firstIds) {
+      expect(page.content.filter((t) => t.id === id)).toHaveLength(1);
+    }
+
+    const accountsResult = await unwrapAxiosErrors(() => api.get("/accounts"));
+    const accounts = accountsResult.data as Array<{ id: number; currentBalance: number }>;
+    const refreshedAccount = accounts.find((a) => a.id === account.id)!;
+    expect(refreshedAccount.currentBalance).toBe(1_000 - 15 - 25);
   });
 });

@@ -9,7 +9,10 @@ type BudgetResponse = components["schemas"]["BudgetResponse"];
 
 export async function createBudget(api: AxiosInstance, params: unknown): Promise<ToolResult> {
   try {
-    const { data } = await api.post<BudgetResponse>("/budgets", params);
+    const { idempotencyKey, ...body } = params as { idempotencyKey: string };
+    const { data } = await api.post<BudgetResponse>("/budgets", body, {
+      headers: { "Idempotency-Key": idempotencyKey },
+    });
     return toToolResult(data);
   } catch (err) {
     return toErrorResult(mapApiError(err));

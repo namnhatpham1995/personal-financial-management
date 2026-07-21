@@ -45,7 +45,29 @@ export const getTransactionShape = {
   id: z.number().int(),
 };
 
+/**
+ * Mirrors the backend's Idempotency-Key rules exactly (16-128 URL-safe characters). The same
+ * validation rule backs two distinct fields: a batch row's clientRequestId (per-row identity,
+ * stays in the request body) and idempotencyKey (whole-operation identity, forwarded only as
+ * the Idempotency-Key header and stripped from the body — never the same field, never conflated).
+ */
+function operationIdentityKey(fieldName: string) {
+  return z.string().min(16).max(128).regex(
+    /^[A-Za-z0-9_-]+$/,
+    `${fieldName} must contain only letters, digits, '-', or '_'`
+  );
+}
+
+export const clientRequestId = operationIdentityKey("clientRequestId");
+
+/**
+ * Required on every create tool. Header-only: handlers must strip this from the JSON body sent
+ * to the backend and forward it as the `Idempotency-Key` HTTP header instead.
+ */
+export const idempotencyKey = operationIdentityKey("idempotencyKey");
+
 export const createTransactionShape = {
+  idempotencyKey,
   transactionType,
   amount: z.number().positive(),
   transactionDate: isoDate,
@@ -71,17 +93,12 @@ export const updateTransactionShape = {
   note: z.string().max(2000).optional(),
 };
 
-/**
- * Mirrors the backend's Idempotency-Key rules exactly (16-128 URL-safe characters) — a batch
- * row's clientRequestId plays the same request-identity role per-row that the Idempotency-Key
- * header plays for the whole batch request.
- */
-export const clientRequestId = z.string().min(16).max(128).regex(
-  /^[A-Za-z0-9_-]+$/,
-  "clientRequestId must contain only letters, digits, '-', or '_'"
-);
-
 export const createTransactionsBatchShape = {
+  /**
+   * Scopes the whole batch request, distinct from each row's clientRequestId — forwarded only
+   * as the Idempotency-Key header, never part of the JSON body.
+   */
+  idempotencyKey,
   transactions: z.array(z.object({
     clientRequestId,
     transaction: z.object({
@@ -121,6 +138,7 @@ export const getAccountShape = {
 };
 
 export const createAccountShape = {
+  idempotencyKey,
   name: z.string().trim().min(1).max(255),
   accountType,
   currency: currencyCode,
@@ -140,6 +158,7 @@ export const listCategoriesShape = {
 };
 
 export const createCategoryShape = {
+  idempotencyKey,
   name: z.string().trim().min(1).max(100),
   transactionType,
 };
@@ -151,6 +170,7 @@ export const updateCategoryShape = {
 };
 
 export const createBudgetShape = {
+  idempotencyKey,
   categoryId: z.number().int(),
   period: budgetPeriod,
   amountLimit: z.number().positive(),
@@ -169,9 +189,16 @@ export const updateBudgetShape = {
 // hand-written shape above stops matching the backend request DTO it corresponds to.
 type AssertAssignable<Expected, _Actual extends Expected> = true;
 
+/**
+ * idempotencyKey is header-only — the handler strips it before building the JSON body — so it
+ * is never part of the generated backend DTO. Compare only the body-shaped remainder of a
+ * create shape against the DTO.
+ */
+type BodyOf<T> = Omit<T, "idempotencyKey">;
+
 type _CheckCreateTransaction = AssertAssignable<
   components["schemas"]["CreateTransactionRequest"],
-  z.infer<z.ZodObject<typeof createTransactionShape>>
+  BodyOf<z.infer<z.ZodObject<typeof createTransactionShape>>>
 >;
 type _CheckUpdateTransaction = AssertAssignable<
   components["schemas"]["UpdateTransactionRequest"],
@@ -183,7 +210,7 @@ type _CheckBatchTransactionRow = AssertAssignable<
 >;
 type _CheckCreateAccount = AssertAssignable<
   components["schemas"]["CreateAccountRequest"],
-  z.infer<z.ZodObject<typeof createAccountShape>>
+  BodyOf<z.infer<z.ZodObject<typeof createAccountShape>>>
 >;
 type _CheckUpdateAccount = AssertAssignable<
   components["schemas"]["UpdateAccountRequest"],
@@ -191,7 +218,7 @@ type _CheckUpdateAccount = AssertAssignable<
 >;
 type _CheckCreateBudget = AssertAssignable<
   components["schemas"]["CreateBudgetRequest"],
-  z.infer<z.ZodObject<typeof createBudgetShape>>
+  BodyOf<z.infer<z.ZodObject<typeof createBudgetShape>>>
 >;
 type _CheckUpdateBudget = AssertAssignable<
   components["schemas"]["UpdateBudgetRequest"],
