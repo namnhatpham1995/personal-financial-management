@@ -17,6 +17,9 @@ import {
   updateTransactionShape,
 } from "../tools/schemas.js";
 
+/** A syntactically valid idempotencyKey/clientRequestId (16-128 URL-safe characters). */
+const VALID_KEY = "test-idempotency-key-0001";
+
 /**
  * These validate the exact zod shapes the MCP SDK uses to gate a tool call before our
  * handler (and therefore any API request) ever runs — proving invalid input never
@@ -40,6 +43,7 @@ describe("tool input schemas reject malformed input before any API call", () => 
 
   it("create_transaction rejects a negative amount", () => {
     const result = z.object(createTransactionShape).safeParse({
+      idempotencyKey: VALID_KEY,
       transactionType: "EXPENSE",
       amount: -5,
       transactionDate: "2026-01-01",
@@ -50,6 +54,7 @@ describe("tool input schemas reject malformed input before any API call", () => 
 
   it("create_transaction rejects an invalid transactionType", () => {
     const result = z.object(createTransactionShape).safeParse({
+      idempotencyKey: VALID_KEY,
       transactionType: "DELETE_EVERYTHING",
       amount: 10,
       transactionDate: "2026-01-01",
@@ -60,6 +65,7 @@ describe("tool input schemas reject malformed input before any API call", () => 
 
   it("create_transaction accepts a valid payload", () => {
     const result = z.object(createTransactionShape).safeParse({
+      idempotencyKey: VALID_KEY,
       transactionType: "EXPENSE",
       amount: 12.5,
       transactionDate: "2026-01-01",
@@ -67,6 +73,16 @@ describe("tool input schemas reject malformed input before any API call", () => 
       note: "Coffee",
     });
     expect(result.success).toBe(true);
+  });
+
+  it("create_transaction rejects a payload missing idempotencyKey", () => {
+    const result = z.object(createTransactionShape).safeParse({
+      transactionType: "EXPENSE",
+      amount: 12.5,
+      transactionDate: "2026-01-01",
+      accountId: 1,
+    });
+    expect(result.success).toBe(false);
   });
 
   it("update_transaction rejects a note over the length limit", () => {
@@ -79,6 +95,7 @@ describe("tool input schemas reject malformed input before any API call", () => 
 
   it("create_transaction accepts a cross-currency TRANSFER with destinationAmount", () => {
     const result = z.object(createTransactionShape).safeParse({
+      idempotencyKey: VALID_KEY,
       transactionType: "TRANSFER",
       amount: 500,
       destinationAmount: 14600000,
@@ -91,6 +108,7 @@ describe("tool input schemas reject malformed input before any API call", () => 
 
   it("create_transaction rejects a non-positive destinationAmount", () => {
     const result = z.object(createTransactionShape).safeParse({
+      idempotencyKey: VALID_KEY,
       transactionType: "TRANSFER",
       amount: 500,
       destinationAmount: 0,
@@ -112,6 +130,7 @@ describe("tool input schemas reject malformed input before any API call", () => 
 
   it("create_transactions_batch accepts a row with destinationAmount", () => {
     const result = z.object(createTransactionsBatchShape).safeParse({
+      idempotencyKey: VALID_KEY,
       transactions: [{
         clientRequestId: "row-request-id-0001",
         transaction: {
@@ -127,6 +146,18 @@ describe("tool input schemas reject malformed input before any API call", () => 
     expect(result.success).toBe(true);
   });
 
+  it("create_transactions_batch rejects a payload missing the top-level idempotencyKey", () => {
+    const result = z.object(createTransactionsBatchShape).safeParse({
+      transactions: [{
+        clientRequestId: "row-request-id-0001",
+        transaction: {
+          transactionType: "EXPENSE", amount: 5, transactionDate: "2026-01-01", accountId: 1,
+        },
+      }],
+    });
+    expect(result.success).toBe(false);
+  });
+
   it("get_account rejects unknown fields", () => {
     const result = z.object(getAccountShape).strict().safeParse({ id: 1, path: "/vault" });
     expect(result.success).toBe(false);
@@ -134,10 +165,20 @@ describe("tool input schemas reject malformed input before any API call", () => 
 
   it("create_account rejects an invalid currency and negative initial balance", () => {
     const result = z.object(createAccountShape).safeParse({
+      idempotencyKey: VALID_KEY,
       name: "EUR checking",
       accountType: "BANK",
       currency: "eur",
       initialBalance: -1,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("create_account rejects a payload missing idempotencyKey", () => {
+    const result = z.object(createAccountShape).safeParse({
+      name: "EUR checking",
+      accountType: "BANK",
+      currency: "EUR",
     });
     expect(result.success).toBe(false);
   });
@@ -152,33 +193,54 @@ describe("tool input schemas reject malformed input before any API call", () => 
     expect(result.success).toBe(false);
   });
 
-  it("category schemas enforce a name and allow an optional update type", () => {
-    expect(z.object(createCategoryShape).safeParse({ name: "", transactionType: "EXPENSE" }).success).toBe(false);
+  it("category schemas enforce a name, idempotencyKey, and allow an optional update type", () => {
+    expect(z.object(createCategoryShape).safeParse({
+      idempotencyKey: VALID_KEY, name: "", transactionType: "EXPENSE",
+    }).success).toBe(false);
+    expect(z.object(createCategoryShape).safeParse({
+      name: "Transport", transactionType: "EXPENSE",
+    }).success).toBe(false);
     expect(z.object(updateCategoryShape).safeParse({ id: 1, name: "Groceries" }).success).toBe(true);
   });
 
-  it("budget schemas require positive amounts, ISO currency, and valid periods", () => {
+  it("budget schemas require positive amounts, ISO currency, valid periods, and idempotencyKey", () => {
     expect(z.object(createBudgetShape).safeParse({
+      idempotencyKey: VALID_KEY,
       categoryId: 1,
       period: "WEEKLY",
       amountLimit: 0,
       startDate: "2026-01-01",
       currency: "EURO",
     }).success).toBe(false);
+    expect(z.object(createBudgetShape).safeParse({
+      categoryId: 1,
+      period: "MONTHLY",
+      amountLimit: 500,
+      startDate: "2026-01-01",
+      currency: "EUR",
+    }).success).toBe(false);
     expect(z.object(updateBudgetShape).safeParse({ id: 1, amountLimit: 120, period: "MONTHLY" }).success).toBe(true);
   });
 
   it("batch transactions reject empty batches, missing clientRequestId, and unknown row fields", () => {
-    expect(z.object(createTransactionsBatchShape).safeParse({ transactions: [] }).success).toBe(false);
-    expect(z.object(createTransactionsBatchShape).safeParse({ transactions: [{
-      transaction: { transactionType: "EXPENSE", amount: 5, transactionDate: "2026-01-01", accountId: 1 },
-    }] }).success).toBe(false);
-    expect(z.object(createTransactionsBatchShape).safeParse({ transactions: [{
-      clientRequestId: "row-request-id-0002",
-      transaction: {
-        transactionType: "EXPENSE", amount: 5, transactionDate: "2026-01-01", accountId: 1, unsafe: true,
-      },
-    }] }).success).toBe(false);
+    expect(z.object(createTransactionsBatchShape).safeParse({
+      idempotencyKey: VALID_KEY, transactions: [],
+    }).success).toBe(false);
+    expect(z.object(createTransactionsBatchShape).safeParse({
+      idempotencyKey: VALID_KEY,
+      transactions: [{
+        transaction: { transactionType: "EXPENSE", amount: 5, transactionDate: "2026-01-01", accountId: 1 },
+      }],
+    }).success).toBe(false);
+    expect(z.object(createTransactionsBatchShape).safeParse({
+      idempotencyKey: VALID_KEY,
+      transactions: [{
+        clientRequestId: "row-request-id-0002",
+        transaction: {
+          transactionType: "EXPENSE", amount: 5, transactionDate: "2026-01-01", accountId: 1, unsafe: true,
+        },
+      }],
+    }).success).toBe(false);
   });
 
   it("budget history accepts valid ranges and rejects malformed currencies and dates", () => {

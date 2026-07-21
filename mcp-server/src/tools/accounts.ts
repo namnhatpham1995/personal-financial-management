@@ -19,7 +19,10 @@ export async function listAccounts(api: AxiosInstance): Promise<ToolResult> {
 
 export async function createAccount(api: AxiosInstance, params: unknown): Promise<ToolResult> {
   try {
-    const { data } = await api.post<AccountResponse>("/accounts", params);
+    const { idempotencyKey, ...body } = params as { idempotencyKey: string };
+    const { data } = await api.post<AccountResponse>("/accounts", body, {
+      headers: { "Idempotency-Key": idempotencyKey },
+    });
     return toToolResult(data);
   } catch (err) {
     return toErrorResult(mapApiError(err));

@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AxiosInstance } from "axios";
 import { mapApiError } from "../api-client.js";
@@ -18,12 +17,13 @@ type BatchTransactionResponse = components["schemas"]["BatchTransactionResponse"
 
 export async function createTransactionsBatch(api: AxiosInstance, params: unknown): Promise<ToolResult> {
   try {
-    // The backend now unconditionally requires an Idempotency-Key header on this endpoint.
-    // Generating a fresh key per call is a stopgap only — it means a retried tool call is NOT
-    // deduplicated against the prior attempt. Task group 8 ("MCP write contract and error
-    // guidance") replaces this with a caller-controlled key retained across retries.
-    const { data } = await api.post<BatchTransactionResponse>("/transactions/batch", params, {
-      headers: { "Idempotency-Key": randomUUID() },
+    // The backend unconditionally requires an Idempotency-Key header on this endpoint. This is
+    // the caller-supplied top-level key, distinct from each row's clientRequestId (which stays
+    // in the request body): resubmitting the same batch key and payload resumes an interrupted
+    // batch or replays the original per-row outcomes instead of reprocessing completed rows.
+    const { idempotencyKey, ...body } = params as { idempotencyKey: string };
+    const { data } = await api.post<BatchTransactionResponse>("/transactions/batch", body, {
+      headers: { "Idempotency-Key": idempotencyKey },
     });
     return toToolResult(data);
   } catch (err) {
@@ -33,7 +33,10 @@ export async function createTransactionsBatch(api: AxiosInstance, params: unknow
 
 export async function createTransaction(api: AxiosInstance, params: unknown): Promise<ToolResult> {
   try {
-    const { data } = await api.post<TransactionResponse>("/transactions", params);
+    const { idempotencyKey, ...body } = params as { idempotencyKey: string };
+    const { data } = await api.post<TransactionResponse>("/transactions", body, {
+      headers: { "Idempotency-Key": idempotencyKey },
+    });
     return toToolResult(data);
   } catch (err) {
     return toErrorResult(mapApiError(err));

@@ -9,7 +9,10 @@ type CategoryResponse = components["schemas"]["CategoryResponse"];
 
 export async function createCategory(api: AxiosInstance, params: unknown): Promise<ToolResult> {
   try {
-    const { data } = await api.post<CategoryResponse>("/categories", params);
+    const { idempotencyKey, ...body } = params as { idempotencyKey: string };
+    const { data } = await api.post<CategoryResponse>("/categories", body, {
+      headers: { "Idempotency-Key": idempotencyKey },
+    });
     return toToolResult(data);
   } catch (err) {
     return toErrorResult(mapApiError(err));
