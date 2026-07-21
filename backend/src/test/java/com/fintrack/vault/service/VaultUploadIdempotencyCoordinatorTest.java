@@ -1,11 +1,13 @@
 package com.fintrack.vault.service;
 
+import com.fintrack.audit.support.AuditReplaySignal;
 import com.fintrack.idempotency.exception.IdempotencyConflictException;
 import com.fintrack.idempotency.service.IdempotencyHasher;
 import com.fintrack.idempotency.service.IdempotencyKeyValidator;
 import com.fintrack.vault.domain.VaultOperation;
 import com.fintrack.vault.domain.VaultOperationState;
 import com.fintrack.vault.repository.VaultOperationRepository;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,7 +53,8 @@ class VaultUploadIdempotencyCoordinatorTest {
     void setUp() {
         when(mongoTemplate.indexOps(VaultOperation.class)).thenReturn(mock(IndexOperations.class));
         coordinator = new VaultUploadIdempotencyCoordinator(
-                new IdempotencyKeyValidator(), new IdempotencyHasher(), operationRepository, gridFsFileStore, mongoTemplate);
+                new IdempotencyKeyValidator(), new IdempotencyHasher(), operationRepository, gridFsFileStore,
+                mongoTemplate, new AuditReplaySignal(), new VaultOperationMetrics(new SimpleMeterRegistry()));
     }
 
     @Test

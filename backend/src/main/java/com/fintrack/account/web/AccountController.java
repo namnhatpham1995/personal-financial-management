@@ -42,7 +42,7 @@ public class AccountController {
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             @Valid @RequestBody CreateAccountRequest request) {
         if (idempotencyKey == null) {
-            idempotencyEnforcementGuard.requireKeyOrThrow(idempotencyKey);
+            idempotencyEnforcementGuard.requireKeyOrThrow("account.create", idempotencyKey);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(accountService.create(principal.getUserId(), request));
         }

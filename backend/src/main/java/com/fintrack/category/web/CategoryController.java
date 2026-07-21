@@ -50,7 +50,7 @@ public class CategoryController {
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             @Valid @RequestBody CreateCategoryRequest request) {
         if (idempotencyKey == null) {
-            idempotencyEnforcementGuard.requireKeyOrThrow(idempotencyKey);
+            idempotencyEnforcementGuard.requireKeyOrThrow("category.create", idempotencyKey);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(categoryService.create(principal.getUserId(), request));
         }

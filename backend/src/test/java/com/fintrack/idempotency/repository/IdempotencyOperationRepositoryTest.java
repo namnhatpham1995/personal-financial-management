@@ -3,6 +3,7 @@ package com.fintrack.idempotency.repository;
 import com.fintrack.auth.domain.User;
 import com.fintrack.auth.repository.UserRepository;
 import com.fintrack.idempotency.domain.IdempotencyOperation;
+import com.fintrack.idempotency.domain.IdempotencyOperationState;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -123,5 +124,69 @@ class IdempotencyOperationRepositoryTest {
     void findByUserIdAndOperationAndKeyHash_noMatch_returnsEmpty() {
         assertThat(repository.findByUserIdAndOperationAndKeyHash(9999L, "account.create", "z".repeat(64)))
                 .isEmpty();
+    }
+
+    // ── 9.4: bounded cleanup delete ─────────────────────────────────────────────
+
+    private IdempotencyOperation persistOperation(User user, String keyHash, IdempotencyOperationState state,
+                                                    Instant expiresAt) {
+        IdempotencyOperation op = IdempotencyOperation.builder()
+                .user(user)
+                .operation("account.create")
+                .keyHash(keyHash)
+                .requestHash("h".repeat(64))
+                .state(state)
+                .expiresAt(expiresAt)
+                .build();
+        return repository.save(op);
+    }
+
+    @Test
+    void deleteExpiredCompleted_expiredCompletedRow_isDeleted() {
+        User user = persistUser("cleanup-1@test.com");
+        IdempotencyOperation expired = persistOperation(user, "k1".repeat(32), IdempotencyOperationState.COMPLETED,
+                Instant.now().minus(1, ChronoUnit.DAYS));
+
+        int deleted = repository.deleteExpiredCompleted(Instant.now(), 1000);
+
+        assertThat(deleted).isEqualTo(1);
+        assertThat(repository.findById(expired.getId())).isEmpty();
+    }
+
+    @Test
+    void deleteExpiredCompleted_nonExpiredCompletedRow_isRetained() {
+        User user = persistUser("cleanup-2@test.com");
+        IdempotencyOperation notExpired = persistOperation(user, "k2".repeat(32), IdempotencyOperationState.COMPLETED,
+                Instant.now().plus(1, ChronoUnit.DAYS));
+
+        int deleted = repository.deleteExpiredCompleted(Instant.now(), 1000);
+
+        assertThat(deleted).isEqualTo(0);
+        assertThat(repository.findById(notExpired.getId())).isPresent();
+    }
+
+    @Test
+    void deleteExpiredCompleted_processingRowPastExpiry_isRetainedRegardlessOfAge() {
+        User user = persistUser("cleanup-3@test.com");
+        IdempotencyOperation stuckProcessing = persistOperation(user, "k3".repeat(32),
+                IdempotencyOperationState.PROCESSING, Instant.now().minus(30, ChronoUnit.DAYS));
+
+        int deleted = repository.deleteExpiredCompleted(Instant.now(), 1000);
+
+        assertThat(deleted).isEqualTo(0);
+        assertThat(repository.findById(stuckProcessing.getId())).isPresent();
+    }
+
+    @Test
+    void deleteExpiredCompleted_boundedByLimit() {
+        User user = persistUser("cleanup-4@test.com");
+        for (int i = 0; i < 5; i++) {
+            persistOperation(user, ("k4" + i).repeat(16), IdempotencyOperationState.COMPLETED,
+                    Instant.now().minus(1, ChronoUnit.DAYS));
+        }
+
+        int deleted = repository.deleteExpiredCompleted(Instant.now(), 3);
+
+        assertThat(deleted).isEqualTo(3);
     }
 }

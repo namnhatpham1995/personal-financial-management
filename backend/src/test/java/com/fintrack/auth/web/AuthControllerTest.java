@@ -2,6 +2,7 @@ package com.fintrack.auth.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fintrack.audit.service.AuditLogWriter;
+import com.fintrack.audit.support.AuditReplaySignal;
 import com.fintrack.auth.service.AuthService;
 import com.fintrack.auth.web.dto.TokenResponse;
 import com.fintrack.common.ratelimit.AuthRateLimitFilter;
@@ -40,6 +41,7 @@ class AuthControllerTest {
     @Autowired ObjectMapper objectMapper;
     @MockBean AuthService authService;
     @MockBean AuditLogWriter auditLogWriter; // satisfies ActivityAuditInterceptor dependency in WebMvcConfig
+    @MockBean AuditReplaySignal auditReplaySignal; // satisfies ActivityAuditInterceptor dependency in WebMvcConfig
 
     @Test
     void register_validRequest_returns201WithTokens() throws Exception {

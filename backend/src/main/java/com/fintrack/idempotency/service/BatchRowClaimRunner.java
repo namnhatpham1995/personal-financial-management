@@ -4,6 +4,7 @@ import com.fintrack.idempotency.domain.IdempotencyOperation;
 import com.fintrack.idempotency.domain.IdempotencyOperationState;
 import com.fintrack.idempotency.repository.IdempotencyOperationRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -26,12 +27,14 @@ import java.util.function.Supplier;
  * for why a real inter-bean call (not self-invocation) is required for {@code @Transactional} to
  * apply.
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class BatchRowClaimRunner {
 
     private final IdempotencyOperationRepository repository;
     private final IdempotencyResponseCodec responseCodec;
+    private final IdempotencyMetrics metrics;
 
     /**
      * Attempts to claim {@code (userId, operation, keyHash)} in its own {@code REQUIRES_NEW}
@@ -55,6 +58,8 @@ public class BatchRowClaimRunner {
         if (claimed == 0) {
             return Optional.empty();
         }
+        metrics.claimed(operation);
+        log.debug("Idempotency batch row claim won: operation={}", operation);
 
         // Not caught on purpose: propagating rolls back this row's claim together with any
         // partial business-mutation writes made in this same transaction.

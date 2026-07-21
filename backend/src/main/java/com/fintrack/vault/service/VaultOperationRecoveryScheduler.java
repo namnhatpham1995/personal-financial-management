@@ -46,6 +46,7 @@ public class VaultOperationRecoveryScheduler {
 
     private final VaultOperationRepository operationRepository;
     private final GridFsFileStore gridFsFileStore;
+    private final VaultOperationMetrics metrics;
 
     @Scheduled(cron = "0 */5 * * * *")   // every 5 minutes
     @SchedulerLock(name = "vaultOperationRecovery", lockAtMostFor = "PT10M", lockAtLeastFor = "PT1M")
@@ -73,9 +74,11 @@ public class VaultOperationRecoveryScheduler {
                 gridFsFileStore.delete(op.getGridFsFileId());
                 log.info("Vault operation recovery: deleted orphaned GridFS binary {} for stale operation {}",
                         op.getGridFsFileId(), op.getId());
+                metrics.recoveryCompensated(op.getOperation());
             }
             op.setState(VaultOperationState.FAILED);
             operationRepository.save(op);
+            metrics.recoveryRecovered(op.getOperation());
         } catch (RuntimeException e) {
             log.error("Vault operation recovery: failed to recover stale operation {}", op.getId(), e);
         }

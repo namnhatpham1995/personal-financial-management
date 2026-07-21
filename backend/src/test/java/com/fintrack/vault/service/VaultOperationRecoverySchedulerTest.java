@@ -23,6 +23,7 @@ class VaultOperationRecoverySchedulerTest {
 
     @Mock VaultOperationRepository operationRepository;
     @Mock GridFsFileStore gridFsFileStore;
+    @Mock VaultOperationMetrics metrics;
     @InjectMocks VaultOperationRecoveryScheduler scheduler;
 
     @Test

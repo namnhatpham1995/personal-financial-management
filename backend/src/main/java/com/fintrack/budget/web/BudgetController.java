@@ -41,7 +41,7 @@ public class BudgetController {
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             @Valid @RequestBody CreateBudgetRequest request) {
         if (idempotencyKey == null) {
-            idempotencyEnforcementGuard.requireKeyOrThrow(idempotencyKey);
+            idempotencyEnforcementGuard.requireKeyOrThrow("budget.create", idempotencyKey);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(budgetService.create(principal.getUserId(), request));
         }

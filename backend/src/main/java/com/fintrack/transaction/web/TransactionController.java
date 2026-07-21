@@ -50,7 +50,7 @@ public class TransactionController {
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             @Valid @RequestBody CreateTransactionRequest request) {
         if (idempotencyKey == null) {
-            idempotencyEnforcementGuard.requireKeyOrThrow(idempotencyKey);
+            idempotencyEnforcementGuard.requireKeyOrThrow("transaction.create", idempotencyKey);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(transactionService.createJoiningCallerTransaction(principal.getUserId(), request));
         }

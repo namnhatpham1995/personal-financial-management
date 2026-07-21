@@ -1,6 +1,7 @@
 package com.fintrack.audit.interceptor;
 
 import com.fintrack.audit.service.AuditLogWriter;
+import com.fintrack.audit.support.AuditReplaySignal;
 import com.fintrack.common.security.AuthMethod;
 import com.fintrack.common.security.UserPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,6 +29,7 @@ public class ActivityAuditInterceptor implements HandlerInterceptor {
     private static final Set<String> MUTATION_METHODS = Set.of("POST", "PUT", "DELETE");
 
     private final AuditLogWriter auditLogWriter;
+    private final AuditReplaySignal auditReplaySignal;
 
     @Override
     public void afterCompletion(HttpServletRequest request,
@@ -39,6 +41,11 @@ public class ActivityAuditInterceptor implements HandlerInterceptor {
         if (response.getStatus() < 200 || response.getStatus() >= 300) return;
         String uri = request.getRequestURI();
         if (uri == null) return;
+        // An idempotent-mutation replay (or a fully-replayed batch/vault-upload/statement
+        // confirmation retry) already recorded its one business event on the original request;
+        // recording a second event here would duplicate it. See design.md Decision #7 and
+        // openspec/changes/harden-idempotent-mutations/specs/activity-audit-log/spec.md.
+        if (auditReplaySignal.isReplayed()) return;
         // Auth endpoints mostly create/validate credentials, where the principal isn't the
         // acting user (register has none yet; login/refresh/logout act on tokens, not profile
         // data) — excluded from the audit trail. /auth/me/language is a genuine authenticated
@@ -60,6 +67,10 @@ public class ActivityAuditInterceptor implements HandlerInterceptor {
         if (principal.getAuthMethod() == AuthMethod.PAT) {
             meta.put("auth", "pat");
             meta.put("tokenId", principal.getApiTokenId());
+        }
+        String operationRef = auditReplaySignal.getOperationReference();
+        if (operationRef != null) {
+            meta.put("operationRef", operationRef);
         }
         auditLogWriter.write(principal.getUserId(), action, correlationId, meta);
     }

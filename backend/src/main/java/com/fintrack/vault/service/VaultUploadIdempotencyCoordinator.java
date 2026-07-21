@@ -1,5 +1,6 @@
 package com.fintrack.vault.service;
 
+import com.fintrack.audit.support.AuditReplaySignal;
 import com.fintrack.idempotency.exception.IdempotencyConflictException;
 import com.fintrack.idempotency.exception.IdempotencyOperationInProgressException;
 import com.fintrack.idempotency.service.IdempotencyHasher;
@@ -54,6 +55,8 @@ public class VaultUploadIdempotencyCoordinator {
     private final VaultOperationRepository operationRepository;
     private final GridFsFileStore gridFsFileStore;
     private final MongoTemplate mongoTemplate;
+    private final AuditReplaySignal auditReplaySignal;
+    private final VaultOperationMetrics metrics;
 
     /**
      * Guards one-time, on-first-use index creation (see {@link #ensureIndexesOnce()}). Deliberately
@@ -89,22 +92,36 @@ public class VaultUploadIdempotencyCoordinator {
         while (true) {
             ClaimAttempt attempt = tryClaim(userId, operation, keyHash, requestHash);
             if (attempt.claimed()) {
+                metrics.claimed(operation);
+                log.debug("Vault operation claim won: operation={}", operation);
                 T response = runClaimedUpload(attempt.operationRow(), binaryStore, documentSave);
+                // Original, freshly-claimed upload — attach a non-secret correlation reference
+                // (the vault_operations id) for the resulting audit event.
+                auditReplaySignal.setOperationReference(attempt.operationRow().getId());
                 return new VaultUploadOutcome<>(response, false);
             }
 
             VaultOperation existing = attempt.existingRow();
             if (existing.getState() == VaultOperationState.COMPLETED) {
                 if (!existing.getRequestHash().equals(requestHash)) {
+                    metrics.conflicted(operation);
+                    log.warn("Vault operation payload conflict: operation={}", operation);
                     throw new IdempotencyConflictException(
                             "Idempotency-Key was already used to complete an upload with a different file or parameters");
                 }
+                // Same key, same file/params, already completed: pure replay, no second binary or
+                // document was written — the interceptor must not record a second audit event.
+                metrics.replayed(operation);
+                log.debug("Vault operation replay: operation={}", operation);
+                auditReplaySignal.markReplayed();
                 return new VaultUploadOutcome<>(replay.buildReplayResponse(existing.getVaultDocumentId()), true);
             }
 
             // PROCESSING owned by another request, or FAILED that we just lost the reclaim race
             // for: wait/retry within the bounded window rather than tying up the thread forever.
             if (Instant.now().isAfter(deadline)) {
+                metrics.inProgress(operation);
+                log.warn("Vault operation in-progress (poll bound exceeded): operation={}", operation);
                 throw new IdempotencyOperationInProgressException(
                         "Another request with this Idempotency-Key is still being processed; retry shortly",
                         Math.max(1, POLL_INTERVAL.toSeconds()));

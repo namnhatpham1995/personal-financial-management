@@ -1,5 +1,6 @@
 package com.fintrack.vault.service;
 
+import com.fintrack.audit.support.AuditReplaySignal;
 import com.fintrack.common.domain.TransactionType;
 import com.fintrack.common.exception.ResourceNotFoundException;
 import com.fintrack.idempotency.exception.IdempotencyConflictException;
@@ -77,6 +78,8 @@ public class StatementImportService {
     private final IdempotencyHasher hasher;
     private final MongoTemplate mongoTemplate;
     private final Validator beanValidator;
+    private final AuditReplaySignal auditReplaySignal;
+    private final VaultOperationMetrics metrics;
 
     /**
      * Parses the uploaded file, stores the binary in GridFS, and creates a STAGED
@@ -185,7 +188,14 @@ public class StatementImportService {
             case STAGED -> {
                 VaultDocument claimed = tryClaimConfirmation(documentId, userId, keyHash, requestHash);
                 if (claimed != null) {
-                    yield runAndActivate(claimed, req);
+                    metrics.claimed(CONFIRM_OPERATION_NAME);
+                    log.debug("Vault operation claim won: operation={}", CONFIRM_OPERATION_NAME);
+                    ConfirmImportResponse response = runAndActivate(claimed, req);
+                    // Original confirmation request (fresh claim) — attach the vault document id
+                    // itself as the non-secret correlation reference; there is no separate
+                    // operation row for statement confirmation.
+                    auditReplaySignal.setOperationReference(documentId);
+                    yield response;
                 }
                 // Lost the CAS race to a concurrent request — re-fetch and fall through to
                 // whatever state won (CONFIRMING or, if it already finished, ACTIVE).
@@ -195,10 +205,21 @@ public class StatementImportService {
             }
             case CONFIRMING -> {
                 requireMatchingConfirmation(doc, keyHash, requestHash);
-                yield runAndActivate(doc, req);
+                // Resuming a partially-processed confirmation: at least the rows that had not yet
+                // reached a terminal outcome do real work here, so this is treated as an original
+                // request (not a pure replay) even though already-decided rows resolve as cheap
+                // per-row resume lookups within processRows().
+                ConfirmImportResponse response = runAndActivate(doc, req);
+                auditReplaySignal.setOperationReference(documentId);
+                yield response;
             }
             case ACTIVE -> {
                 requireMatchingConfirmation(doc, keyHash, requestHash);
+                // Same key, same selected-row set, already fully activated: pure replay — no row
+                // was (re)processed, so the interceptor must not record a second audit event.
+                metrics.replayed(CONFIRM_OPERATION_NAME);
+                log.debug("Vault operation replay: operation={}", CONFIRM_OPERATION_NAME);
+                auditReplaySignal.markReplayed();
                 yield buildResponse(doc, req.selectedDedupKeys());
             }
         };
@@ -208,6 +229,8 @@ public class StatementImportService {
         boolean matches = keyHash.equals(doc.getConfirmationKeyHash())
                 && requestHash.equals(doc.getConfirmationRequestHash());
         if (!matches) {
+            metrics.conflicted(CONFIRM_OPERATION_NAME);
+            log.warn("Vault operation payload conflict: operation={}", CONFIRM_OPERATION_NAME);
             String stage = doc.getStatus() == VaultDocumentStatus.ACTIVE ? "already completed" : "already in progress";
             throw new IdempotencyConflictException(
                     "Statement confirmation is " + stage + " for this document with a different "

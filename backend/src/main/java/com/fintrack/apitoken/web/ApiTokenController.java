@@ -44,7 +44,7 @@ public class ApiTokenController {
                     + "with the original token's metadata instead of creating a second token.")
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             @Valid @RequestBody CreateApiTokenRequest request) {
-        idempotencyEnforcementGuard.requireKeyOrThrow(idempotencyKey);
+        idempotencyEnforcementGuard.requireKeyOrThrow("apitoken.create", idempotencyKey);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(apiTokenService.create(principal.getUserId(), request, idempotencyKey));
     }
