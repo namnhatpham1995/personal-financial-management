@@ -529,7 +529,23 @@
     "emptyBody": "账户、预算、分类和会话的变更将显示在这里。",
     "prevAria": "上一页",
     "nextAria": "下一页",
-    "pageOf": "{current} / {total}"
+    "pageOf": "{current} / {total}",
+    "action": "{verb, select, created {创建了} updated {更新了} deleted {删除了} other {修改了}}{resource}",
+    "resources": {
+      "accounts": "账户",
+      "agent-runs": "代理运行",
+      "tokens": "API 令牌",
+      "auth": "个人资料",
+      "budgets": "预算",
+      "categories": "分类",
+      "recurring-transactions": "定期交易",
+      "transactions": "交易",
+      "vault": "文档"
+    },
+    "actionsByUri": {
+      "/api/v1/auth/me/language": "更新了语言偏好",
+      "/api/v1/auth/me/changelog-seen": "已将更新日志标记为已读"
+    }
   },
   "changelog": {
     "sidebarLabel": "更新日志",

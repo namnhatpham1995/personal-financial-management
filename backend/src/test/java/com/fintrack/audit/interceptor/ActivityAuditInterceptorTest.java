@@ -111,6 +111,30 @@ class ActivityAuditInterceptorTest {
     }
 
     @Test
+    void afterCompletion_vaultUpload_derivesVaultResource() throws Exception {
+        authenticateAs(12L);
+        when(request.getMethod()).thenReturn("POST");
+        when(request.getRequestURI()).thenReturn("/api/vault/upload");
+        when(response.getStatus()).thenReturn(201);
+
+        interceptor.afterCompletion(request, response, null, null);
+
+        verify(auditLogWriter).write(eq(12L), eq("vault.created"), any(), any());
+    }
+
+    @Test
+    void afterCompletion_vaultImportStatement_derivesVaultResource() throws Exception {
+        authenticateAs(13L);
+        when(request.getMethod()).thenReturn("POST");
+        when(request.getRequestURI()).thenReturn("/api/vault/import/statements");
+        when(response.getStatus()).thenReturn(201);
+
+        interceptor.afterCompletion(request, response, null, null);
+
+        verify(auditLogWriter).write(eq(13L), eq("vault.created"), any(), any());
+    }
+
+    @Test
     void afterCompletion_updateLanguage_writesAuditEntry() throws Exception {
         authenticateAs(9L);
         when(request.getMethod()).thenReturn("PUT");
