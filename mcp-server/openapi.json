@@ -311,6 +311,10 @@
           "budgetName" : {
             "type" : "string"
           },
+          "categoryId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
           "categoryName" : {
             "type" : "string"
           },

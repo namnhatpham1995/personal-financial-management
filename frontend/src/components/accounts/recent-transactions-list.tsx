@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { transactionService, type Transaction } from "@/services/transaction-service";
 import { MoneyText } from "@/components/ui/money-text";
 import { formatDate } from "@/lib/utils";
+import { useCategoryLabel } from "@/lib/category-label";
 
 const RECENT_COUNT = 5;
 
@@ -85,11 +86,13 @@ export function RecentTransactionsList({ currency }: RecentTransactionsListProps
 function TransactionRow({ transaction }: { transaction: Transaction }) {
   const t = useTranslations("accounts");
   const locale = useLocale();
+  const getCategoryLabel = useCategoryLabel();
+  const categoryLabel = getCategoryLabel({ name: transaction.categoryName, categoryId: transaction.categoryId });
   return (
     <li className="flex items-center justify-between gap-3 text-sm">
       <div className="min-w-0">
-        <p className="truncate text-foreground" title={transaction.categoryName ?? transaction.note ?? undefined}>
-          {transaction.categoryName ?? transaction.note ?? t("uncategorized")}
+        <p className="truncate text-foreground" title={categoryLabel ?? transaction.note ?? undefined}>
+          {categoryLabel ?? transaction.note ?? t("uncategorized")}
         </p>
         <p className="text-xs text-muted-foreground">{formatDate(transaction.transactionDate, locale)}</p>
       </div>

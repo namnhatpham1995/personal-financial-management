@@ -608,5 +608,27 @@
       "REJECTED": "已拒绝",
       "FAILED": "失败"
     }
+  },
+  "systemCategories": {
+    "Uncategorized": "未分类",
+    "Food & Dining": "餐饮",
+    "Transportation": "交通",
+    "Housing": "住房",
+    "Utilities": "水电煤",
+    "Healthcare": "医疗保健",
+    "Entertainment": "娱乐",
+    "Shopping": "购物",
+    "Education": "教育",
+    "Travel": "旅行",
+    "Insurance": "保险",
+    "Personal Care": "个人护理",
+    "Other": "其他",
+    "Salary": "工资",
+    "Freelance": "自由职业",
+    "Investment": "投资",
+    "Gift": "礼物",
+    "Refund": "退款",
+    "Loans & Credit": "贷款与信贷",
+    "Loan & Mortgage Payment": "贷款还款"
   }
 }

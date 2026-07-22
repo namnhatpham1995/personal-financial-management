@@ -967,6 +967,8 @@ export interface components {
             /** Format: int64 */
             budgetId?: number;
             budgetName?: string;
+            /** Format: int64 */
+            categoryId?: number;
             categoryName?: string;
             currency?: string;
             limitAmount?: number;

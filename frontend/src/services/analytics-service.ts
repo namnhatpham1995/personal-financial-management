@@ -20,6 +20,7 @@ export interface IncomeExpenseTrend {
 export interface BudgetProgress {
   budgetId: number;
   budgetName: string;
+  categoryId?: number;
   categoryName?: string;
   currency: string;
   limitAmount: string;

@@ -608,5 +608,27 @@
       "REJECTED": "Abgelehnt",
       "FAILED": "Fehlgeschlagen"
     }
+  },
+  "systemCategories": {
+    "Uncategorized": "Nicht kategorisiert",
+    "Food & Dining": "Essen & Trinken",
+    "Transportation": "Transport",
+    "Housing": "Wohnen",
+    "Utilities": "Nebenkosten",
+    "Healthcare": "Gesundheit",
+    "Entertainment": "Unterhaltung",
+    "Shopping": "Einkaufen",
+    "Education": "Bildung",
+    "Travel": "Reisen",
+    "Insurance": "Versicherung",
+    "Personal Care": "Körperpflege",
+    "Other": "Sonstiges",
+    "Salary": "Gehalt",
+    "Freelance": "Freiberuflich",
+    "Investment": "Investition",
+    "Gift": "Geschenk",
+    "Refund": "Erstattung",
+    "Loans & Credit": "Kredite",
+    "Loan & Mortgage Payment": "Kredit- & Hypothekenzahlung"
   }
 }

@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 public record BudgetProgressDto(
         Long budgetId,
         String budgetName,
+        Long categoryId,
         String categoryName,
         String currency,
         BigDecimal limitAmount,
