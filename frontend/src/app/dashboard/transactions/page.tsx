@@ -180,7 +180,7 @@ function HistoryTab() {
           onChange={(e) => setFilters((f) => ({ ...f, type: e.target.value || undefined, page: 0 }))}
         >
           <option value="">{t("allTypes")}</option>
-          {["INCOME", "EXPENSE", "TRANSFER"].map((type) => <option key={type} value={type}>{getTypeLabel(type)}</option>)}
+          {(["INCOME", "EXPENSE", "TRANSFER"] as const).map((type) => <option key={type} value={type}>{getTypeLabel(type)}</option>)}
         </select>
         <input
           type="date"

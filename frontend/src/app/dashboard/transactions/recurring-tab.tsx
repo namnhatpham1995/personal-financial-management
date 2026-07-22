@@ -134,7 +134,7 @@ export function RecurringTab() {
             </Field>
             <Field label={t("fields.frequency")} error={errors.frequency?.message}>
               <select {...register("frequency")} className={inputCls}>
-                {["DAILY", "WEEKLY", "MONTHLY", "YEARLY"].map((f) => <option key={f} value={f}>{getFrequencyLabel(f)}</option>)}
+                {(["DAILY", "WEEKLY", "MONTHLY", "YEARLY"] as const).map((f) => <option key={f} value={f}>{getFrequencyLabel(f)}</option>)}
               </select>
             </Field>
             <Field label={t("fields.everyNPeriods")} error={errors.intervalValue?.message}>
