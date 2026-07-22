@@ -126,7 +126,9 @@ export function RecurringTab() {
             </Field>
             <Field label={t("fields.type")} error={errors.transactionType?.message}>
               <select {...register("transactionType")} className={inputCls}>
-                {["INCOME", "EXPENSE", "TRANSFER"].map((type) => <option key={type}>{type}</option>)}
+                {(["INCOME", "EXPENSE", "TRANSFER"] as const).map((type) => (
+                  <option key={type} value={type}>{getTypeLabel(type)}</option>
+                ))}
               </select>
             </Field>
             <Field label={t("fields.amount")} error={errors.amount?.message}>
