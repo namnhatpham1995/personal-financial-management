@@ -17,7 +17,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useIdempotencyKey } from "@/lib/use-idempotency-key";
 import { getIdempotencyErrorCode } from "@/lib/idempotency-error";
-import { useTransactionTypeLabel } from "@/lib/enum-labels";
+import { useTransactionTypeLabel, useFrequencyLabel } from "@/lib/enum-labels";
 
 const schema = z.object({
   accountId: z.coerce.number(),
@@ -40,6 +40,7 @@ export function RecurringTab() {
   const tCommon = useTranslations("common");
   const locale = useLocale();
   const getTypeLabel = useTransactionTypeLabel();
+  const getFrequencyLabel = useFrequencyLabel();
   const [showForm, setShowForm] = useState(false);
 
   const { data: items = [], isLoading } = useQuery({
@@ -133,7 +134,7 @@ export function RecurringTab() {
             </Field>
             <Field label={t("fields.frequency")} error={errors.frequency?.message}>
               <select {...register("frequency")} className={inputCls}>
-                {["DAILY", "WEEKLY", "MONTHLY", "YEARLY"].map((f) => <option key={f}>{f}</option>)}
+                {["DAILY", "WEEKLY", "MONTHLY", "YEARLY"].map((f) => <option key={f} value={f}>{getFrequencyLabel(f)}</option>)}
               </select>
             </Field>
             <Field label={t("fields.everyNPeriods")} error={errors.intervalValue?.message}>
