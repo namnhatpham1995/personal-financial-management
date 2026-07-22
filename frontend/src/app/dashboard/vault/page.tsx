@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { useLocale, useTranslations } from "next-intl";
 import { Receipt, FileText, Download, Trash2, ChevronLeft, ChevronRight, Sparkles, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useDocumentStatusLabel, useIngestionStatusLabel } from "@/lib/enum-labels";
 
 export default function VaultPage() {
   return (
@@ -27,6 +28,8 @@ function VaultContent() {
   const t = useTranslations("vault");
   const tCommon = useTranslations("common");
   const locale = useLocale();
+  const getDocumentStatusLabel = useDocumentStatusLabel();
+  const getIngestionStatusLabel = useIngestionStatusLabel();
   const [page, setPage] = useState(0);
   const [activeTab, setActiveTab] = useState<"browse" | "import" | "upload">("browse");
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(null);
@@ -198,7 +201,7 @@ function VaultContent() {
                             ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                             : "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400"
                         )}>
-                          {doc.status}
+                          {getDocumentStatusLabel(doc.status as "STAGED" | "CONFIRMING" | "ACTIVE")}
                         </span>
                       </td>
                       <td className="px-4 py-3">
@@ -210,7 +213,7 @@ function VaultContent() {
                                   href="/dashboard/receipts"
                                   className="text-xs font-medium text-primary hover:underline"
                                 >
-                                  {t(`ingestion.viewRun`)} — {doc.ingestionStatus}
+                                  {t(`ingestion.viewRun`)} — {getIngestionStatusLabel(doc.ingestionStatus as "EXTRACTING" | "AWAITING_REVIEW" | "COMMITTED" | "REJECTED" | "FAILED")}
                                 </Link>
                               ) : (
                                 <button
