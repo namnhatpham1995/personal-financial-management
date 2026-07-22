@@ -114,6 +114,7 @@ export function BudgetLimitForm({
           <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("fields.currency")}</label>
           <select {...form.register("currency")} className={inputCls}>
             {currencies.map((c) => (
+              // enum-label-coverage-ignore: currency codes (USD, EUR, …) are verbatim, never translated
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
