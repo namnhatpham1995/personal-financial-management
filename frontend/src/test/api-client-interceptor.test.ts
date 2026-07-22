@@ -12,9 +12,18 @@ import {
   setTokens,
   clearTokens,
   hasStoredAuthCredentials,
+  hasSessionHintCookie,
   redirectToLoginIfProtected,
   isProtectedRoute,
+  SESSION_HINT_COOKIE_NAME,
 } from "@/lib/api-client";
+
+const clearAllCookies = () => {
+  document.cookie.split("; ").forEach((entry) => {
+    const name = entry.split("=")[0];
+    if (name) document.cookie = `${name}=; path=/; max-age=0`;
+  });
+};
 
 // axios doesn't publicly type the interceptor manager's internal handler list,
 // but exposing it is the standard way to invoke a registered rejected-handler
@@ -70,6 +79,37 @@ describe("token helpers", () => {
 
   it("does not treat empty storage as a restoration candidate", () => {
     expect(hasStoredAuthCredentials()).toBe(false);
+  });
+});
+
+describe("session hint cookie", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    clearAllCookies();
+  });
+
+  it("is set when tokens are stored", () => {
+    setTokens("acc-123", "ref-456");
+    expect(hasSessionHintCookie()).toBe(true);
+    expect(document.cookie).toContain(`${SESSION_HINT_COOKIE_NAME}=1`);
+  });
+
+  it("is cleared when tokens are cleared", () => {
+    setTokens("acc-123", "ref-456");
+    clearTokens();
+    expect(hasSessionHintCookie()).toBe(false);
+  });
+
+  it("is cleared via redirectToLoginIfProtected (interceptor's session-abandonment path)", () => {
+    setTokens("acc-123", "ref-456");
+    redirectToLoginIfProtected("/dashboard/settings", vi.fn());
+    expect(hasSessionHintCookie()).toBe(false);
+  });
+
+  it("carries no credential — only presence, never a token value", () => {
+    setTokens("acc-123", "ref-456");
+    expect(document.cookie).not.toContain("acc-123");
+    expect(document.cookie).not.toContain("ref-456");
   });
 });
 
