@@ -450,6 +450,7 @@ public class AnalyticsService {
         return new BudgetProgressDto(
                 budget.getId(),
                 budget.getCategory() != null ? budget.getCategory().getName() : null,
+                budget.getCategory() != null ? budget.getCategory().getId() : null,
                 budget.getCategory() != null ? budget.getCategory().getName() : null,
                 budget.getCurrency(),
                 limit,

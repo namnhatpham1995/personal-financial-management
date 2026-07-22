@@ -7,6 +7,7 @@ import { formatDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { MoneyText } from "@/components/ui/money-text";
 import { useTransactionTypeLabel } from "@/lib/enum-labels";
+import { useCategoryLabel } from "@/lib/category-label";
 
 export interface TransactionTablePagination {
   currentPage: number;
@@ -47,6 +48,7 @@ export function TransactionTable({
   const t = useTranslations("transactions.table");
   const locale = useLocale();
   const getTypeLabel = useTransactionTypeLabel();
+  const getCategoryLabel = useCategoryLabel();
   const showActions = Boolean(onEdit || onDelete);
   const headers = [
     t("dateHeader"),
@@ -107,7 +109,9 @@ export function TransactionTable({
                       {getTypeLabel(tx.transactionType)}
                     </Badge>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">{tx.categoryName ?? "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {getCategoryLabel({ name: tx.categoryName, categoryId: tx.categoryId }) ?? "—"}
+                  </td>
                   <td className="px-4 py-3">
                     {tx.transactionType === "TRANSFER" && tx.destinationAmount && tx.destinationCurrency ? (
                       <span className="flex items-center gap-1.5 font-mono tabular-nums font-medium text-muted-foreground">

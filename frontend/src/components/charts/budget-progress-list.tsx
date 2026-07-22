@@ -5,6 +5,7 @@ import { AlertCircle } from "lucide-react";
 import { type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { formatCurrency } from "@/lib/utils";
+import { useCategoryLabel } from "@/lib/category-label";
 
 const WARN_THRESHOLD = 70;
 const DANGER_THRESHOLD = 100;
@@ -25,6 +26,7 @@ interface Props {
 
 export function BudgetProgressList({ budgets, renderActions, renderDetails, renderCurrencyBadge }: Props) {
   const t = useTranslations("budgets.progressList");
+  const getCategoryLabel = useCategoryLabel();
   if (budgets.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">{t("empty")}</p>
@@ -43,7 +45,7 @@ export function BudgetProgressList({ budgets, renderActions, renderDetails, rend
                 {rawPct >= DANGER_THRESHOLD && (
                   <AlertCircle className="h-3.5 w-3.5 text-destructive" />
                 )}
-                {b.budgetName}
+                {getCategoryLabel({ name: b.budgetName, categoryId: b.categoryId }) ?? b.budgetName}
                 {renderCurrencyBadge?.(b)}
               </span>
               <div className="flex shrink-0 items-center gap-2">

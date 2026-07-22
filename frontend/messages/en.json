@@ -608,5 +608,27 @@
       "REJECTED": "Rejected",
       "FAILED": "Failed"
     }
+  },
+  "systemCategories": {
+    "Uncategorized": "Uncategorized",
+    "Food & Dining": "Food & Dining",
+    "Transportation": "Transportation",
+    "Housing": "Housing",
+    "Utilities": "Utilities",
+    "Healthcare": "Healthcare",
+    "Entertainment": "Entertainment",
+    "Shopping": "Shopping",
+    "Education": "Education",
+    "Travel": "Travel",
+    "Insurance": "Insurance",
+    "Personal Care": "Personal Care",
+    "Other": "Other",
+    "Salary": "Salary",
+    "Freelance": "Freelance",
+    "Investment": "Investment",
+    "Gift": "Gift",
+    "Refund": "Refund",
+    "Loans & Credit": "Loans & Credit",
+    "Loan & Mortgage Payment": "Loan & Mortgage Payment"
   }
 }

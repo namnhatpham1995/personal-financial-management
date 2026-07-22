@@ -11,6 +11,7 @@ import { TransferDirectionFields } from "@/components/transactions/transfer-dire
 import { useAutoConversion } from "@/components/transactions/use-auto-conversion";
 import { useDefaultAccountSelection } from "@/components/transactions/use-default-account-selection";
 import { useTransactionTypeLabel } from "@/lib/enum-labels";
+import { useCategoryLabel } from "@/lib/category-label";
 import { buildSchema, todayIsoDate, type TransactionFormValues } from "./transaction-form-schema";
 import type { Transaction } from "@/services/transaction-service";
 import type { Account } from "@/services/account-service";
@@ -110,6 +111,7 @@ export function TransactionForm({ editingTx, accounts, categories, isPending, on
       : errors.transferAccountId?.message;
 
   const getTypeLabel = useTransactionTypeLabel();
+  const getCategoryLabel = useCategoryLabel();
   const typeLabels = {
     INCOME: getTypeLabel("INCOME"),
     EXPENSE: getTypeLabel("EXPENSE"),
@@ -181,7 +183,9 @@ export function TransactionForm({ editingTx, accounts, categories, isPending, on
         <Field label={t("fields.category")} error={errors.categoryId?.message}>
           <select {...register("categoryId")} className={inputCls}>
             <option value="">{t("noCategory")}</option>
-            {relevantCategories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            {relevantCategories.map((c) => (
+              <option key={c.id} value={c.id}>{getCategoryLabel({ name: c.name, system: c.system })}</option>
+            ))}
           </select>
         </Field>
         <Field label={t("fields.note")} error={errors.note?.message}>

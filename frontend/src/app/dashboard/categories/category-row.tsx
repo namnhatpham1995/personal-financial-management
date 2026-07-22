@@ -8,6 +8,7 @@ import { Check, Lock, Pencil, Trash2, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Category } from "@/services/category-service";
 import { Button } from "@/components/ui/button";
+import { useCategoryLabel } from "@/lib/category-label";
 
 function createRenameSchema(t: (key: string) => string) {
   return z.object({ name: z.string().min(1, t("validation.nameRequired")).max(100) });
@@ -48,6 +49,8 @@ export function CategoryRow({
 }: CategoryRowProps) {
   const t = useTranslations("categories");
   const tCommon = useTranslations("common");
+  const getCategoryLabel = useCategoryLabel();
+  const categoryLabel = getCategoryLabel({ name: category.name, system: category.system }) ?? category.name;
   const renameSchema = useMemo(() => createRenameSchema(t), [t]);
   const renameForm = useForm<RenameValues>({
     resolver: zodResolver(renameSchema),
@@ -94,7 +97,7 @@ export function CategoryRow({
         <div className="flex items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
             {t.rich("row.deleteConfirm", {
-              categoryName: category.name,
+              categoryName: categoryLabel,
               strong: (chunks) => <span className="font-medium text-foreground">{chunks}</span>,
             })}
           </p>
@@ -114,7 +117,7 @@ export function CategoryRow({
   return (
     <div className="px-4 py-2.5">
       <div className="flex items-center justify-between gap-3">
-        <span className="font-medium truncate text-foreground">{category.name}</span>
+        <span className="font-medium truncate text-foreground">{categoryLabel}</span>
 
         <div className="flex shrink-0 items-center gap-2">
           {readonly ? (

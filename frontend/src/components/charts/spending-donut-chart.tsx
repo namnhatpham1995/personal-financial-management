@@ -4,6 +4,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { SpendingByCategory } from "@/services/analytics-service";
 import { formatCurrency } from "@/lib/utils";
 import { useChartTheme } from "@/lib/use-chart-theme";
+import { useCategoryLabel } from "@/lib/category-label";
 
 /** Optional distinctly-styled slice for money that flowed IN (e.g. incoming transfers). */
 export interface IncomingSlice {
@@ -22,6 +23,7 @@ const INCOMING_HATCH_ID = "incoming-hatch";
 
 export function SpendingDonutChart({ data, currency, incoming }: Props) {
   const theme = useChartTheme();
+  const getCategoryLabel = useCategoryLabel();
 
   const hasIncoming = incoming != null && incoming.amount > 0;
 
@@ -41,7 +43,11 @@ export function SpendingDonutChart({ data, currency, incoming }: Props) {
   // last with a hatched fill so it reads as received-not-spent.
   const incomingLabel = incoming?.label ?? "Incoming transfers";
   const chartData = [
-    ...top7.map((d) => ({ name: d.categoryName, value: Number(d.total), incoming: false })),
+    ...top7.map((d) => ({
+      name: getCategoryLabel({ name: d.categoryName, categoryId: d.categoryId }) ?? d.categoryName,
+      value: Number(d.total),
+      incoming: false,
+    })),
     ...(hasIncoming ? [{ name: incomingLabel, value: incoming!.amount, incoming: true }] : []),
   ];
 

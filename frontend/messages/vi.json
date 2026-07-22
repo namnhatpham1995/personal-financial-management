@@ -608,5 +608,27 @@
       "REJECTED": "Đã từ chối",
       "FAILED": "Thất bại"
     }
+  },
+  "systemCategories": {
+    "Uncategorized": "Chưa phân loại",
+    "Food & Dining": "Ăn uống",
+    "Transportation": "Di chuyển",
+    "Housing": "Nhà ở",
+    "Utilities": "Tiện ích",
+    "Healthcare": "Sức khỏe",
+    "Entertainment": "Giải trí",
+    "Shopping": "Mua sắm",
+    "Education": "Giáo dục",
+    "Travel": "Du lịch",
+    "Insurance": "Bảo hiểm",
+    "Personal Care": "Chăm sóc cá nhân",
+    "Other": "Khác",
+    "Salary": "Lương",
+    "Freelance": "Việc tự do",
+    "Investment": "Đầu tư",
+    "Gift": "Quà tặng",
+    "Refund": "Hoàn tiền",
+    "Loans & Credit": "Vay & Tín dụng",
+    "Loan & Mortgage Payment": "Trả nợ vay & thế chấp"
   }
 }

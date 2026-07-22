@@ -16,6 +16,7 @@ import { BudgetProgressList } from "./budget-progress-list";
 import { Button } from "@/components/ui/button";
 import { useIdempotencyKey } from "@/lib/use-idempotency-key";
 import { getIdempotencyErrorCode } from "@/lib/idempotency-error";
+import { useCategoryLabel } from "@/lib/category-label";
 
 const inputCls =
   "w-full rounded-lg border border-border bg-card px-3 py-2 text-base text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-colors";
@@ -28,6 +29,7 @@ interface BudgetProgressManagerProps {
 export function BudgetProgressManager({ currency }: BudgetProgressManagerProps) {
   const t = useTranslations("budgets.manager");
   const tCommon = useTranslations("common");
+  const getCategoryLabel = useCategoryLabel();
   const queryClient = useQueryClient();
   const [editingBudgetId, setEditingBudgetId] = useState<number | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -140,6 +142,7 @@ export function BudgetProgressManager({ currency }: BudgetProgressManagerProps) 
   const renderActions = (item: BudgetProgress) => {
     const budget = budgetById.get(item.budgetId);
     if (!budget) return null;
+    const budgetLabel = getCategoryLabel({ name: item.budgetName, categoryId: item.categoryId }) ?? item.budgetName;
 
     return (
       <div className="flex items-center gap-1">
@@ -147,7 +150,7 @@ export function BudgetProgressManager({ currency }: BudgetProgressManagerProps) 
           type="button"
           onClick={() => setEditingBudgetId(budget.id)}
           className="inline-flex min-h-11 min-w-11 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
-          aria-label={t("editAria", { budgetName: item.budgetName })}
+          aria-label={t("editAria", { budgetName: budgetLabel })}
         >
           <Pencil className="h-3.5 w-3.5" />
         </button>
@@ -156,7 +159,7 @@ export function BudgetProgressManager({ currency }: BudgetProgressManagerProps) 
           onClick={() => removeMutation.mutate(budget.id)}
           disabled={pending}
           className="inline-flex min-h-11 min-w-11 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-50 transition-colors"
-          aria-label={t("removeAria", { budgetName: item.budgetName })}
+          aria-label={t("removeAria", { budgetName: budgetLabel })}
         >
           <Trash2 className="h-3.5 w-3.5" />
         </button>
@@ -222,7 +225,7 @@ export function BudgetProgressManager({ currency }: BudgetProgressManagerProps) 
                   <option value="">{t("chooseCategory")}</option>
                   {availableCategoriesToAdd.map((category) => (
                     <option key={category.id} value={category.id}>
-                      {category.name}
+                      {getCategoryLabel({ name: category.name, system: category.system })}
                     </option>
                   ))}
                 </select>
