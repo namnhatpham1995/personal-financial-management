@@ -200,11 +200,6 @@
       "destinationAmountRequired": "不同币种账户间转账必须填写到账金额",
       "destinationAmountNotAllowed": "同币种转账不得填写到账金额",
       "sameAccountNotAllowed": "转出账户和转入账户不能相同",
-      "typeOptions": {
-        "income": "收入",
-        "expense": "支出",
-        "transfer": "转账"
-      },
       "transfer": {
         "from": "从",
         "to": "到",
@@ -564,6 +559,38 @@
         "title": "多语言界面",
         "body": "Fintrack 现已支持英语、越南语、德语和简体中文。默认会根据浏览器语言自动匹配，选择语言后会在所有设备间同步。"
       }
+    }
+  },
+  "enums": {
+    "transactionType": {
+      "INCOME": "收入",
+      "EXPENSE": "支出",
+      "TRANSFER": "转账"
+    },
+    "frequency": {
+      "DAILY": "天",
+      "WEEKLY": "周",
+      "MONTHLY": "月",
+      "YEARLY": "年"
+    },
+    "accountType": {
+      "CASH": "现金",
+      "BANK": "银行",
+      "CREDIT_CARD": "信用卡",
+      "SAVINGS": "储蓄",
+      "OTHER": "其他"
+    },
+    "documentStatus": {
+      "STAGED": "待处理",
+      "CONFIRMING": "处理中",
+      "ACTIVE": "活跃"
+    },
+    "ingestionStatus": {
+      "EXTRACTING": "正在提取",
+      "AWAITING_REVIEW": "待审核",
+      "COMMITTED": "已完成",
+      "REJECTED": "已拒绝",
+      "FAILED": "失败"
     }
   }
 }
