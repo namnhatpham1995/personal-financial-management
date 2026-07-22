@@ -24,14 +24,37 @@ export const hasStoredAuthCredentials = () =>
   typeof window !== "undefined" &&
   Boolean(localStorage.getItem("accessToken") || localStorage.getItem("refreshToken"));
 
+// Server-visible mirror of "tokens are present" — localStorage isn't readable by the server,
+// so middleware reads this cookie instead to redirect an already-signed-in visitor away from
+// public routes before any HTML renders. It never carries a credential; only presence matters.
+export const SESSION_HINT_COOKIE_NAME = "fintrack.hasSession";
+
+export const hasSessionHintCookie = () =>
+  typeof document !== "undefined" &&
+  document.cookie
+    .split("; ")
+    .some((entry) => entry.startsWith(`${SESSION_HINT_COOKIE_NAME}=`));
+
+export const setSessionHintCookie = () => {
+  if (typeof document === "undefined") return;
+  document.cookie = `${SESSION_HINT_COOKIE_NAME}=1; path=/; SameSite=Lax`;
+};
+
+export const clearSessionHintCookie = () => {
+  if (typeof document === "undefined") return;
+  document.cookie = `${SESSION_HINT_COOKIE_NAME}=; path=/; SameSite=Lax; max-age=0`;
+};
+
 export const setTokens = (access: string, refresh: string) => {
   localStorage.setItem("accessToken", access);
   localStorage.setItem("refreshToken", refresh);
+  setSessionHintCookie();
 };
 
 export const clearTokens = () => {
   localStorage.removeItem("accessToken");
   localStorage.removeItem("refreshToken");
+  clearSessionHintCookie();
 };
 
 // Protected surface mirrors auth-guard.tsx, which is only mounted under /dashboard.

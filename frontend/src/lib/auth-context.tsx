@@ -2,7 +2,14 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiClient, clearTokens, hasStoredAuthCredentials, setTokens } from "./api-client";
+import {
+  apiClient,
+  clearTokens,
+  hasSessionHintCookie,
+  hasStoredAuthCredentials,
+  setSessionHintCookie,
+  setTokens,
+} from "./api-client";
 import { getLocaleCookie, setLocaleCookie } from "./locale-preference";
 import { isSupportedLocale } from "@/i18n/config";
 
@@ -55,6 +62,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
       return;
     }
+    // Sessions established before the hint cookie existed have tokens but no cookie yet —
+    // backfill it so this visitor gets the public-route redirect on their next visit.
+    if (!hasSessionHintCookie()) setSessionHintCookie();
     apiClient
       .get<AuthUser>("/auth/me")
       .then((r) => {
