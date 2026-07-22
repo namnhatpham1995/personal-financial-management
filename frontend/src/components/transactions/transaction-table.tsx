@@ -6,6 +6,7 @@ import type { Transaction } from "@/services/transaction-service";
 import { formatDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { MoneyText } from "@/components/ui/money-text";
+import { useTransactionTypeLabel } from "@/lib/enum-labels";
 
 export interface TransactionTablePagination {
   currentPage: number;
@@ -45,6 +46,7 @@ export function TransactionTable({
 }: TransactionTableProps) {
   const t = useTranslations("transactions.table");
   const locale = useLocale();
+  const getTypeLabel = useTransactionTypeLabel();
   const showActions = Boolean(onEdit || onDelete);
   const headers = [
     t("dateHeader"),
@@ -102,7 +104,7 @@ export function TransactionTable({
                           : "transfer"
                       }
                     >
-                      {tx.transactionType}
+                      {getTypeLabel(tx.transactionType)}
                     </Badge>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{tx.categoryName ?? "—"}</td>

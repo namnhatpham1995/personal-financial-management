@@ -17,6 +17,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useIdempotencyKey } from "@/lib/use-idempotency-key";
 import { getIdempotencyErrorCode } from "@/lib/idempotency-error";
+import { useTransactionTypeLabel } from "@/lib/enum-labels";
 
 const schema = z.object({
   accountId: z.coerce.number(),
@@ -38,6 +39,7 @@ export function RecurringTab() {
   const t = useTranslations("transactions.recurring");
   const tCommon = useTranslations("common");
   const locale = useLocale();
+  const getTypeLabel = useTransactionTypeLabel();
   const [showForm, setShowForm] = useState(false);
 
   const { data: items = [], isLoading } = useQuery({
@@ -171,7 +173,7 @@ export function RecurringTab() {
                   <div>
                     <div className="flex items-center gap-2">
                       <Badge variant={item.transactionType === "INCOME" ? "income" : item.transactionType === "EXPENSE" ? "expense" : "transfer"}>
-                        {item.transactionType}
+                        {getTypeLabel(item.transactionType)}
                       </Badge>
                       {!item.active && <Badge variant="neutral">{t("pausedBadge")}</Badge>}
                     </div>

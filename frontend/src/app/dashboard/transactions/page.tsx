@@ -19,6 +19,7 @@ import { TransactionTable } from "@/components/transactions/transaction-table";
 import { Button } from "@/components/ui/button";
 import { useIdempotencyKey } from "@/lib/use-idempotency-key";
 import { getIdempotencyErrorCode } from "@/lib/idempotency-error";
+import { useTransactionTypeLabel } from "@/lib/enum-labels";
 
 const inputCls =
   "w-full rounded-md border border-border bg-card px-3.5 py-2.5 text-base text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-colors";
@@ -76,6 +77,7 @@ function HistoryTab() {
   const qc = useQueryClient();
   const t = useTranslations("transactions");
   const tCommon = useTranslations("common");
+  const getTypeLabel = useTransactionTypeLabel();
   const [showForm, setShowForm] = useState(false);
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [filters, setFilters] = useState<TransactionFilters>({ page: 0, size: 20 });
@@ -178,7 +180,7 @@ function HistoryTab() {
           onChange={(e) => setFilters((f) => ({ ...f, type: e.target.value || undefined, page: 0 }))}
         >
           <option value="">{t("allTypes")}</option>
-          {["INCOME", "EXPENSE", "TRANSFER"].map((type) => <option key={type}>{type}</option>)}
+          {["INCOME", "EXPENSE", "TRANSFER"].map((type) => <option key={type} value={type}>{getTypeLabel(type)}</option>)}
         </select>
         <input
           type="date"
