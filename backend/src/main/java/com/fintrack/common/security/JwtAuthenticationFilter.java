@@ -2,6 +2,7 @@ package com.fintrack.common.security;
 
 import com.fintrack.auth.service.JwtService;
 import com.fintrack.auth.service.UserDetailsServiceImpl;
+import com.fintrack.auth.service.AuthSessionService;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -27,6 +28,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserDetailsServiceImpl userDetailsService;
+    private final AuthSessionService authSessionService;
 
     @Override
     protected void doFilterInternal(
@@ -51,9 +53,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             String email = jwtService.extractSubject(token);
+            Long userId = jwtService.extractUserId(token);
+            Long sessionId = jwtService.extractSessionId(token);
             UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-            if (jwtService.isTokenValid(token, userDetails)) {
+            if (sessionId != null && userId != null
+                    && jwtService.isTokenValid(token, userDetails)
+                    && authSessionService.authenticateAndTouch(sessionId, userId)) {
                 UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

@@ -6,6 +6,8 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import jakarta.annotation.PostConstruct;
+
 @Getter
 @Setter
 @Component
@@ -20,12 +22,28 @@ public class AppProperties {
     private Agent agent = new Agent();
     private Idempotency idempotency = new Idempotency();
 
+    @PostConstruct
+    void validate() {
+        jwt.validateSessionTimeouts();
+    }
+
     @Getter
     @Setter
     public static class Jwt {
         private String secret;
         private long accessTokenExpiryMs = 900_000L;    // 15 min
         private long refreshTokenExpiryMs = 604_800_000L; // 7 days
+        private long sessionIdleTimeoutMs = 86_400_000L; // 24 hours
+        private long sessionAbsoluteTimeoutMs = 2_592_000_000L; // 30 days
+
+        void validateSessionTimeouts() {
+            if (sessionIdleTimeoutMs <= 0 || sessionAbsoluteTimeoutMs <= 0) {
+                throw new IllegalStateException("JWT session timeouts must be positive");
+            }
+            if (sessionAbsoluteTimeoutMs <= sessionIdleTimeoutMs) {
+                throw new IllegalStateException("JWT absolute session timeout must exceed idle timeout");
+            }
+        }
     }
 
     @Getter

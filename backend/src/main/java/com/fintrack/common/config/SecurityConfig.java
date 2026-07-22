@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fintrack.agent.service.AgentTokenService;
 import com.fintrack.apitoken.service.ApiTokenService;
 import com.fintrack.auth.repository.UserRepository;
+import com.fintrack.auth.service.AuthSessionService;
 import com.fintrack.auth.service.JwtService;
 import com.fintrack.auth.service.UserDetailsServiceImpl;
 import com.fintrack.common.ratelimit.AuthRateLimitFilter;
@@ -52,6 +53,7 @@ public class SecurityConfig {
     private final AgentTokenService agentTokenService;
     private final AgentEndpointPolicy agentEndpointPolicy;
     private final UserRepository userRepository;
+    private final AuthSessionService authSessionService;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -70,7 +72,7 @@ public class SecurityConfig {
                     res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))
             )
             .authenticationProvider(authenticationProvider())
-            .addFilterBefore(new JwtAuthenticationFilter(jwtService, userDetailsService),
+            .addFilterBefore(new JwtAuthenticationFilter(jwtService, userDetailsService, authSessionService),
                     UsernamePasswordAuthenticationFilter.class)
             // PAT runs before JWT so a fintrack_pat_ bearer never falls through to JWT parsing.
             .addFilterBefore(new PatAuthenticationFilter(apiTokenService, patEndpointPolicy, appProperties, objectMapper),
