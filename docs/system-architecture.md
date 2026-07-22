@@ -51,17 +51,28 @@ com.fintrack
 ## Authentication Flow
 
 ```
-Register/Login → AuthService → issueTokens()
-  → generate 15-min access JWT (HS256)
+Register/Login → AuthService → create auth session (24-hour idle / 30-day absolute deadline)
+  → issueTokens()
+  → generate 15-min access JWT (HS256, session id claim)
   → generate 64-byte SecureRandom refresh token → SHA-256 hash → DB
 
-Request → JwtAuthenticationFilter → extract Bearer → validate JWT
-  → UserPrincipal(userId) → SecurityContext
+Request → JwtAuthenticationFilter → extract Bearer → validate JWT + auth session
+  → advance last_activity_at → UserPrincipal(userId) → SecurityContext
 
 Refresh → POST /auth/refresh → validate hash in DB
-  → revoke old token → issue new pair (rotation)
+  → validate idle/absolute session deadlines
+  → revoke old token → issue new pair in the same session (rotation)
   → detect reuse (revoked): revoke ALL user tokens
 ```
+
+Browser auth sessions are persisted in PostgreSQL. `last_activity_at` advances only after
+server-accepted browser JWT activity, login/registration, or refresh; public-page activity does
+not extend a session. A session is rejected at 24 hours of inactivity or 30 days after its
+original login, whichever comes first. Explicit logout revokes the whole current session while
+leaving independent browser/device sessions active. The frontend keeps the current access and
+refresh tokens in `localStorage`, restores from either token after a browser restart, and clears
+them when the backend rejects the session. Configure the limits with
+`JWT_SESSION_IDLE_TIMEOUT_MS` and `JWT_SESSION_ABSOLUTE_TIMEOUT_MS`.
 
 ## Personal Access Token (PAT) Authentication
 

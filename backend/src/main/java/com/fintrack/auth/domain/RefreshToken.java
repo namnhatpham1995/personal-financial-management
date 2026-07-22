@@ -23,6 +23,10 @@ public class RefreshToken {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "session_id", nullable = false)
+    private AuthSession session;
+
     @Column(name = "token_hash", nullable = false, unique = true, length = 255)
     private String tokenHash;
 

@@ -1,6 +1,7 @@
 package com.fintrack.auth.service;
 
 import com.fintrack.auth.domain.RefreshToken;
+import com.fintrack.auth.domain.AuthSession;
 import com.fintrack.auth.domain.Role;
 import com.fintrack.auth.domain.User;
 import com.fintrack.auth.exception.RefreshAlreadyRotatedException;
@@ -40,6 +41,7 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final AuthSessionService authSessionService;
     private final UserDetailsServiceImpl userDetailsService;
     private final AppProperties appProperties;
     private final EntityManager entityManager;
@@ -86,6 +88,10 @@ public class AuthService {
         RefreshToken stored = refreshTokenRepository.findByTokenHash(hash)
                 .orElseThrow(() -> new BadCredentialsException("Invalid refresh token"));
 
+        if (stored.getSession() != null) {
+            authSessionService.requireActive(stored.getSession().getId(), stored.getUser().getId());
+        }
+
         if (stored.isExpired()) {
             refreshTokenRepository.revokeAllByUserId(stored.getUser().getId());
             throw new BadCredentialsException("Refresh token is expired or revoked");
@@ -99,7 +105,10 @@ public class AuthService {
             // follow-up save that links the successor.
             stored.setRevoked(true);
             stored.setRotatedAt(now);
-            IssuedTokens issued = issueTokensInternal(stored.getUser());
+            if (stored.getSession() != null) {
+                authSessionService.recordActivity(stored.getSession());
+            }
+            IssuedTokens issued = issueTokensInternal(stored.getUser(), stored.getSession());
             stored.setSuccessorId(issued.refreshToken().getId());
             refreshTokenRepository.save(stored);
             return issued.response();
@@ -171,26 +180,32 @@ public class AuthService {
     public void logout(String rawRefreshToken) {
         String hash = hashToken(rawRefreshToken);
         refreshTokenRepository.findByTokenHash(hash).ifPresent(rt -> {
-            rt.setRevoked(true);
-            refreshTokenRepository.save(rt);
+            if (rt.getSession() != null) {
+                authSessionService.revoke(rt.getSession().getId());
+            } else {
+                rt.setRevoked(true);
+                refreshTokenRepository.save(rt);
+            }
         });
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
     private TokenResponse issueTokens(User user) {
-        return issueTokensInternal(user).response();
+        return issueTokensInternal(user, authSessionService.start(user)).response();
     }
 
     /** Pairs the returned {@link TokenResponse} with the persisted successor entity so callers
      *  that need the new row's id (refresh rotation lineage) don't have to re-look it up by hash. */
     private record IssuedTokens(TokenResponse response, RefreshToken refreshToken) {}
 
-    private IssuedTokens issueTokensInternal(User user) {
+    private IssuedTokens issueTokensInternal(User user, AuthSession session) {
         UserPrincipal principal = new UserPrincipal(user);
-        String accessToken = jwtService.generateAccessToken(principal, user.getId());
+        String accessToken = session == null
+                ? jwtService.generateAccessToken(principal, user.getId())
+                : jwtService.generateAccessToken(principal, user.getId(), session.getId());
         String rawRefresh = generateRawRefreshToken();
-        RefreshToken saved = persistRefreshToken(user, rawRefresh);
+        RefreshToken saved = persistRefreshToken(user, rawRefresh, session);
 
         String fullName = user.getFullName() != null ? user.getFullName() : "";
         int spaceIdx = fullName.indexOf(' ');
@@ -211,10 +226,15 @@ public class AuthService {
         return new IssuedTokens(response, saved);
     }
 
-    private RefreshToken persistRefreshToken(User user, String rawToken) {
-        Instant expiresAt = Instant.now().plusMillis(appProperties.getJwt().getRefreshTokenExpiryMs());
+    private RefreshToken persistRefreshToken(User user, String rawToken, AuthSession session) {
+        Instant now = Instant.now();
+        Instant expiresAt = now.plusMillis(appProperties.getJwt().getRefreshTokenExpiryMs());
+        if (session != null && expiresAt.isAfter(session.getAbsoluteExpiresAt())) {
+            expiresAt = session.getAbsoluteExpiresAt();
+        }
         RefreshToken rt = RefreshToken.builder()
                 .user(user)
+                .session(session)
                 .tokenHash(hashToken(rawToken))
                 .expiresAt(expiresAt)
                 .build();

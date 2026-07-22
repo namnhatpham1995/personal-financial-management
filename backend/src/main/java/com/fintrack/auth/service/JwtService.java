@@ -14,6 +14,7 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.function.Function;
 
 @Slf4j
@@ -25,6 +26,14 @@ public class JwtService {
 
     public String generateAccessToken(UserDetails userDetails, Long userId) {
         return buildToken(Map.of("userId", userId), userDetails.getUsername(),
+                appProperties.getJwt().getAccessTokenExpiryMs());
+    }
+
+    public String generateAccessToken(UserDetails userDetails, Long userId, Long sessionId) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", userId);
+        claims.put("sid", sessionId);
+        return buildToken(claims, userDetails.getUsername(),
                 appProperties.getJwt().getAccessTokenExpiryMs());
     }
 
@@ -44,6 +53,10 @@ public class JwtService {
 
     public Long extractUserId(String token) {
         return extractClaim(token, claims -> claims.get("userId", Long.class));
+    }
+
+    public Long extractSessionId(String token) {
+        return extractClaim(token, claims -> claims.get("sid", Long.class));
     }
 
     private boolean isTokenExpired(String token) {

@@ -1,6 +1,7 @@
 package com.fintrack.auth.service;
 
 import com.fintrack.auth.domain.RefreshToken;
+import com.fintrack.auth.domain.AuthSession;
 import com.fintrack.auth.domain.Role;
 import com.fintrack.auth.domain.User;
 import com.fintrack.auth.repository.RefreshTokenRepository;
@@ -37,6 +38,7 @@ class AuthServiceTest {
     @Mock PasswordEncoder passwordEncoder;
     @Mock JwtService jwtService;
     @Mock UserDetailsServiceImpl userDetailsService;
+    @Mock AuthSessionService authSessionService;
     @Mock AppProperties appProperties;
     @Mock jakarta.persistence.EntityManager entityManager;
 
@@ -44,6 +46,7 @@ class AuthServiceTest {
 
     private AppProperties.Jwt jwtProps;
     private Role userRole;
+    private AuthSession testSession;
 
     @BeforeEach
     void setUp() {
@@ -57,6 +60,13 @@ class AuthServiceTest {
 
         userRole = new Role("ROLE_USER");
         userRole.setId(1L);
+        testSession = AuthSession.builder()
+                .id(42L)
+                .startedAt(Instant.now())
+                .lastActivityAt(Instant.now())
+                .absoluteExpiresAt(Instant.now().plusSeconds(3600))
+                .build();
+        lenient().when(authSessionService.start(any(User.class))).thenReturn(testSession);
     }
 
     @Test
@@ -70,7 +80,7 @@ class AuthServiceTest {
                 .id(1L).email("a@b.com").fullName("Alice Smith")
                 .roles(Set.of(userRole)).build();
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
-        when(jwtService.generateAccessToken(any(), anyLong())).thenReturn("access-token");
+        when(jwtService.generateAccessToken(any(), anyLong(), anyLong())).thenReturn("access-token");
         when(refreshTokenRepository.save(any())).thenReturn(new RefreshToken());
 
         TokenResponse response = authService.register(req);
@@ -105,7 +115,7 @@ class AuthServiceTest {
         User user = User.builder().id(2L).email("y@b.com").passwordHash("hash").fullName("Bob Jones").build();
         when(userRepository.findByEmail("y@b.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("pass1234", "hash")).thenReturn(true);
-        when(jwtService.generateAccessToken(any(), anyLong())).thenReturn("new-access");
+        when(jwtService.generateAccessToken(any(), anyLong(), anyLong())).thenReturn("new-access");
         when(refreshTokenRepository.save(any())).thenReturn(new RefreshToken());
 
         TokenResponse response = authService.login(new LoginRequest("y@b.com", "pass1234"));
