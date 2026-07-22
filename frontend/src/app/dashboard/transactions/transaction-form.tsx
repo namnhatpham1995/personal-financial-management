@@ -10,6 +10,7 @@ import { TransactionTypeSegmentedControl } from "@/components/transactions/trans
 import { TransferDirectionFields } from "@/components/transactions/transfer-direction-fields";
 import { useAutoConversion } from "@/components/transactions/use-auto-conversion";
 import { useDefaultAccountSelection } from "@/components/transactions/use-default-account-selection";
+import { useTransactionTypeLabel } from "@/lib/enum-labels";
 import { buildSchema, todayIsoDate, type TransactionFormValues } from "./transaction-form-schema";
 import type { Transaction } from "@/services/transaction-service";
 import type { Account } from "@/services/account-service";
@@ -108,10 +109,11 @@ export function TransactionForm({ editingTx, accounts, categories, isPending, on
       ? t("sameAccountNotAllowed")
       : errors.transferAccountId?.message;
 
+  const getTypeLabel = useTransactionTypeLabel();
   const typeLabels = {
-    INCOME: t("typeOptions.income"),
-    EXPENSE: t("typeOptions.expense"),
-    TRANSFER: t("typeOptions.transfer"),
+    INCOME: getTypeLabel("INCOME"),
+    EXPENSE: getTypeLabel("EXPENSE"),
+    TRANSFER: getTypeLabel("TRANSFER"),
   } as const;
 
   return (
