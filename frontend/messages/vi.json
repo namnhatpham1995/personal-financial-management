@@ -200,11 +200,6 @@
       "destinationAmountRequired": "Số tiền nhận là bắt buộc khi chuyển khoản giữa các loại tiền tệ khác nhau",
       "destinationAmountNotAllowed": "Số tiền nhận phải để trống khi chuyển khoản cùng loại tiền tệ",
       "sameAccountNotAllowed": "Tài khoản nguồn và tài khoản nhận phải khác nhau",
-      "typeOptions": {
-        "income": "Thu nhập",
-        "expense": "Chi tiêu",
-        "transfer": "Chuyển khoản"
-      },
       "transfer": {
         "from": "Từ",
         "to": "Đến",
@@ -564,6 +559,38 @@
         "title": "Giao diện đa ngôn ngữ",
         "body": "Fintrack hiện có sẵn bằng tiếng Anh, tiếng Việt, tiếng Đức và tiếng Trung (giản thể). Ứng dụng tự động khớp với ngôn ngữ trình duyệt của bạn theo mặc định, và lựa chọn của bạn sẽ được đồng bộ trên mọi thiết bị sau khi bạn chọn."
       }
+    }
+  },
+  "enums": {
+    "transactionType": {
+      "INCOME": "Thu nhập",
+      "EXPENSE": "Chi tiêu",
+      "TRANSFER": "Chuyển khoản"
+    },
+    "frequency": {
+      "DAILY": "ngày",
+      "WEEKLY": "tuần",
+      "MONTHLY": "tháng",
+      "YEARLY": "năm"
+    },
+    "accountType": {
+      "CASH": "tiền mặt",
+      "BANK": "ngân hàng",
+      "CREDIT_CARD": "thẻ tín dụng",
+      "SAVINGS": "tiết kiệm",
+      "OTHER": "khác"
+    },
+    "documentStatus": {
+      "STAGED": "Đang chờ",
+      "CONFIRMING": "Đang xử lý",
+      "ACTIVE": "Hoạt động"
+    },
+    "ingestionStatus": {
+      "EXTRACTING": "Đang trích xuất",
+      "AWAITING_REVIEW": "Chờ xem xét",
+      "COMMITTED": "Đã hoàn tất",
+      "REJECTED": "Đã từ chối",
+      "FAILED": "Thất bại"
     }
   }
 }

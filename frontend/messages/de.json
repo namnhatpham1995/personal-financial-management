@@ -200,11 +200,6 @@
       "destinationAmountRequired": "Zielbetrag ist bei Überweisungen zwischen verschiedenen Währungen erforderlich",
       "destinationAmountNotAllowed": "Zielbetrag muss bei Überweisungen innerhalb derselben Währung leer bleiben",
       "sameAccountNotAllowed": "Quell- und Zielkonto müssen unterschiedlich sein",
-      "typeOptions": {
-        "income": "Einnahme",
-        "expense": "Ausgabe",
-        "transfer": "Überweisung"
-      },
       "transfer": {
         "from": "Von",
         "to": "Nach",
@@ -564,6 +559,38 @@
         "title": "Mehrsprachige Benutzeroberfläche",
         "body": "Fintrack ist jetzt auf Englisch, Vietnamesisch, Deutsch und Chinesisch (vereinfacht) verfügbar. Die Sprache wird standardmäßig an Ihre Browsersprache angepasst, und Ihre Auswahl folgt Ihnen geräteübergreifend, sobald Sie eine getroffen haben."
       }
+    }
+  },
+  "enums": {
+    "transactionType": {
+      "INCOME": "Einnahme",
+      "EXPENSE": "Ausgabe",
+      "TRANSFER": "Überweisung"
+    },
+    "frequency": {
+      "DAILY": "Täglich",
+      "WEEKLY": "Wöchentlich",
+      "MONTHLY": "Monatlich",
+      "YEARLY": "Jährlich"
+    },
+    "accountType": {
+      "CASH": "bargeld",
+      "BANK": "bank",
+      "CREDIT_CARD": "kreditkarte",
+      "SAVINGS": "sparkonten",
+      "OTHER": "sonstiges"
+    },
+    "documentStatus": {
+      "STAGED": "Bereitgestellt",
+      "CONFIRMING": "Verarbeitung läuft",
+      "ACTIVE": "Aktiv"
+    },
+    "ingestionStatus": {
+      "EXTRACTING": "Wird extrahiert",
+      "AWAITING_REVIEW": "Prüfung ausstehend",
+      "COMMITTED": "Abgeschlossen",
+      "REJECTED": "Abgelehnt",
+      "FAILED": "Fehlgeschlagen"
     }
   }
 }

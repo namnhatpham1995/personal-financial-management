@@ -6,10 +6,8 @@ import type { Account, CreateAccountPayload } from "@/services/account-service";
 import { formatCurrency } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  CreateAccountForm,
-  formatAccountType,
-} from "@/components/accounts/account-management-ui";
+import { CreateAccountForm } from "@/components/accounts/account-management-ui";
+import { useAccountTypeLabel } from "@/lib/enum-labels";
 
 /**
  * Top-of-page account management entry point: add-account action, inline create
@@ -130,6 +128,7 @@ function AccountBox({
   onOpenDetail: (account: Account) => void;
 }) {
   const t = useTranslations("accounts");
+  const getAccountTypeLabel = useAccountTypeLabel();
   const viewDetailsLabel = t("viewDetails", { accountName: account.name });
 
   return (
@@ -150,7 +149,7 @@ function AccountBox({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {formatAccountType(account.accountType)}
+            {getAccountTypeLabel(account.accountType as "CASH" | "BANK" | "CREDIT_CARD" | "SAVINGS" | "OTHER")}
           </p>
           <p className="mt-1 truncate font-semibold text-foreground" title={account.name}>
             {account.name}

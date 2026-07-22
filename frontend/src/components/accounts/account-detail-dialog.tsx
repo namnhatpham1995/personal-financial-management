@@ -12,7 +12,7 @@ import { formatCurrency } from "@/lib/utils";
 import { SpendingDonutChart } from "@/components/charts/spending-donut-chart";
 import { TransactionTable } from "@/components/transactions/transaction-table";
 import { Card } from "@/components/ui/card";
-import { formatAccountType } from "@/components/accounts/account-management-ui";
+import { useAccountTypeLabel } from "@/lib/enum-labels";
 
 const PAGE_SIZE = 10;
 
@@ -28,6 +28,7 @@ const inputCls =
 export function AccountDetailDialog({ account, onClose }: { account: Account; onClose: () => void }) {
   const t = useTranslations("accounts");
   const tCommon = useTranslations("common");
+  const getAccountTypeLabel = useAccountTypeLabel();
   // Default to the last 12 months; the pie endpoint requires a concrete range, so
   // all three sections share this window rather than an open-ended "all time".
   const [startDate, setStartDate] = useState(
@@ -80,7 +81,7 @@ export function AccountDetailDialog({ account, onClose }: { account: Account; on
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              {formatAccountType(account.accountType)}
+              {getAccountTypeLabel(account.accountType as "CASH" | "BANK" | "CREDIT_CARD" | "SAVINGS" | "OTHER")}
             </p>
             <h2 className="mt-1 truncate text-xl font-bold tracking-tight text-foreground" title={account.name}>
               {account.name}

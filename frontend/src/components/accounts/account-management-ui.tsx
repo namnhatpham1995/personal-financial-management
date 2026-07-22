@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTranslations } from "next-intl";
+import { useAccountTypeLabel } from "@/lib/enum-labels";
 import type {
   Account,
   CreateAccountPayload,
@@ -35,7 +36,7 @@ export type EditAccountFormValues = z.infer<typeof editSchema>;
 const inputCls =
   "w-full rounded-md border border-border bg-card px-3.5 py-2.5 text-base text-foreground placeholder:text-muted-foreground/50 transition-colors focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/40";
 
-const ACCOUNT_TYPES = ["CASH", "BANK", "CREDIT_CARD", "SAVINGS", "OTHER"];
+const ACCOUNT_TYPES = ["CASH", "BANK", "CREDIT_CARD", "SAVINGS", "OTHER"] as const;
 
 export function CreateAccountForm({
   onSubmit,
@@ -57,6 +58,7 @@ export function CreateAccountForm({
     formState: { errors },
   } = useForm<CreateAccountFormValues>({ resolver: zodResolver(createSchema) });
   const t = useTranslations("accounts");
+  const getAccountTypeLabel = useAccountTypeLabel();
   const tCommon = useTranslations("common");
 
   const form = (
@@ -188,10 +190,6 @@ export function DeleteAccountDialog({
   );
 }
 
-export function formatAccountType(type: string): string {
-  return type.replaceAll("_", " ").toLowerCase();
-}
-
 function AccountFields({
   register,
   errors,
@@ -204,6 +202,7 @@ function AccountFields({
   defaultCurrency?: string;
 }) {
   const t = useTranslations("accounts.fields");
+  const getAccountTypeLabel = useAccountTypeLabel();
   return (
     <>
       <Field label={t("name")} error={errors.name?.message}>
@@ -212,7 +211,7 @@ function AccountFields({
       <Field label={t("type")} error={errors.accountType?.message}>
         <select {...register("accountType")} className={inputCls}>
           {ACCOUNT_TYPES.map((type) => (
-            <option key={type}>{type}</option>
+            <option key={type} value={type}>{getAccountTypeLabel(type)}</option>
           ))}
         </select>
       </Field>
