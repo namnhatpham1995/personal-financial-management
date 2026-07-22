@@ -529,7 +529,23 @@
     "emptyBody": "Änderungen an Konten, Budgets, Kategorien und Sitzungen erscheinen hier.",
     "prevAria": "Vorherige Seite",
     "nextAria": "Nächste Seite",
-    "pageOf": "{current} / {total}"
+    "pageOf": "{current} / {total}",
+    "action": "{resource} {verb, select, created {erstellt} updated {aktualisiert} deleted {gelöscht} other {geändert}}",
+    "resources": {
+      "accounts": "Konto",
+      "agent-runs": "Agent-Lauf",
+      "tokens": "API-Token",
+      "auth": "Profil",
+      "budgets": "Budget",
+      "categories": "Kategorie",
+      "recurring-transactions": "wiederkehrende Transaktion",
+      "transactions": "Transaktion",
+      "vault": "Dokument"
+    },
+    "actionsByUri": {
+      "/api/v1/auth/me/language": "Spracheinstellung aktualisiert",
+      "/api/v1/auth/me/changelog-seen": "Neuigkeiten als gesehen markiert"
+    }
   },
   "changelog": {
     "sidebarLabel": "Neuigkeiten",

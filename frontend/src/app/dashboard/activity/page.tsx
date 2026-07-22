@@ -7,8 +7,20 @@ import { useTranslations } from "next-intl";
 import { activityService, ActivityEvent } from "@/services/activity-service";
 import { Card } from "@/components/ui/card";
 
-function actionLabel(action: string): string {
-  return action.replace(".", " ").replace(/\b\w/g, (c) => c.toUpperCase());
+function useActionLabel() {
+  const t = useTranslations("activity");
+
+  return (event: ActivityEvent): string => {
+    const uri = typeof event.meta?.uri === "string" ? event.meta.uri : undefined;
+    if (uri) {
+      const override = t.has(`actionsByUri.${uri}`) ? t(`actionsByUri.${uri}` as never) : undefined;
+      if (override) return override;
+    }
+
+    const [resource, verb] = event.action.split(".");
+    const resourceLabel = t.has(`resources.${resource}`) ? t(`resources.${resource}` as never) : resource;
+    return t("action", { verb: verb ?? "mutated", resource: resourceLabel });
+  };
 }
 
 function actionColor(action: string): string {
@@ -20,6 +32,7 @@ function actionColor(action: string): string {
 
 function EventRow({ event }: { event: ActivityEvent }) {
   const date = new Date(event.ts);
+  const getActionLabel = useActionLabel();
 
   return (
     <div className="flex items-start gap-4 border-b border-border py-3 last:border-0">
@@ -28,7 +41,7 @@ function EventRow({ event }: { event: ActivityEvent }) {
       </div>
       <div className="min-w-0 flex-1">
         <p className={`text-sm font-medium ${actionColor(event.action)}`}>
-          {actionLabel(event.action)}
+          {getActionLabel(event)}
         </p>
         <p className="mt-0.5 font-mono text-xs tabular-nums text-muted-foreground">
           {date.toLocaleDateString()} {date.toLocaleTimeString()}

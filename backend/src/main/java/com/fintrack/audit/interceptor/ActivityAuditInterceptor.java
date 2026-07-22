@@ -76,8 +76,15 @@ public class ActivityAuditInterceptor implements HandlerInterceptor {
     }
 
     private String resolveAction(String method, String uri) {
-        String[] parts = uri.replaceAll("/api/v\\d+/", "").split("/");
-        String resource = parts.length > 0 ? parts[0] : "resource";
+        // Versioned routes ("/api/v1/accounts") strip the version segment so the
+        // resource segment (e.g. "accounts") lands at parts[0]. Vault routes have no
+        // version segment ("/api/vault/upload"), so only "/api/" is stripped, keeping
+        // "vault" itself as the resource segment.
+        String stripped = uri.startsWith("/api/vault/")
+                ? uri.substring("/api/".length())
+                : uri.replaceAll("/api/v\\d+/", "");
+        String[] parts = stripped.split("/");
+        String resource = parts.length > 0 && !parts[0].isEmpty() ? parts[0] : "resource";
 
         return switch (method) {
             case "POST"   -> resource + ".created";

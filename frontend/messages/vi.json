@@ -529,7 +529,23 @@
     "emptyBody": "Các thay đổi về tài khoản, ngân sách, danh mục và phiên đăng nhập sẽ xuất hiện ở đây.",
     "prevAria": "Trang trước",
     "nextAria": "Trang sau",
-    "pageOf": "{current} / {total}"
+    "pageOf": "{current} / {total}",
+    "action": "{verb, select, created {Đã tạo} updated {Đã cập nhật} deleted {Đã xóa} other {Đã thay đổi}} {resource}",
+    "resources": {
+      "accounts": "tài khoản",
+      "agent-runs": "phiên AI",
+      "tokens": "token API",
+      "auth": "hồ sơ",
+      "budgets": "ngân sách",
+      "categories": "danh mục",
+      "recurring-transactions": "giao dịch định kỳ",
+      "transactions": "giao dịch",
+      "vault": "tài liệu"
+    },
+    "actionsByUri": {
+      "/api/v1/auth/me/language": "Đã cập nhật ngôn ngữ ưa thích",
+      "/api/v1/auth/me/changelog-seen": "Đã đánh dấu đã xem tính năng mới"
+    }
   },
   "changelog": {
     "sidebarLabel": "Có gì mới",

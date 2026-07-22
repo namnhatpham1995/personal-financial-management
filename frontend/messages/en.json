@@ -529,7 +529,23 @@
     "emptyBody": "Changes to accounts, budgets, categories, and sessions will appear here.",
     "prevAria": "Previous page",
     "nextAria": "Next page",
-    "pageOf": "{current} / {total}"
+    "pageOf": "{current} / {total}",
+    "action": "{verb, select, created {Created} updated {Updated} deleted {Deleted} other {Changed}} {resource}",
+    "resources": {
+      "accounts": "account",
+      "agent-runs": "agent run",
+      "tokens": "API token",
+      "auth": "profile",
+      "budgets": "budget",
+      "categories": "category",
+      "recurring-transactions": "recurring transaction",
+      "transactions": "transaction",
+      "vault": "document"
+    },
+    "actionsByUri": {
+      "/api/v1/auth/me/language": "Updated language preference",
+      "/api/v1/auth/me/changelog-seen": "Marked What's New as seen"
+    }
   },
   "changelog": {
     "sidebarLabel": "What's New",
