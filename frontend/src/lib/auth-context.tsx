@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiClient, clearTokens, setTokens } from "./api-client";
+import { apiClient, clearTokens, hasStoredAuthCredentials, setTokens } from "./api-client";
 import { getLocaleCookie, setLocaleCookie } from "./locale-preference";
 import { isSupportedLocale } from "@/i18n/config";
 
@@ -48,10 +48,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.refresh();
   };
 
-  // Restore session from stored tokens on mount
+  // Restore a session from either stored credential. An expired/missing access token is
+  // recovered by the api client's coordinated refresh interceptor when /auth/me returns 401.
   useEffect(() => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
-    if (!token) {
+    if (!hasStoredAuthCredentials()) {
       setIsLoading(false);
       return;
     }

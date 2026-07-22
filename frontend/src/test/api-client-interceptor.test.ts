@@ -11,6 +11,7 @@ import {
   apiClient,
   setTokens,
   clearTokens,
+  hasStoredAuthCredentials,
   redirectToLoginIfProtected,
   isProtectedRoute,
 } from "@/lib/api-client";
@@ -60,6 +61,15 @@ describe("token helpers", () => {
     clearTokens();
     expect(localStorage.getItem("accessToken")).toBeNull();
     expect(localStorage.getItem("refreshToken")).toBeNull();
+  });
+
+  it("recognizes a refresh-token-only session as restorable", () => {
+    localStorage.setItem("refreshToken", "ref-456");
+    expect(hasStoredAuthCredentials()).toBe(true);
+  });
+
+  it("does not treat empty storage as a restoration candidate", () => {
+    expect(hasStoredAuthCredentials()).toBe(false);
   });
 });
 
