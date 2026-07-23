@@ -15,6 +15,13 @@ export const apiClient = axios.create({
   withCredentials: false,
 });
 
+// Vault/statement-import endpoints are intentionally un-versioned (`/api/vault`, not
+// `/api/v1/vault`) — mcp-server's generated client already targets that shape live, so
+// the backend route stays as-is. vault-service.ts overrides apiClient's default baseURL
+// with this per-request to reach it while still going through apiClient's auth-attach
+// and 401-refresh interceptors.
+export const VAULT_BASE_URL = `${BASE_URL}/api`;
+
 // ── Token helpers ──────────────────────────────────────────────────────────────
 
 export const getAccessToken = () =>
