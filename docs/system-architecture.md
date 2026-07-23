@@ -210,16 +210,16 @@ Daily at 01:00 UTC (`@Scheduled(cron="0 0 1 * * *")`):
 The vault is a polyglot persistence layer that stores financial documents alongside the relational core.
 
 **Receipt flow:**
-1. User uploads image/PDF → `POST /api/v1/vault/upload?type=RECEIPT`
+1. User uploads image/PDF → `POST /api/vault/upload?type=RECEIPT`
 2. Binary stored in GridFS; `VaultDocument` created in MongoDB (status: `ACTIVE`)
-3. User links to an existing transaction → `PATCH /api/v1/vault/{id}/link?transactionId=...`
+3. User links to an existing transaction → `PATCH /api/vault/{id}/link?transactionId=...`
 4. Transaction row gains `source_document_id`; `VaultDocument.transactionId` is set (bidirectional)
 
 **Statement import flow:**
-1. User uploads CSV or OFX file → `POST /api/v1/vault/import/upload?accountId=...`
+1. User uploads CSV or OFX file → `POST /api/vault/import/upload?accountId=...`
 2. File stored in GridFS; parser runs (`CsvStatementParser` or `OfxStatementParser`)
 3. Parsed rows stored in MongoDB as a `STAGED` `VaultDocument` payload for user review
-4. User selects rows → `POST /api/v1/vault/import/{id}/confirm`
+4. User selects rows → `POST /api/vault/import/{id}/confirm`
 5. Each selected row inserted as a PostgreSQL transaction via `TransactionService` with a SHA-256 `importDedupKey`
 6. Partial unique index on `transactions.import_dedup_key WHERE NOT NULL` silently skips duplicates on re-import
 7. MongoDB document promoted to `ACTIVE`
