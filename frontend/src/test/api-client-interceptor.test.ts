@@ -6,7 +6,7 @@
  * refresh state, queued-request settlement).
  */
 import axios, { AxiosError } from "axios";
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   apiClient,
   setTokens,
@@ -110,6 +110,70 @@ describe("session hint cookie", () => {
     setTokens("acc-123", "ref-456");
     expect(document.cookie).not.toContain("acc-123");
     expect(document.cookie).not.toContain("ref-456");
+  });
+});
+
+// jsdom's `document.cookie` getter never echoes back attributes like Max-Age or Secure — it
+// only returns "name=value" pairs. The only way to catch a regression to a bare session cookie
+// (the actual bug this change fixes: no Max-Age → destroyed on browser restart while
+// localStorage survives) is to intercept the exact string written to the setter.
+describe("session hint cookie attributes (written string)", () => {
+  let cookieSpy: ReturnType<typeof vi.fn>;
+  let protocolSpy: { mockRestore: () => void } | undefined;
+  const ONE_DAY_SECONDS = 24 * 60 * 60;
+
+  beforeEach(() => {
+    localStorage.clear();
+    clearAllCookies();
+    cookieSpy = vi.fn();
+    Object.defineProperty(document, "cookie", {
+      configurable: true,
+      get: () => "",
+      set: cookieSpy,
+    });
+  });
+
+  afterEach(() => {
+    protocolSpy?.mockRestore();
+    Object.defineProperty(document, "cookie", {
+      configurable: true,
+      writable: true,
+      value: "",
+    });
+  });
+
+  it("persists with an explicit Max-Age mirroring the 24h sliding session deadline", () => {
+    setTokens("acc-123", "ref-456");
+    const written = cookieSpy.mock.calls.map(([v]) => v).find((v) => v.startsWith(SESSION_HINT_COOKIE_NAME));
+    expect(written).toContain(`max-age=${ONE_DAY_SECONDS}`);
+  });
+
+  it("omits Secure on a non-HTTPS origin", () => {
+    protocolSpy = vi.spyOn(window, "location", "get").mockReturnValue({
+      ...window.location,
+      protocol: "http:",
+    });
+    setTokens("acc-123", "ref-456");
+    const written = cookieSpy.mock.calls.map(([v]) => v).find((v) => v.startsWith(SESSION_HINT_COOKIE_NAME));
+    expect(written).not.toContain("Secure");
+  });
+
+  it("adds Secure on an HTTPS origin", () => {
+    protocolSpy = vi.spyOn(window, "location", "get").mockReturnValue({
+      ...window.location,
+      protocol: "https:",
+    });
+    setTokens("acc-123", "ref-456");
+    const written = cookieSpy.mock.calls.map(([v]) => v).find((v) => v.startsWith(SESSION_HINT_COOKIE_NAME));
+    expect(written).toContain("Secure");
+  });
+
+  it("clears with matching attributes and max-age=0", () => {
+    clearTokens();
+    const written = cookieSpy.mock.calls.map(([v]) => v).find((v) => v.startsWith(SESSION_HINT_COOKIE_NAME));
+    expect(written).toContain("max-age=0");
+    expect(written).toContain("path=/");
+    expect(written).toContain("SameSite=Lax");
   });
 });
 

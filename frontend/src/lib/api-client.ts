@@ -29,20 +29,34 @@ export const hasStoredAuthCredentials = () =>
 // public routes before any HTML renders. It never carries a credential; only presence matters.
 export const SESSION_HINT_COOKIE_NAME = "fintrack.hasSession";
 
+// Mirrors the server-authoritative sliding inactivity deadline (24h — see "Browser Session
+// Lifetime Limits" in openspec/specs/user-authentication/spec.md). Without an explicit max-age
+// this cookie defaults to a browser-session cookie and is destroyed on browser restart, while
+// the tokens it mirrors persist in localStorage — the client value is only a UX hint and never
+// a substitute for the server's own deadline, so a mismatch here costs at most one redirect hop.
+const SESSION_HINT_MAX_AGE_SECONDS = 24 * 60 * 60;
+
+const sessionHintCookieAttributes = (maxAgeSeconds: number) => {
+  const secure = typeof location !== "undefined" && location.protocol === "https:" ? "; Secure" : "";
+  return `path=/; SameSite=Lax; max-age=${maxAgeSeconds}${secure}`;
+};
+
 export const hasSessionHintCookie = () =>
   typeof document !== "undefined" &&
   document.cookie
     .split("; ")
     .some((entry) => entry.startsWith(`${SESSION_HINT_COOKIE_NAME}=`));
 
+// Re-stamped on every setTokens() call (login, register, and each token refresh), so an active
+// session's cookie keeps sliding forward while an inactive one expires with the server session.
 export const setSessionHintCookie = () => {
   if (typeof document === "undefined") return;
-  document.cookie = `${SESSION_HINT_COOKIE_NAME}=1; path=/; SameSite=Lax`;
+  document.cookie = `${SESSION_HINT_COOKIE_NAME}=1; ${sessionHintCookieAttributes(SESSION_HINT_MAX_AGE_SECONDS)}`;
 };
 
 export const clearSessionHintCookie = () => {
   if (typeof document === "undefined") return;
-  document.cookie = `${SESSION_HINT_COOKIE_NAME}=; path=/; SameSite=Lax; max-age=0`;
+  document.cookie = `${SESSION_HINT_COOKIE_NAME}=; ${sessionHintCookieAttributes(0)}`;
 };
 
 export const setTokens = (access: string, refresh: string) => {
