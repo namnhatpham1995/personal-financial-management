@@ -119,7 +119,7 @@ describe("session hint cookie", () => {
 // localStorage survives) is to intercept the exact string written to the setter.
 describe("session hint cookie attributes (written string)", () => {
   let cookieSpy: ReturnType<typeof vi.fn>;
-  let protocolSpy: ReturnType<typeof vi.spyOn>;
+  let protocolSpy: { mockRestore: () => void } | undefined;
   const ONE_DAY_SECONDS = 24 * 60 * 60;
 
   beforeEach(() => {
