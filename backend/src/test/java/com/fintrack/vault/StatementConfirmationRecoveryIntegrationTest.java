@@ -125,11 +125,25 @@ class StatementConfirmationRecoveryIntegrationTest {
     }
 
     private MvcResult confirm(String jwt, String documentId, List<String> selected, String key) throws Exception {
+        return confirmWithCategories(jwt, documentId, selected, null, key);
+    }
+
+    /** Assigns the given categoryId (nullable) to every selected row. */
+    private MvcResult confirmWithCategories(String jwt, String documentId, List<String> selected,
+                                             Long categoryId, String key) throws Exception {
+        List<Map<String, Object>> rows = selected.stream()
+                .map(dedupKey -> {
+                    Map<String, Object> row = new HashMap<>();
+                    row.put("dedupKey", dedupKey);
+                    row.put("categoryId", categoryId);
+                    return row;
+                })
+                .toList();
         return mockMvc.perform(post("/api/vault/import/" + documentId + "/confirm")
                         .header("Authorization", "Bearer " + jwt)
                         .header("Idempotency-Key", key)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(Map.of("selectedDedupKeys", selected))))
+                        .content(objectMapper.writeValueAsString(Map.of("rows", rows))))
                 .andReturn();
     }
 
@@ -289,6 +303,42 @@ class StatementConfirmationRecoveryIntegrationTest {
         BigDecimal balanceAfterConflict = accountRepository.findById(Long.valueOf(accountId)).orElseThrow().getCurrentBalance();
         long txCountAfterConflict = transactionRepository.findConnectedToAccount(Long.valueOf(accountId)).size();
         assertThat(balanceAfterConflict).isEqualByComparingTo(balanceAfterFirst);
+        assertThat(txCountAfterConflict).isEqualTo(txCountAfterFirst);
+    }
+
+    // ── Category assignment ──────────────────────────────────────────────────
+
+    @Test
+    void confirmedRows_useTheChosenCategory() throws Exception {
+        String jwt = HttpTestHelper.registerAndLogin(mockMvc, objectMapper, "confirm.category@test.com");
+        String accountId = HttpTestHelper.createAccount(mockMvc, objectMapper, jwt, "USD");
+        String categoryId = HttpTestHelper.createCategory(mockMvc, objectMapper, jwt, "Salary", "INCOME");
+        String documentId = upload(jwt, accountId, VALID_CSV, "upload-key-category-0000001");
+        List<String> keys = dedupKeys(jwt, documentId);
+
+        confirmWithCategories(jwt, documentId, keys, Long.valueOf(categoryId), "confirm-key-category-0000000001");
+
+        List<Transaction> txs = transactionRepository.findConnectedToAccount(Long.valueOf(accountId));
+        assertThat(txs).hasSize(2);
+        assertThat(txs).allSatisfy(t -> assertThat(t.getCategory().getId()).isEqualTo(Long.valueOf(categoryId)));
+    }
+
+    @Test
+    void sameKeyDifferentCategory_returns409AndDoesNotCreateDivergentTransactions() throws Exception {
+        String jwt = HttpTestHelper.registerAndLogin(mockMvc, objectMapper, "confirm.diffcat@test.com");
+        String accountId = HttpTestHelper.createAccount(mockMvc, objectMapper, jwt, "USD");
+        String categoryId = HttpTestHelper.createCategory(mockMvc, objectMapper, jwt, "Salary", "INCOME");
+        String documentId = upload(jwt, accountId, VALID_CSV, "upload-key-diffcat-0000001");
+        List<String> keys = dedupKeys(jwt, documentId);
+        String confirmKey = "confirm-key-diffcat-00000000001";
+
+        confirmWithCategories(jwt, documentId, keys, null, confirmKey);
+        long txCountAfterFirst = transactionRepository.findConnectedToAccount(Long.valueOf(accountId)).size();
+
+        MvcResult conflict = confirmWithCategories(jwt, documentId, keys, Long.valueOf(categoryId), confirmKey);
+        assertThat(conflict.getResponse().getStatus()).isEqualTo(409);
+
+        long txCountAfterConflict = transactionRepository.findConnectedToAccount(Long.valueOf(accountId)).size();
         assertThat(txCountAfterConflict).isEqualTo(txCountAfterFirst);
     }
 

@@ -59,6 +59,7 @@ class StatementImportServiceTest {
     @Mock OfxStatementParser ofxParser;
     @Mock TransactionService transactionService;
     @Mock TransactionRepository transactionRepository;
+    @Mock com.fintrack.category.repository.CategoryRepository categoryRepository;
     @Mock MongoTemplate mongoTemplate;
 
     private static final String IDEMPOTENCY_KEY = "test-key-0123456789";
@@ -73,6 +74,7 @@ class StatementImportServiceTest {
                 ofxParser,
                 transactionService,
                 transactionRepository,
+                categoryRepository,
                 new com.fintrack.idempotency.service.IdempotencyKeyValidator(),
                 new com.fintrack.idempotency.service.IdempotencyHasher(),
                 mongoTemplate,
@@ -150,7 +152,7 @@ class StatementImportServiceTest {
         when(vaultDocumentRepository.findByIdAndUserId("doc-1", 1L)).thenReturn(Optional.of(doc));
         when(gridFsFileStore.loadInputStream("gridfs-1", 1L)).thenReturn(new ByteArrayInputStream(new byte[0]));
         var row = new ParsedStatementRow(LocalDate.of(2024, 1, 15),
-                new BigDecimal("45.00"), TransactionType.EXPENSE, "Supermarket", "raw", null);
+                new BigDecimal("45.00"), TransactionType.EXPENSE, "Supermarket", "raw", null, null);
         when(csvParser.parse(any())).thenReturn(List.of(row));
         when(vaultDocumentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -165,6 +167,61 @@ class StatementImportServiceTest {
         var captor = org.mockito.ArgumentCaptor.forClass(VaultDocument.class);
         verify(vaultDocumentRepository).save(captor.capture());
         assertThat(captor.getValue().getStatus()).isEqualTo(VaultDocumentStatus.STAGED);
+    }
+
+    @Test
+    void parse_categoryTextMatchesExistingCategory_suggestsCategoryId() throws IOException {
+        StatementImportService importService = newService();
+        VaultDocument doc = uploadedDoc("statement.csv");
+        when(vaultDocumentRepository.findByIdAndUserId("doc-1", 1L)).thenReturn(Optional.of(doc));
+        when(gridFsFileStore.loadInputStream("gridfs-1", 1L)).thenReturn(new ByteArrayInputStream(new byte[0]));
+        var row = new ParsedStatementRow(LocalDate.of(2024, 1, 15),
+                new BigDecimal("45.00"), TransactionType.EXPENSE, "Supermarket", "raw", null, "groceries");
+        when(csvParser.parse(any())).thenReturn(List.of(row));
+        when(vaultDocumentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        com.fintrack.category.domain.Category groceries = com.fintrack.category.domain.Category.builder()
+                .id(7L).name("Groceries").transactionType(TransactionType.EXPENSE).build();
+        when(categoryRepository.findVisibleToUser(1L, TransactionType.EXPENSE)).thenReturn(List.of(groceries));
+
+        List<StagedRowResponse> rows = importService.parse(1L, "doc-1");
+
+        assertThat(rows.get(0).category()).isEqualTo("groceries");
+        assertThat(rows.get(0).categoryId()).isEqualTo(7L);
+    }
+
+    @Test
+    void parse_categoryTextWithNoMatch_leavesCategoryIdNull() throws IOException {
+        StatementImportService importService = newService();
+        VaultDocument doc = uploadedDoc("statement.csv");
+        when(vaultDocumentRepository.findByIdAndUserId("doc-1", 1L)).thenReturn(Optional.of(doc));
+        when(gridFsFileStore.loadInputStream("gridfs-1", 1L)).thenReturn(new ByteArrayInputStream(new byte[0]));
+        var row = new ParsedStatementRow(LocalDate.of(2024, 1, 15),
+                new BigDecimal("45.00"), TransactionType.EXPENSE, "Supermarket", "raw", null, "made-up-category");
+        when(csvParser.parse(any())).thenReturn(List.of(row));
+        when(vaultDocumentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(categoryRepository.findVisibleToUser(1L, TransactionType.EXPENSE)).thenReturn(List.of());
+
+        List<StagedRowResponse> rows = importService.parse(1L, "doc-1");
+
+        assertThat(rows.get(0).category()).isEqualTo("made-up-category");
+        assertThat(rows.get(0).categoryId()).isNull();
+    }
+
+    @Test
+    void parse_noCategoryText_skipsMatchingAndLeavesCategoryIdNull() throws IOException {
+        StatementImportService importService = newService();
+        VaultDocument doc = uploadedDoc("statement.csv");
+        when(vaultDocumentRepository.findByIdAndUserId("doc-1", 1L)).thenReturn(Optional.of(doc));
+        when(gridFsFileStore.loadInputStream("gridfs-1", 1L)).thenReturn(new ByteArrayInputStream(new byte[0]));
+        var row = new ParsedStatementRow(LocalDate.of(2024, 1, 15),
+                new BigDecimal("45.00"), TransactionType.EXPENSE, "Supermarket", "raw", null, null);
+        when(csvParser.parse(any())).thenReturn(List.of(row));
+        when(vaultDocumentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<StagedRowResponse> rows = importService.parse(1L, "doc-1");
+
+        assertThat(rows.get(0).categoryId()).isNull();
+        verifyNoInteractions(categoryRepository);
     }
 
     @Test
@@ -189,9 +246,9 @@ class StatementImportServiceTest {
         when(vaultDocumentRepository.findByIdAndUserId("doc-1", 1L)).thenReturn(Optional.of(doc));
         when(gridFsFileStore.loadInputStream("gridfs-1", 1L)).thenReturn(new ByteArrayInputStream(new byte[0]));
         var row1 = new ParsedStatementRow(LocalDate.of(2024, 1, 15),
-                new BigDecimal("10.00"), TransactionType.EXPENSE, "Coffee", "raw1", null);
+                new BigDecimal("10.00"), TransactionType.EXPENSE, "Coffee", "raw1", null, null);
         var row2 = new ParsedStatementRow(LocalDate.of(2024, 1, 15),
-                new BigDecimal("10.00"), TransactionType.EXPENSE, "Coffee", "raw2", null);
+                new BigDecimal("10.00"), TransactionType.EXPENSE, "Coffee", "raw2", null, null);
         when(csvParser.parse(any())).thenReturn(List.of(row1, row2));
         when(vaultDocumentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -208,7 +265,7 @@ class StatementImportServiceTest {
         when(vaultDocumentRepository.findByIdAndUserId("doc-1", 1L)).thenReturn(Optional.of(doc));
         when(gridFsFileStore.loadInputStream("gridfs-1", 1L)).thenReturn(new ByteArrayInputStream(new byte[0]));
         var row1 = new ParsedStatementRow(LocalDate.of(2024, 1, 15),
-                new BigDecimal("10.00"), TransactionType.EXPENSE, "Coffee shop", "raw1", "FIT-001");
+                new BigDecimal("10.00"), TransactionType.EXPENSE, "Coffee shop", "raw1", "FIT-001", null);
         when(ofxParser.parse(any())).thenReturn(List.of(row1));
         when(vaultDocumentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
