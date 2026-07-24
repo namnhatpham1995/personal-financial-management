@@ -358,7 +358,9 @@
       "downloadFallback": "receipt",
       "toast": {
         "uploaded": "Receipt uploaded",
-        "uploadFailed": "Upload failed"
+        "uploadFailed": "Upload failed",
+        "fileTooLarge": "File is too large (max 10MB)",
+        "unsupportedFormat": "This file format isn't supported"
       },
       "uploading": "Uploading…",
       "dropOrClick": "Drop or click to attach receipt",
@@ -368,7 +370,9 @@
     "importWizard": {
       "toast": {
         "parseFailed": "Failed to parse file",
-        "importFailed": "Import failed"
+        "importFailed": "Import failed",
+        "fileTooLarge": "File is too large (max 10MB)",
+        "unsupportedFormat": "Unsupported format — only CSV, OFX, and QFX files are accepted"
       },
       "imported": "{count, plural, one {# transaction imported} other {# transactions imported}}",
       "importAnother": "Import another file",

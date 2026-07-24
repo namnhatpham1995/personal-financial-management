@@ -8,7 +8,7 @@ import { Upload, X, Download, Receipt } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { useIdempotencyKey } from "@/lib/use-idempotency-key";
-import { getIdempotencyErrorCode } from "@/lib/idempotency-error";
+import { getIdempotencyErrorCode, isFileTooLargeError } from "@/lib/idempotency-error";
 
 interface Props {
   transactionId?: number;
@@ -54,6 +54,10 @@ export function ReceiptUploadViewer({ transactionId, documentId, onLinked }: Pro
       qc.invalidateQueries({ queryKey: ["vault"] });
     },
     onError: (err) => {
+      if (isFileTooLargeError(err)) {
+        toast.error(t("toast.fileTooLarge"));
+        return;
+      }
       const idempotencyCode = getIdempotencyErrorCode(err);
       if (idempotencyCode === "idempotency_key_conflict") {
         uploadIdempotency.clear();

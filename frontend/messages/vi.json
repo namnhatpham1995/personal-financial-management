@@ -358,7 +358,9 @@
       "downloadFallback": "hóa đơn",
       "toast": {
         "uploaded": "Đã tải lên hóa đơn",
-        "uploadFailed": "Tải lên thất bại"
+        "uploadFailed": "Tải lên thất bại",
+        "fileTooLarge": "Tệp quá lớn (tối đa 10MB)",
+        "unsupportedFormat": "Định dạng tệp không được hỗ trợ"
       },
       "uploading": "Đang tải lên…",
       "dropOrClick": "Kéo thả hoặc nhấp để đính kèm hóa đơn",
@@ -368,7 +370,9 @@
     "importWizard": {
       "toast": {
         "parseFailed": "Đọc tệp thất bại",
-        "importFailed": "Nhập thất bại"
+        "importFailed": "Nhập thất bại",
+        "fileTooLarge": "Tệp quá lớn (tối đa 10MB)",
+        "unsupportedFormat": "Định dạng không được hỗ trợ — chỉ chấp nhận tệp CSV, OFX và QFX"
       },
       "imported": "{count, plural, other {Đã nhập # giao dịch}}",
       "importAnother": "Nhập tệp khác",

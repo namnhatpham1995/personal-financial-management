@@ -27,3 +27,13 @@ export function getRetryAfterSeconds(err: unknown): number | null {
   const seconds = Number(header);
   return Number.isFinite(seconds) ? seconds : null;
 }
+
+/** True for the 413 the backend returns when an upload exceeds the multipart size cap. */
+export function isFileTooLargeError(err: unknown): boolean {
+  return isAxiosError(err) && err.response?.status === 413;
+}
+
+/** True for the 415 the backend returns when a statement file's format isn't CSV/OFX/QFX. */
+export function isUnsupportedFormatError(err: unknown): boolean {
+  return isAxiosError(err) && err.response?.status === 415;
+}

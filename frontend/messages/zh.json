@@ -358,7 +358,9 @@
       "downloadFallback": "收据",
       "toast": {
         "uploaded": "收据已上传",
-        "uploadFailed": "上传失败"
+        "uploadFailed": "上传失败",
+        "fileTooLarge": "文件过大(最大 10MB)",
+        "unsupportedFormat": "不支持此文件格式"
       },
       "uploading": "正在上传…",
       "dropOrClick": "拖放或点击以附加收据",
@@ -368,7 +370,9 @@
     "importWizard": {
       "toast": {
         "parseFailed": "解析文件失败",
-        "importFailed": "导入失败"
+        "importFailed": "导入失败",
+        "fileTooLarge": "文件过大(最大 10MB)",
+        "unsupportedFormat": "不支持的格式 — 仅接受 CSV、OFX 和 QFX 文件"
       },
       "imported": "{count, plural, other {已导入 # 笔交易}}",
       "importAnother": "导入另一个文件",
