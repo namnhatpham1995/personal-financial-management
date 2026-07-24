@@ -414,14 +414,14 @@
       },
       "ConfirmImportRequest" : {
         "properties" : {
-          "selectedDedupKeys" : {
+          "rows" : {
             "items" : {
-              "type" : "string"
+              "$ref" : "#/components/schemas/ConfirmRow"
             },
             "type" : "array"
           }
         },
-        "required" : [ "selectedDedupKeys" ],
+        "required" : [ "rows" ],
         "type" : "object"
       },
       "ConfirmImportResponse" : {
@@ -445,6 +445,19 @@
             "type" : "array"
           }
         },
+        "type" : "object"
+      },
+      "ConfirmRow" : {
+        "properties" : {
+          "categoryId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "dedupKey" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "dedupKey" ],
         "type" : "object"
       },
       "ConvertResponse" : {
@@ -1226,6 +1239,13 @@
         "properties" : {
           "amount" : {
             "type" : "string"
+          },
+          "category" : {
+            "type" : "string"
+          },
+          "categoryId" : {
+            "format" : "int64",
+            "type" : "integer"
           },
           "date" : {
             "type" : "string"
