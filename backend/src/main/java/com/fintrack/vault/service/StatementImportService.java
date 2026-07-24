@@ -57,7 +57,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class StatementImportService {
 
-    private static final String UPLOAD_OPERATION_NAME = "statement.upload";
     private static final String CONFIRM_OPERATION_NAME = "statement.confirm";
 
     /** Constraint name from V15/V16 — see {@link #isDedupConstraintViolation}. */
@@ -68,12 +67,13 @@ public class StatementImportService {
     private static final Duration POLL_BOUND = Duration.ofSeconds(3);
 
     private final VaultDocumentRepository vaultDocumentRepository;
+    private final VaultService vaultService;
+    private final VaultAccountIdBackfillService accountIdBackfillService;
     private final GridFsFileStore gridFsFileStore;
     private final CsvStatementParser csvParser;
     private final OfxStatementParser ofxParser;
     private final TransactionService transactionService;
     private final TransactionRepository transactionRepository;
-    private final VaultUploadIdempotencyCoordinator idempotencyCoordinator;
     private final IdempotencyKeyValidator keyValidator;
     private final IdempotencyHasher hasher;
     private final MongoTemplate mongoTemplate;
@@ -82,61 +82,68 @@ public class StatementImportService {
     private final VaultOperationMetrics metrics;
 
     /**
-     * Parses the uploaded file, stores the binary in GridFS, and creates a STAGED
-     * VaultDocument whose payload holds the parsed rows for user review.
-     * Returns the vault document id so the caller can fetch staged rows.
-     *
-     * <p>Requires an {@code Idempotency-Key} (per the statement-import spec, uploads SHALL
-     * require one) — same-key/same-account/same-file retries replay the original staged document
-     * id without a second binary or staged document; same-key/different-file (or account)
-     * retries return a typed 409. Parsing happens before the binary is even claimed, so a
-     * malformed file fails fast without touching GridFS or Mongo.
+     * Stores the uploaded file's binary only (no parsing) via the shared
+     * {@link VaultService#upload} path, creating a vault document in the {@code UPLOADED} state.
+     * The format allow-list is enforced up front so an unsupported file is rejected before it is
+     * ever stored. Returns the vault document id.
      */
     public VaultUploadOutcome<String> upload(Long userId, Long accountId, MultipartFile file,
                                               String rawIdempotencyKey) throws IOException {
-        String filename = file.getOriginalFilename() != null
-                ? file.getOriginalFilename().toLowerCase() : "";
+        validateFormat(file.getOriginalFilename());
+        var outcome = vaultService.upload(userId, VaultDocumentType.STATEMENT, accountId, file, rawIdempotencyKey);
+        return new VaultUploadOutcome<>(outcome.response().id(), outcome.replayed());
+    }
 
-        List<ParsedStatementRow> rows;
-        String source;
-        if (filename.endsWith(".ofx") || filename.endsWith(".qfx")) {
-            rows = ofxParser.parse(file.getInputStream());
-            source = "ofx";
-        } else if (filename.endsWith(".csv")) {
-            rows = csvParser.parse(file.getInputStream());
-            source = "csv";
-        } else {
+    /**
+     * Parses an {@code UPLOADED} (or previously {@code STAGED}) statement on demand, transitioning
+     * it to {@code STAGED} with a payload of parsed rows. Deterministic and side-effect-free (no
+     * transactions are created), so it MAY safely be re-run — re-parsing simply recomputes the same
+     * rows and overwrites the staged payload.
+     */
+    public List<StagedRowResponse> parse(Long userId, String documentId) throws IOException {
+        accountIdBackfillService.ensureBackfillOnce();
+
+        VaultDocument doc = vaultDocumentRepository.findByIdAndUserId(documentId, userId)
+                .orElseThrow(() -> ResourceNotFoundException.of("UploadedStatement", documentId));
+        if (doc.getType() != VaultDocumentType.STATEMENT) {
+            throw ResourceNotFoundException.of("UploadedStatement", documentId);
+        }
+        if (doc.getStatus() == VaultDocumentStatus.CONFIRMING || doc.getStatus() == VaultDocumentStatus.ACTIVE) {
+            throw new com.fintrack.common.exception.ConflictException(
+                    "Statement has already been confirmed and cannot be re-parsed");
+        }
+        validateFormat(doc.getOriginalFilename());
+
+        List<ParsedStatementRow> rows = parseBinary(doc);
+        List<Map<String, Object>> rowMaps = buildRowMaps(userId, doc.getAccountId(), rows);
+
+        doc.setPayload(Map.of("accountId", doc.getAccountId(), "rows", rowMaps));
+        doc.setStatus(VaultDocumentStatus.STAGED);
+        vaultDocumentRepository.save(doc);
+
+        return rowMaps.stream().map(this::toStagedRowResponse).toList();
+    }
+
+    private List<ParsedStatementRow> parseBinary(VaultDocument doc) throws IOException {
+        String filename = doc.getOriginalFilename() != null ? doc.getOriginalFilename().toLowerCase() : "";
+        var in = gridFsFileStore.loadInputStream(doc.getGridFsFileId(), doc.getUserId());
+        if (in == null) {
+            throw ResourceNotFoundException.of("UploadedStatement binary", doc.getId());
+        }
+        try (in) {
+            if (filename.endsWith(".ofx") || filename.endsWith(".qfx")) {
+                return ofxParser.parse(in);
+            }
+            return csvParser.parse(in);
+        }
+    }
+
+    private void validateFormat(String originalFilename) {
+        String filename = originalFilename != null ? originalFilename.toLowerCase() : "";
+        if (!(filename.endsWith(".csv") || filename.endsWith(".ofx") || filename.endsWith(".qfx"))) {
             throw new UnsupportedStatementFormatException(
                     "Unsupported statement format: only CSV, OFX, and QFX files are accepted");
         }
-
-        List<Map<String, Object>> rowMaps = buildRowMaps(userId, accountId, rows);
-
-        Map<String, String> nonFileParams = Map.of("accountId", String.valueOf(accountId));
-        byte[] fileBytes = file.getBytes();
-
-        return idempotencyCoordinator.execute(
-                userId,
-                UPLOAD_OPERATION_NAME,
-                rawIdempotencyKey,
-                nonFileParams,
-                fileBytes,
-                operationId -> gridFsFileStore.store(file, userId, operationId),
-                gridFsFileId -> {
-                    VaultDocument staged = VaultDocument.builder()
-                            .userId(userId)
-                            .type(VaultDocumentType.STATEMENT)
-                            .status(VaultDocumentStatus.STAGED)
-                            .source(source)
-                            .capturedAt(Instant.now())
-                            .gridFsFileId(gridFsFileId)
-                            .originalFilename(file.getOriginalFilename())
-                            .payload(Map.of("accountId", accountId, "rows", rowMaps))
-                            .build();
-                    String documentId = vaultDocumentRepository.save(staged).getId();
-                    return new VaultUploadResult<>(documentId, documentId);
-                },
-                vaultDocumentId -> vaultDocumentId);
     }
 
     /** Returns the staged rows for user review before confirmation. */
@@ -149,17 +156,19 @@ public class StatementImportService {
         List<Map<String, Object>> rows =
                 (List<Map<String, Object>>) doc.getPayload().get("rows");
 
-        return rows.stream()
-                .map(r -> new StagedRowResponse(
-                        (String) r.get("date"),
-                        // MongoDB round-trips this untyped map value as a String, not a Number
-                        // (matches the .toString() handling already used in confirm() below).
-                        r.get("amount").toString(),
-                        (String) r.get("type"),
-                        (String) r.get("description"),
-                        (String) r.get("dedupKey")
-                ))
-                .toList();
+        return rows.stream().map(this::toStagedRowResponse).toList();
+    }
+
+    private StagedRowResponse toStagedRowResponse(Map<String, Object> r) {
+        return new StagedRowResponse(
+                (String) r.get("date"),
+                // MongoDB round-trips this untyped map value as a String, not a Number
+                // (matches the .toString() handling already used in confirm() below).
+                r.get("amount").toString(),
+                (String) r.get("type"),
+                (String) r.get("description"),
+                (String) r.get("dedupKey")
+        );
     }
 
     /**
@@ -188,6 +197,8 @@ public class StatementImportService {
     private ConfirmImportResponse resolveConfirmation(VaultDocument doc, Long userId, String documentId,
                                                         ConfirmImportRequest req, String keyHash, String requestHash) {
         return switch (doc.getStatus()) {
+            case UPLOADED -> throw new com.fintrack.common.exception.ConflictException(
+                    "Statement has not been parsed yet; call parse before confirming");
             case STAGED -> {
                 VaultDocument claimed = tryClaimConfirmation(documentId, userId, keyHash, requestHash);
                 if (claimed != null) {

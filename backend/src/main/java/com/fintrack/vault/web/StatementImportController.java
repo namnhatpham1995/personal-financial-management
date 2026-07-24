@@ -54,6 +54,19 @@ public class StatementImportController {
         return builder.body(Map.of("documentId", outcome.response()));
     }
 
+    /**
+     * Parses an uploaded statement on demand, transitioning it from {@code UPLOADED} to
+     * {@code STAGED} and returning the parsed rows. Deterministic and side-effect-free, so it
+     * may safely be re-run (e.g. to refresh a previously staged review).
+     */
+    @PostMapping("/{documentId}/parse")
+    public List<StagedRowResponse> parse(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String documentId
+    ) throws IOException {
+        return importService.parse(principal.getUserId(), documentId);
+    }
+
     /** Returns staged rows parsed from the uploaded file, ready for user review. */
     @GetMapping("/{documentId}/rows")
     public List<StagedRowResponse> getReviewRows(
