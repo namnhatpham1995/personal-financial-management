@@ -17,7 +17,9 @@ import java.util.Map;
 @Document(collection = "vault_documents")
 @CompoundIndexes({
     @CompoundIndex(name = "idx_user_captured", def = "{'userId': 1, 'capturedAt': -1}"),
-    @CompoundIndex(name = "idx_user_transaction", def = "{'userId': 1, 'transactionId': 1}")
+    @CompoundIndex(name = "idx_user_transaction", def = "{'userId': 1, 'transactionId': 1}"),
+    @CompoundIndex(name = "idx_user_account_type_captured",
+            def = "{'userId': 1, 'accountId': 1, 'type': 1, 'capturedAt': -1}")
 })
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class VaultDocument {
@@ -26,6 +28,9 @@ public class VaultDocument {
     private String id;
 
     private Long userId;
+
+    /** Owning account. First-class as of the vault-upload-import rework; pre-existing receipts MAY be null. */
+    private Long accountId;
 
     private VaultDocumentType type;
 

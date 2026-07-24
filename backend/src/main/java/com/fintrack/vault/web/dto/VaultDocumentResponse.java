@@ -9,6 +9,7 @@ import java.util.Map;
 
 public record VaultDocumentResponse(
         String id,
+        Long accountId,
         VaultDocumentType type,
         VaultDocumentStatus status,
         String source,

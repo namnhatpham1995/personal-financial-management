@@ -34,6 +34,7 @@ public class VaultController {
     public ResponseEntity<VaultDocumentResponse> upload(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam VaultDocumentType type,
+            @RequestParam Long accountId,
             @RequestParam("file") MultipartFile file,
             @Parameter(required = true, description = "Client-generated key (16-128 URL-safe characters) "
                     + "required for every vault upload; a retry with the same key and file replays the "
@@ -43,7 +44,7 @@ public class VaultController {
         if (idempotencyKey == null) {
             throw new MissingIdempotencyKeyException("Idempotency-Key header is required for vault uploads");
         }
-        var outcome = vaultService.upload(principal.getUserId(), type, file, idempotencyKey);
+        var outcome = vaultService.upload(principal.getUserId(), type, accountId, file, idempotencyKey);
         ResponseEntity.BodyBuilder builder = ResponseEntity.status(HttpStatus.CREATED);
         if (outcome.replayed()) {
             builder = builder.header("Idempotency-Replayed", "true");
@@ -57,6 +58,17 @@ public class VaultController {
             Pageable pageable
     ) {
         return vaultService.list(principal.getUserId(), pageable);
+    }
+
+    /** Lists vault documents for one account and type — backs the per-account Statement/Receipt tabs. */
+    @GetMapping("/by-account")
+    public Page<VaultDocumentResponse> listByAccount(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @RequestParam Long accountId,
+            @RequestParam VaultDocumentType type,
+            Pageable pageable
+    ) {
+        return vaultService.listByAccount(principal.getUserId(), accountId, type, pageable);
     }
 
     @GetMapping("/{id}")
