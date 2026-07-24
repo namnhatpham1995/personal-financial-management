@@ -10,6 +10,7 @@ import com.fintrack.idempotency.exception.IdempotencyConflictException;
 import com.fintrack.idempotency.exception.IdempotencyOperationInProgressException;
 import com.fintrack.idempotency.exception.InvalidIdempotencyKeyException;
 import com.fintrack.idempotency.exception.MissingIdempotencyKeyException;
+import com.fintrack.vault.service.UnsupportedStatementFormatException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.List;
 
@@ -167,6 +169,23 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
                 .body(ApiError.of(409, "refresh_already_rotated", ex.getMessage(), req.getRequestURI()));
+    }
+
+    @ExceptionHandler(UnsupportedStatementFormatException.class)
+    public ResponseEntity<ApiError> handleUnsupportedStatementFormat(
+            UnsupportedStatementFormatException ex, HttpServletRequest req) {
+        return ResponseEntity
+                .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                .body(ApiError.of(415, "unsupported_statement_format", ex.getMessage(), req.getRequestURI()));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiError> handleMaxUploadSizeExceeded(
+            MaxUploadSizeExceededException ex, HttpServletRequest req) {
+        return ResponseEntity
+                .status(HttpStatus.PAYLOAD_TOO_LARGE)
+                .body(ApiError.of(413, "file_too_large",
+                        "Uploaded file exceeds the maximum allowed size of 10MB", req.getRequestURI()));
     }
 
     @ExceptionHandler(ApiTokenIdempotencyConflictException.class)

@@ -358,7 +358,9 @@
       "downloadFallback": "Beleg",
       "toast": {
         "uploaded": "Beleg hochgeladen",
-        "uploadFailed": "Hochladen fehlgeschlagen"
+        "uploadFailed": "Hochladen fehlgeschlagen",
+        "fileTooLarge": "Datei ist zu groß (max. 10 MB)",
+        "unsupportedFormat": "Dieses Dateiformat wird nicht unterstützt"
       },
       "uploading": "Wird hochgeladen…",
       "dropOrClick": "Ablegen oder klicken, um einen Beleg anzuhängen",
@@ -368,7 +370,9 @@
     "importWizard": {
       "toast": {
         "parseFailed": "Datei konnte nicht gelesen werden",
-        "importFailed": "Import fehlgeschlagen"
+        "importFailed": "Import fehlgeschlagen",
+        "fileTooLarge": "Datei ist zu groß (max. 10 MB)",
+        "unsupportedFormat": "Nicht unterstütztes Format — nur CSV-, OFX- und QFX-Dateien werden akzeptiert"
       },
       "imported": "{count, plural, one {# Transaktion importiert} other {# Transaktionen importiert}}",
       "importAnother": "Weitere Datei importieren",

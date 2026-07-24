@@ -138,6 +138,30 @@ class StatementImportPipelineIntegrationTest {
     }
 
     @Test
+    void unsupportedFormat_xlsx_rejectedWithoutStagingRows() throws Exception {
+        String jwt = HttpTestHelper.registerAndLogin(mockMvc, objectMapper, "vault.xlsx@test.com");
+        String accountId = HttpTestHelper.createAccount(mockMvc, objectMapper, jwt, "USD");
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "statement.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "not a real xlsx file".getBytes(StandardCharsets.UTF_8));
+
+        mockMvc.perform(multipart("/api/vault/import/upload")
+                        .file(file)
+                        .param("accountId", accountId)
+                        .header("Authorization", "Bearer " + jwt)
+                        .header("Idempotency-Key", "statement-upload-key-xlsx-0123456"))
+                .andExpect(status().isUnsupportedMediaType())
+                .andExpect(jsonPath("$.error").value("unsupported_statement_format"));
+    }
+
+    // Oversized-upload -> 413 is exercised at the handler level in
+    // GlobalExceptionHandlerTest: MockMvc's multipart request builder stores parts directly
+    // and never routes through the real servlet container's MultipartConfig size enforcement
+    // (only a real embedded Tomcat does), so it can't reproduce a genuine MaxUploadSizeExceededException.
+
+    @Test
     void mixedCsv_malformedRowsSkipped_validRowsStillImport() throws Exception {
         String jwt = HttpTestHelper.registerAndLogin(mockMvc, objectMapper, "vault.mixed@test.com");
         String accountId = HttpTestHelper.createAccount(mockMvc, objectMapper, jwt, "USD");

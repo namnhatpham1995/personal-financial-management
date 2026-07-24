@@ -9,7 +9,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { cn, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useIdempotencyKey } from "@/lib/use-idempotency-key";
-import { getIdempotencyErrorCode } from "@/lib/idempotency-error";
+import { getIdempotencyErrorCode, isFileTooLargeError, isUnsupportedFormatError } from "@/lib/idempotency-error";
 
 interface Props {
   accountId: number;
@@ -46,6 +46,14 @@ export function StatementImportWizard({ accountId, onComplete }: Props) {
       setStep("review");
     },
     onError: (err) => {
+      if (isFileTooLargeError(err)) {
+        toast.error(t("toast.fileTooLarge"));
+        return;
+      }
+      if (isUnsupportedFormatError(err)) {
+        toast.error(t("toast.unsupportedFormat"));
+        return;
+      }
       const idempotencyCode = getIdempotencyErrorCode(err);
       if (idempotencyCode === "idempotency_key_conflict") {
         uploadIdempotency.clear();
