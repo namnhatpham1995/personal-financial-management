@@ -99,7 +99,7 @@ describe("vaultService: requests target the unversioned /api/vault base path", (
 
   it("confirmImport", async () => {
     const spy = vi.spyOn(apiClient, "post").mockImplementation(() => okResponse({ created: 1 }));
-    await vaultService.confirmImport("doc-1", ["k1"], "a".repeat(16));
+    await vaultService.confirmImport("doc-1", [{ dedupKey: "k1", categoryId: null }], "a".repeat(16));
     expect(spy.mock.calls[0][0]).toBe("/vault/import/doc-1/confirm");
     expect(spy.mock.calls[0][2]).toMatchObject({ baseURL: VAULT_BASE_URL });
   });

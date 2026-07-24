@@ -87,11 +87,17 @@ export function StatementImportWizard({ accountId, onComplete }: Props) {
 
   const confirmMut = useMutation({
     mutationFn: () => {
-      const selectedKeys = Array.from(selected);
+      const rowsByKey = new Map((rowsQuery.data ?? []).map((r) => [r.dedupKey, r]));
+      // No category-editing UI yet (that lands with the reworked review table) — each row
+      // confirms with the backend's parsed suggestion, editable in a later pass.
+      const selectedRows = Array.from(selected).map((dedupKey) => ({
+        dedupKey,
+        categoryId: rowsByKey.get(dedupKey)?.categoryId ?? null,
+      }));
       return vaultService.confirmImport(
         documentId!,
-        selectedKeys,
-        confirmIdempotency.resolve({ documentId, selectedKeys })
+        selectedRows,
+        confirmIdempotency.resolve({ documentId, selectedRows })
       );
     },
     onSuccess: (n) => {

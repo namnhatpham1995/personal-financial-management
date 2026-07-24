@@ -25,6 +25,15 @@ export interface StagedRow {
   type: "INCOME" | "EXPENSE";
   description: string;
   dedupKey: string;
+  /** Category text as parsed from the source file (e.g. a CSV category column), if any. */
+  category?: string | null;
+  /** Existing category suggested by matching `category` to the row's transaction type; null if no match. */
+  categoryId?: number | null;
+}
+
+export interface ConfirmImportRow {
+  dedupKey: string;
+  categoryId: number | null;
 }
 
 export interface PageResponse<T> {
@@ -138,12 +147,12 @@ export const vaultService = {
 
   async confirmImport(
     documentId: string,
-    selectedDedupKeys: string[],
+    rows: ConfirmImportRow[],
     idempotencyKey: string
   ): Promise<number> {
     const { data } = await apiClient.post<{ created: number }>(
       `/vault/import/${documentId}/confirm`,
-      { selectedDedupKeys },
+      { rows },
       { baseURL: VAULT_BASE_URL, headers: { "Idempotency-Key": idempotencyKey } }
     );
     return data.created;
