@@ -37,7 +37,7 @@ public class CsvStatementParser {
     );
 
     public List<ParsedStatementRow> parse(InputStream input) throws IOException {
-        var records = CSVFormat.DEFAULT
+        var parser = CSVFormat.DEFAULT
                 .builder()
                 .setHeader()
                 .setSkipHeaderRecord(true)
@@ -46,10 +46,18 @@ public class CsvStatementParser {
                 .build()
                 .parse(new InputStreamReader(input, StandardCharsets.UTF_8));
 
+        List<String> headerNames = parser.getHeaderNames();
+        int categoryColumnIndex = findColumnIndex(headerNames, "category");
+        // A trailing optional category column also pushes the column count to 4+ for the
+        // single-Amount layout, so the debit/credit layout must be detected by header name
+        // rather than raw column count.
+        boolean debitCreditLayout = findColumnIndex(headerNames, "debit") >= 0
+                && findColumnIndex(headerNames, "credit") >= 0;
+
         List<ParsedStatementRow> rows = new ArrayList<>();
-        for (CSVRecord record : records) {
+        for (CSVRecord record : parser) {
             try {
-                rows.add(toRow(record));
+                rows.add(toRow(record, categoryColumnIndex, debitCreditLayout));
             } catch (Exception ignored) {
                 // Skip unparseable rows
             }
@@ -57,13 +65,23 @@ public class CsvStatementParser {
         return rows;
     }
 
-    private ParsedStatementRow toRow(CSVRecord rec) {
+    /** Case-insensitive match for a header with the given name; returns -1 when absent. */
+    private int findColumnIndex(List<String> headerNames, String name) {
+        for (int i = 0; i < headerNames.size(); i++) {
+            if (name.equalsIgnoreCase(headerNames.get(i).trim())) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private ParsedStatementRow toRow(CSVRecord rec, int categoryColumnIndex, boolean debitCreditLayout) {
         LocalDate date = parseDate(rec.get(0));
         String description = rec.get(1);
         BigDecimal amount;
         TransactionType type;
 
-        if (rec.size() >= 4) {
+        if (debitCreditLayout) {
             // Layout (b): Debit, Credit columns
             String debitStr = rec.get(2).trim();
             String creditStr = rec.get(3).trim();
@@ -86,7 +104,17 @@ public class CsvStatementParser {
             }
         }
 
-        return new ParsedStatementRow(date, amount, type, description, rec.toString(), null);
+        String category = extractCategory(rec, categoryColumnIndex);
+        return new ParsedStatementRow(date, amount, type, description, rec.toString(), null, category);
+    }
+
+    /** Tolerant of the column being absent from this row's data (short row) — returns null. */
+    private String extractCategory(CSVRecord rec, int categoryColumnIndex) {
+        if (categoryColumnIndex < 0 || categoryColumnIndex >= rec.size()) {
+            return null;
+        }
+        String value = rec.get(categoryColumnIndex).trim();
+        return value.isEmpty() ? null : value;
     }
 
     private LocalDate parseDate(String raw) {
