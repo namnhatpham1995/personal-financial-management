@@ -102,9 +102,12 @@ public class StatementImportService {
         if (filename.endsWith(".ofx") || filename.endsWith(".qfx")) {
             rows = ofxParser.parse(file.getInputStream());
             source = "ofx";
-        } else {
+        } else if (filename.endsWith(".csv")) {
             rows = csvParser.parse(file.getInputStream());
             source = "csv";
+        } else {
+            throw new UnsupportedStatementFormatException(
+                    "Unsupported statement format: only CSV, OFX, and QFX files are accepted");
         }
 
         List<Map<String, Object>> rowMaps = buildRowMaps(userId, accountId, rows);
