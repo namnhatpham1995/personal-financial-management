@@ -25,7 +25,7 @@ export function useAccountTypeLabel() {
 
 export function useDocumentStatusLabel() {
   const t = useTranslations("enums.documentStatus");
-  return (value: "STAGED" | "CONFIRMING" | "ACTIVE"): string => {
+  return (value: "UPLOADED" | "STAGED" | "CONFIRMING" | "ACTIVE"): string => {
     return t(value);
   };
 }

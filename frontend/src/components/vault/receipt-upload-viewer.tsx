@@ -11,13 +11,15 @@ import { useIdempotencyKey } from "@/lib/use-idempotency-key";
 import { getIdempotencyErrorCode, isFileTooLargeError } from "@/lib/idempotency-error";
 
 interface Props {
+  /** Account the uploaded receipt belongs to — required for every new upload. */
+  accountId: number;
   transactionId?: number;
   /** If provided, pre-loads this vault document. */
   documentId?: string;
   onLinked?: (doc: VaultDocument) => void;
 }
 
-export function ReceiptUploadViewer({ transactionId, documentId, onLinked }: Props) {
+export function ReceiptUploadViewer({ accountId, transactionId, documentId, onLinked }: Props) {
   const t = useTranslations("vault.uploadViewer");
   const qc = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -39,6 +41,7 @@ export function ReceiptUploadViewer({ transactionId, documentId, onLinked }: Pro
     mutationFn: (file: File) =>
       vaultService.upload(
         "RECEIPT",
+        accountId,
         file,
         uploadIdempotency.resolve({ name: file.name, size: file.size, lastModified: file.lastModified })
       ),

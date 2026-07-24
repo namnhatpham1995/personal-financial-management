@@ -45,7 +45,7 @@ describe("StatementImportWizard: upload vs. staged-row loading state", () => {
   });
 
   it("retains documentId after a successful upload and transitions to rows once the query resolves", async () => {
-    vi.mocked(vaultService.getImportRows).mockResolvedValue(stagedRows);
+    vi.mocked(vaultService.parseImport).mockResolvedValue(stagedRows);
     const user = userEvent.setup();
     renderWizard();
 
@@ -55,11 +55,11 @@ describe("StatementImportWizard: upload vs. staged-row loading state", () => {
       expect(screen.getByText("Coffee")).toBeInTheDocument();
     });
     expect(vaultService.importUpload).toHaveBeenCalledTimes(1);
-    expect(vaultService.getImportRows).toHaveBeenCalledWith("doc-1");
+    expect(vaultService.parseImport).toHaveBeenCalledWith("doc-1");
   });
 
   it("a failed rows-GET does not re-trigger the upload and is retryable via the query alone", async () => {
-    vi.mocked(vaultService.getImportRows)
+    vi.mocked(vaultService.parseImport)
       .mockRejectedValueOnce(new Error("network error"))
       .mockResolvedValueOnce(stagedRows);
     const user = userEvent.setup();
@@ -78,6 +78,6 @@ describe("StatementImportWizard: upload vs. staged-row loading state", () => {
 
     // Retrying the rows fetch never re-uploaded the file.
     expect(vaultService.importUpload).toHaveBeenCalledTimes(1);
-    expect(vaultService.getImportRows).toHaveBeenCalledTimes(2);
+    expect(vaultService.parseImport).toHaveBeenCalledTimes(2);
   });
 });

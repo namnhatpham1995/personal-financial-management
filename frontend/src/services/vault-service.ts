@@ -2,10 +2,11 @@ import { apiClient, VAULT_BASE_URL } from "@/lib/api-client";
 import type { AgentRunStatus } from "@/services/agent-run-service";
 
 export type VaultDocumentType = "RECEIPT" | "STATEMENT";
-export type VaultDocumentStatus = "STAGED" | "ACTIVE";
+export type VaultDocumentStatus = "UPLOADED" | "STAGED" | "CONFIRMING" | "ACTIVE";
 
 export interface VaultDocument {
   id: string;
+  accountId?: number;
   type: VaultDocumentType;
   status: VaultDocumentStatus;
   source: string;
@@ -35,10 +36,11 @@ export interface PageResponse<T> {
 }
 
 export const vaultService = {
-  /** Upload a receipt or statement binary. Returns the new vault document. */
-  async upload(type: VaultDocumentType, file: File, idempotencyKey: string): Promise<VaultDocument> {
+  /** Upload a receipt or statement binary for an account. Returns the new vault document (status UPLOADED). */
+  async upload(type: VaultDocumentType, accountId: number, file: File, idempotencyKey: string): Promise<VaultDocument> {
     const form = new FormData();
     form.append("type", type);
+    form.append("accountId", String(accountId));
     form.append("file", file);
     const { data } = await apiClient.post<VaultDocument>("/vault/upload", form, {
       baseURL: VAULT_BASE_URL,
@@ -54,6 +56,20 @@ export const vaultService = {
     const { data } = await apiClient.get<PageResponse<VaultDocument>>("/vault", {
       baseURL: VAULT_BASE_URL,
       params: { page, size },
+    });
+    return data;
+  },
+
+  /** Lists vault documents for one account and type — backs the per-account Statement/Receipt tabs. */
+  async listByAccount(
+    accountId: number,
+    type: VaultDocumentType,
+    page = 0,
+    size = 20
+  ): Promise<PageResponse<VaultDocument>> {
+    const { data } = await apiClient.get<PageResponse<VaultDocument>>("/vault/by-account", {
+      baseURL: VAULT_BASE_URL,
+      params: { accountId, type, page, size },
     });
     return data;
   },
@@ -103,6 +119,14 @@ export const vaultService = {
       headers: { "Content-Type": undefined, "Idempotency-Key": idempotencyKey },
     });
     return data.documentId;
+  },
+
+  /** Parses an UPLOADED statement on demand, transitioning it to STAGED. Safe to re-run. */
+  async parseImport(documentId: string): Promise<StagedRow[]> {
+    const { data } = await apiClient.post<StagedRow[]>(`/vault/import/${documentId}/parse`, null, {
+      baseURL: VAULT_BASE_URL,
+    });
+    return data;
   },
 
   async getImportRows(documentId: string): Promise<StagedRow[]> {

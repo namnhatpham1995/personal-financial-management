@@ -66,12 +66,13 @@ export function StatementImportWizard({ accountId, onComplete }: Props) {
     },
   });
 
-  // Staged rows are fetched independently of the upload, keyed on the resulting
-  // documentId — this is what makes a rows-load failure retryable (via refetch())
-  // without re-uploading the file.
+  // Upload only stores the binary (UPLOADED) — parsing is a separate on-demand step, fetched
+  // independently of the upload and keyed on the resulting documentId. Parse is deterministic
+  // and safely re-runnable, so this doubles as the retry path (via refetch()) without
+  // re-uploading the file.
   const rowsQuery = useQuery({
     queryKey: ["vault-import-rows", documentId],
-    queryFn: () => vaultService.getImportRows(documentId!),
+    queryFn: () => vaultService.parseImport(documentId!),
     enabled: !!documentId,
     retry: false,
   });

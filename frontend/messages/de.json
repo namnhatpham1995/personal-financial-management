@@ -601,6 +601,7 @@
       "OTHER": "sonstiges"
     },
     "documentStatus": {
+      "UPLOADED": "Hochgeladen",
       "STAGED": "Bereitgestellt",
       "CONFIRMING": "Verarbeitung läuft",
       "ACTIVE": "Aktiv"

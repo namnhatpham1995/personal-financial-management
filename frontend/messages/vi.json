@@ -601,6 +601,7 @@
       "OTHER": "khác"
     },
     "documentStatus": {
+      "UPLOADED": "Đã tải lên",
       "STAGED": "Đang chờ",
       "CONFIRMING": "Đang xử lý",
       "ACTIVE": "Hoạt động"

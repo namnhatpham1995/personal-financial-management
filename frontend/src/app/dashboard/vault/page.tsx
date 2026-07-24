@@ -135,14 +135,32 @@ function VaultContent() {
       )}
 
       {activeTab === "upload" && (
-        <div className="max-w-md">
-          <ReceiptUploadViewer
-            onLinked={() => {
-              toast.success(t("toast.receiptSaved"));
-              qc.invalidateQueries({ queryKey: ["vault"] });
-              setActiveTab("browse");
-            }}
-          />
+        <div className="max-w-md space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">{t("account")}</label>
+            <select
+              className="w-full rounded-md border border-border bg-card px-3.5 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+              value={selectedAccountId ?? ""}
+              onChange={(e) => setSelectedAccountId(Number(e.target.value) || null)}
+            >
+              <option value="">{t("selectAccount")}</option>
+              {(accounts ?? []).map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          {selectedAccountId && (
+            <ReceiptUploadViewer
+              accountId={selectedAccountId}
+              onLinked={() => {
+                toast.success(t("toast.receiptSaved"));
+                qc.invalidateQueries({ queryKey: ["vault"] });
+                setActiveTab("browse");
+              }}
+            />
+          )}
         </div>
       )}
 
@@ -201,7 +219,7 @@ function VaultContent() {
                             ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                             : "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400"
                         )}>
-                          {getDocumentStatusLabel(doc.status as "STAGED" | "CONFIRMING" | "ACTIVE")}
+                          {getDocumentStatusLabel(doc.status)}
                         </span>
                       </td>
                       <td className="px-4 py-3">
