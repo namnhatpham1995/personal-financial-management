@@ -121,6 +121,28 @@ class StatementImportServiceTest {
     }
 
     @Test
+    void upload_unsupportedExtension_rejectedWithoutParsingOrPersisting() throws IOException {
+        StatementImportService importService = newService();
+        MultipartFile f = mock(MultipartFile.class);
+        when(f.getOriginalFilename()).thenReturn("statement.xlsx");
+
+        assertThatThrownBy(() -> importService.upload(1L, 10L, f, IDEMPOTENCY_KEY))
+                .isInstanceOf(UnsupportedStatementFormatException.class);
+
+        verifyNoInteractions(csvParser, ofxParser, gridFsFileStore, vaultDocumentRepository, idempotencyCoordinator);
+    }
+
+    @Test
+    void upload_noExtension_rejectedAsUnsupportedFormat() throws IOException {
+        StatementImportService importService = newService();
+        MultipartFile f = mock(MultipartFile.class);
+        when(f.getOriginalFilename()).thenReturn("statement");
+
+        assertThatThrownBy(() -> importService.upload(1L, 10L, f, IDEMPOTENCY_KEY))
+                .isInstanceOf(UnsupportedStatementFormatException.class);
+    }
+
+    @Test
     void upload_ofxFile_usesOfxParser() throws IOException {
         StatementImportService importService = newService();
         MultipartFile f = mock(MultipartFile.class);
