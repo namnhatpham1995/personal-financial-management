@@ -74,11 +74,13 @@ class AgentRunLifecycleIntegrationTest {
     @Autowired UserRepository userRepository;
 
     private String uploadReceipt(String jwt) throws Exception {
+        String accountId = HttpTestHelper.createAccount(mockMvc, objectMapper, jwt, "USD");
         MockMultipartFile file = new MockMultipartFile(
                 "file", "receipt.jpg", MediaType.IMAGE_JPEG_VALUE, "fake-image-bytes".getBytes(StandardCharsets.UTF_8));
         MvcResult result = mockMvc.perform(multipart("/api/vault/upload")
                         .file(file)
                         .param("type", "RECEIPT")
+                        .param("accountId", accountId)
                         .header("Authorization", "Bearer " + jwt)
                         .header("Idempotency-Key", java.util.UUID.randomUUID().toString()))
                 .andExpect(status().isCreated())

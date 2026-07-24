@@ -109,6 +109,11 @@ class StatementConfirmationRecoveryIntegrationTest {
     }
 
     private List<String> dedupKeys(String jwt, String documentId) throws Exception {
+        // Upload no longer parses — an UPLOADED statement must be parsed on demand before rows exist.
+        mockMvc.perform(post("/api/vault/import/" + documentId + "/parse")
+                        .header("Authorization", "Bearer " + jwt))
+                .andExpect(status().isOk());
+
         MvcResult result = mockMvc.perform(get("/api/vault/import/" + documentId + "/rows")
                         .header("Authorization", "Bearer " + jwt))
                 .andExpect(status().isOk())
