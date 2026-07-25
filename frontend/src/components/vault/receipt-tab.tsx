@@ -6,6 +6,7 @@ import { vaultService } from "@/services/vault-service";
 import { accountService } from "@/services/account-service";
 import { agentRunService, isAgentFeatureUnavailable } from "@/services/agent-run-service";
 import { ReceiptUploadViewer } from "@/components/vault/receipt-upload-viewer";
+import { DocumentReaderModal } from "@/components/vault/document-reader-modal";
 import { formatDate } from "@/lib/utils";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
@@ -19,6 +20,7 @@ export function ReceiptTab() {
   const qc = useQueryClient();
   const getIngestionStatusLabel = useIngestionStatusLabel();
   const [accountId, setAccountId] = useState<number | null>(null);
+  const [readingDoc, setReadingDoc] = useState<{ id: string; filename?: string } | null>(null);
 
   const { data: accounts } = useQuery({ queryKey: ["accounts"], queryFn: () => accountService.list() });
 
@@ -77,9 +79,12 @@ export function ReceiptTab() {
               {receipts.map((doc) => (
                 <div key={doc.id} className="flex items-center gap-3 px-3 py-2">
                   <Receipt className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
-                  <span className="min-w-0 flex-1 truncate text-sm text-foreground">
+                  <button
+                    onClick={() => setReadingDoc({ id: doc.id, filename: doc.originalFilename })}
+                    className="min-w-0 flex-1 truncate text-left text-sm text-foreground hover:underline"
+                  >
                     {doc.originalFilename ?? doc.id}
-                  </span>
+                  </button>
                   <span className="shrink-0 text-xs text-muted-foreground">
                     {formatDate(doc.capturedAt.split("T")[0], locale)}
                   </span>
@@ -116,6 +121,12 @@ export function ReceiptTab() {
           )}
         </div>
       )}
+
+      <DocumentReaderModal
+        documentId={readingDoc?.id ?? null}
+        originalFilename={readingDoc?.filename}
+        onClose={() => setReadingDoc(null)}
+      />
     </div>
   );
 }

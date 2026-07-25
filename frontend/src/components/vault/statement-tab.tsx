@@ -6,6 +6,7 @@ import { vaultService } from "@/services/vault-service";
 import { accountService } from "@/services/account-service";
 import { StatementUploadDropzone } from "@/components/vault/statement-upload-dropzone";
 import { StatementImportWizard } from "@/components/vault/statement-import-wizard";
+import { DocumentReaderModal } from "@/components/vault/document-reader-modal";
 import { formatDate, cn } from "@/lib/utils";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -21,6 +22,7 @@ export function StatementTab() {
   const [subTab, setSubTab] = useState<SubTab>("upload");
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [importedExpanded, setImportedExpanded] = useState(false);
+  const [readingDoc, setReadingDoc] = useState<{ id: string; filename?: string } | null>(null);
 
   const { data: accounts } = useQuery({ queryKey: ["accounts"], queryFn: () => accountService.list() });
 
@@ -103,9 +105,12 @@ export function StatementTab() {
                   {uploaded.map((doc) => (
                     <div key={doc.id} className="flex items-center gap-3 px-3 py-2">
                       <FileText className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
-                      <span className="min-w-0 flex-1 truncate text-sm text-foreground">
+                      <button
+                        onClick={() => setReadingDoc({ id: doc.id, filename: doc.originalFilename })}
+                        className="min-w-0 flex-1 truncate text-left text-sm text-foreground hover:underline"
+                      >
                         {doc.originalFilename ?? doc.id}
-                      </span>
+                      </button>
                       <span className="shrink-0 text-xs text-muted-foreground">
                         {formatDate(doc.capturedAt.split("T")[0], locale)}
                       </span>
@@ -216,6 +221,12 @@ export function StatementTab() {
           )}
         </>
       )}
+
+      <DocumentReaderModal
+        documentId={readingDoc?.id ?? null}
+        originalFilename={readingDoc?.filename}
+        onClose={() => setReadingDoc(null)}
+      />
     </div>
   );
 }
