@@ -1,5 +1,6 @@
 package com.fintrack.agent.domain;
 
+import com.fintrack.account.domain.Account;
 import com.fintrack.auth.domain.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -31,6 +32,14 @@ public class AgentRun {
 
     @Column(name = "vault_document_id", nullable = false, length = 24)
     private String vaultDocumentId;
+
+    /**
+     * Account every non-excluded proposal in this run commits against, captured from the source
+     * vault document's accountId at start time. Null for runs created before this field existed.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id")
+    private Account account;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)

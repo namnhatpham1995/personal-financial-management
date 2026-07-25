@@ -10,6 +10,8 @@ import java.util.Map;
 public record AgentRunDetailResponse(
         Long id,
         String vaultDocumentId,
+        /** Account every non-excluded proposal commits against; null for runs predating this field. */
+        Long accountId,
         AgentRunStatus status,
         Map<String, Object> extraction,
         List<ProposalDto> proposals,
@@ -23,6 +25,7 @@ public record AgentRunDetailResponse(
         return new AgentRunDetailResponse(
                 run.getId(),
                 run.getVaultDocumentId(),
+                run.getAccount() != null ? run.getAccount().getId() : null,
                 run.getStatus(),
                 run.getExtraction(),
                 proposals,

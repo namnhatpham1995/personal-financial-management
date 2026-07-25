@@ -2,7 +2,7 @@ package com.fintrack.agent.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fintrack.account.domain.Account;
-import com.fintrack.account.service.AccountService;
+import com.fintrack.account.repository.AccountRepository;
 import com.fintrack.agent.domain.AgentRun;
 import com.fintrack.agent.domain.AgentRunStatus;
 import com.fintrack.agent.exception.AgentFeatureUnavailableException;
@@ -54,8 +54,8 @@ public class AgentRunService {
     private final AgentRunRepository agentRunRepository;
     private final VaultDocumentRepository vaultDocumentRepository;
     private final UserRepository userRepository;
+    private final AccountRepository accountRepository;
     private final CategoryService categoryService;
-    private final AccountService accountService;
     private final ExchangeRateService exchangeRateService;
     private final TransactionService transactionService;
     private final AgentTokenService agentTokenService;
@@ -79,9 +79,11 @@ public class AgentRunService {
         }
 
         User user = userRepository.getReferenceById(userId);
+        Account account = doc.getAccountId() != null ? accountRepository.getReferenceById(doc.getAccountId()) : null;
         AgentRun run = AgentRun.builder()
                 .user(user)
                 .vaultDocumentId(vaultDocumentId)
+                .account(account)
                 .status(AgentRunStatus.EXTRACTING)
                 .retryable(false)
                 .build();
@@ -182,6 +184,11 @@ public class AgentRunService {
     // ── internal ─────────────────────────────────────────────────────────────
 
     private AgentRunDetailResponse doCommit(Long userId, AgentRun run, List<ProposalDto> editedProposals) {
+        if (run.getAccount() == null) {
+            throw new IllegalArgumentException("This run has no account bound to it and cannot be approved");
+        }
+        Long accountId = run.getAccount().getId();
+
         BigDecimal extractedTotal = extractTotal(run.getExtraction());
         List<ProposalDto> validated = validateProposals(userId, editedProposals, extractedTotal).stream()
                 .filter(p -> !p.excluded())
@@ -191,9 +198,8 @@ public class AgentRunService {
             throw new IllegalArgumentException("At least one non-excluded proposal is required to approve a run");
         }
         for (ProposalDto p : validated) {
-            if (p.categoryId() == null || p.accountId() == null) {
-                throw new IllegalArgumentException(
-                        "Every approved proposal must have a category and an account selected");
+            if (p.categoryId() == null) {
+                throw new IllegalArgumentException("Every approved proposal must have a category selected");
             }
         }
 
@@ -205,7 +211,7 @@ public class AgentRunService {
                     TransactionType.EXPENSE,
                     p.amount(),
                     p.date(),
-                    p.accountId(),
+                    accountId,
                     null,
                     null,
                     p.categoryId(),
@@ -253,7 +259,6 @@ public class AgentRunService {
         for (ProposalDto p : proposals) {
             List<String> flags = new ArrayList<>(p.flags());
             Long categoryId = p.categoryId();
-            Long accountId = p.accountId();
 
             if (categoryId != null) {
                 try {
@@ -265,16 +270,6 @@ public class AgentRunService {
                 }
             } else {
                 addFlag(flags, "low-confidence");
-            }
-
-            if (accountId != null) {
-                try {
-                    Account account = accountService.findOwned(userId, accountId);
-                    accountId = account.getId();
-                } catch (ResourceNotFoundException e) {
-                    accountId = null;
-                    addFlag(flags, "low-confidence");
-                }
             }
 
             if (p.date() != null && p.date().isAfter(LocalDate.now())) {
@@ -289,8 +284,11 @@ public class AgentRunService {
                 addFlag(flags, "totals-mismatch");
             }
 
+            // accountId is no longer authoritative — every proposal commits against the run's
+            // bound account (see doCommit) — but the field is passed through unchanged since
+            // ProposalDto is shared with the agent-service's submit-proposals contract.
             result.add(new ProposalDto(p.merchant(), p.date(), p.amount(), p.currency(),
-                    categoryId, accountId, p.description(), flags, p.excluded()));
+                    categoryId, p.accountId(), p.description(), flags, p.excluded()));
         }
         return result;
     }
