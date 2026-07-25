@@ -75,6 +75,11 @@ class AgentRunLifecycleIntegrationTest {
 
     private String uploadReceipt(String jwt) throws Exception {
         String accountId = HttpTestHelper.createAccount(mockMvc, objectMapper, jwt, "USD");
+        return uploadReceipt(jwt, accountId);
+    }
+
+    /** Uploads a receipt against a caller-chosen account — the run's proposals commit against this account. */
+    private String uploadReceipt(String jwt, String accountId) throws Exception {
         MockMultipartFile file = new MockMultipartFile(
                 "file", "receipt.jpg", MediaType.IMAGE_JPEG_VALUE, "fake-image-bytes".getBytes(StandardCharsets.UTF_8));
         MvcResult result = mockMvc.perform(multipart("/api/vault/upload")
@@ -104,17 +109,17 @@ class AgentRunLifecycleIntegrationTest {
         return objectMapper.readTree(result.getResponse().getContentAsString()).get("id").asLong();
     }
 
-    private String proposalPayload(String accountId, String categoryId) {
+    private String proposalPayload(String categoryId) {
         return """
                 {
                   "extraction": {"merchant": "Corner Store", "total": "12.50"},
                   "proposals": [
                     {"merchant": "Corner Store", "date": "2026-01-05", "amount": "12.50",
-                     "currency": "USD", "categoryId": %s, "accountId": %s,
+                     "currency": "USD", "categoryId": %s,
                      "description": "Groceries", "flags": [], "excluded": false}
                   ]
                 }
-                """.formatted(categoryId, accountId);
+                """.formatted(categoryId);
     }
 
     @Test
@@ -122,7 +127,9 @@ class AgentRunLifecycleIntegrationTest {
         String jwt = HttpTestHelper.registerAndLogin(mockMvc, objectMapper, "agent.happy@test.com");
         String accountId = HttpTestHelper.createAccount(mockMvc, objectMapper, jwt, "USD");
         String categoryId = HttpTestHelper.createCategory(mockMvc, objectMapper, jwt, "Groceries", "EXPENSE");
-        String docId = uploadReceipt(jwt);
+        // Every proposal in this run commits against the receipt's upload account — no per-item
+        // account selection.
+        String docId = uploadReceipt(jwt, accountId);
 
         Long runId = startRun(jwt, docId);
         String agentToken = agentTokenFor("agent.happy@test.com", runId);
@@ -130,9 +137,10 @@ class AgentRunLifecycleIntegrationTest {
         mockMvc.perform(post("/api/v1/agent-runs/" + runId + "/proposals")
                         .header("Authorization", "Bearer " + agentToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(proposalPayload(accountId, categoryId)))
+                        .content(proposalPayload(categoryId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("AWAITING_REVIEW"))
+                .andExpect(jsonPath("$.accountId").value(Long.parseLong(accountId)))
                 .andExpect(jsonPath("$.proposals[0].flags").isEmpty());
 
         MvcResult decisionResult = mockMvc.perform(post("/api/v1/agent-runs/" + runId + "/decision")
@@ -143,7 +151,7 @@ class AgentRunLifecycleIntegrationTest {
                                 "proposals", List.of(Map.of(
                                         "merchant", "Corner Store", "date", "2026-01-05",
                                         "amount", "12.50", "currency", "USD",
-                                        "categoryId", Long.parseLong(categoryId), "accountId", Long.parseLong(accountId),
+                                        "categoryId", Long.parseLong(categoryId),
                                         "description", "Groceries", "flags", List.of(), "excluded", false))))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("COMMITTED"))
@@ -190,7 +198,6 @@ class AgentRunLifecycleIntegrationTest {
     @Test
     void rejection_leavesNoTransactions() throws Exception {
         String jwt = HttpTestHelper.registerAndLogin(mockMvc, objectMapper, "agent.reject@test.com");
-        String accountId = HttpTestHelper.createAccount(mockMvc, objectMapper, jwt, "USD");
         String categoryId = HttpTestHelper.createCategory(mockMvc, objectMapper, jwt, "Groceries", "EXPENSE");
         String docId = uploadReceipt(jwt);
 
@@ -199,7 +206,7 @@ class AgentRunLifecycleIntegrationTest {
         mockMvc.perform(post("/api/v1/agent-runs/" + runId + "/proposals")
                         .header("Authorization", "Bearer " + agentToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(proposalPayload(accountId, categoryId)))
+                        .content(proposalPayload(categoryId)))
                 .andExpect(status().isOk());
 
         mockMvc.perform(post("/api/v1/agent-runs/" + runId + "/decision")

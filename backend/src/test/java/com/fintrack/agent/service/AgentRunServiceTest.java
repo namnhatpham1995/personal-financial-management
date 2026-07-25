@@ -2,7 +2,7 @@ package com.fintrack.agent.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fintrack.account.domain.Account;
-import com.fintrack.account.service.AccountService;
+import com.fintrack.account.repository.AccountRepository;
 import com.fintrack.agent.domain.AgentRun;
 import com.fintrack.agent.domain.AgentRunStatus;
 import com.fintrack.agent.exception.AgentFeatureUnavailableException;
@@ -48,8 +48,8 @@ class AgentRunServiceTest {
     @Mock AgentRunRepository agentRunRepository;
     @Mock VaultDocumentRepository vaultDocumentRepository;
     @Mock UserRepository userRepository;
+    @Mock AccountRepository accountRepository;
     @Mock CategoryService categoryService;
-    @Mock AccountService accountService;
     @Mock ExchangeRateService exchangeRateService;
     @Mock TransactionService transactionService;
     @Mock AgentTokenService agentTokenService;
@@ -63,7 +63,7 @@ class AgentRunServiceTest {
     void setUp() {
         ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
         service = new AgentRunService(agentRunRepository, vaultDocumentRepository, userRepository,
-                categoryService, accountService, exchangeRateService, transactionService,
+                accountRepository, categoryService, exchangeRateService, transactionService,
                 agentTokenService, agentServiceClient, objectMapper);
         lenient().when(exchangeRateService.supportedCurrencies()).thenReturn(Set.of("USD", "EUR"));
     }
@@ -83,6 +83,12 @@ class AgentRunServiceTest {
                 .status(status)
                 .retryable(false)
                 .build();
+    }
+
+    private AgentRun runInStatusWithAccount(AgentRunStatus status, Long accountId) {
+        AgentRun run = runInStatus(status);
+        run.setAccount(Account.builder().id(accountId).build());
+        return run;
     }
 
     // ── start ────────────────────────────────────────────────────────────────
@@ -138,6 +144,28 @@ class AgentRunServiceTest {
         assertThat(response.id()).isEqualTo(42L);
         assertThat(response.status()).isEqualTo(AgentRunStatus.EXTRACTING);
         verify(agentServiceClient).notifyRunStarted(42L, "doc-1", "agent-token");
+        verifyNoInteractions(accountRepository);
+    }
+
+    @Test
+    void start_documentHasAccount_bindsItToTheRun() {
+        when(agentServiceClient.isConfigured()).thenReturn(true);
+        VaultDocument doc = VaultDocument.builder()
+                .id("doc-1").userId(USER_ID).accountId(7L).type(VaultDocumentType.RECEIPT).build();
+        when(vaultDocumentRepository.findByIdAndUserId("doc-1", USER_ID)).thenReturn(Optional.of(doc));
+        when(agentRunRepository.findByVaultDocumentIdAndUser_IdAndStatusIn(eq("doc-1"), eq(USER_ID), any()))
+                .thenReturn(List.of());
+        when(userRepository.getReferenceById(USER_ID)).thenReturn(user());
+        Account account = Account.builder().id(7L).build();
+        when(accountRepository.getReferenceById(7L)).thenReturn(account);
+        when(agentRunRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(agentTokenService.generateAgentToken(any(), any(), any())).thenReturn("agent-token");
+
+        service.start(USER_ID, "doc-1");
+
+        ArgumentCaptor<AgentRun> captor = ArgumentCaptor.forClass(AgentRun.class);
+        verify(agentRunRepository).save(captor.capture());
+        assertThat(captor.getValue().getAccount()).isEqualTo(account);
     }
 
     // ── submitProposals: deterministic validation ───────────────────────────
@@ -148,12 +176,10 @@ class AgentRunServiceTest {
         when(agentRunRepository.findByIdAndUser_Id(10L, USER_ID)).thenReturn(Optional.of(run));
         when(categoryService.findVisibleOrThrow(eq(USER_ID), any())).thenAnswer(inv ->
                 Category.builder().id(inv.getArgument(1)).build());
-        when(accountService.findOwned(eq(USER_ID), any())).thenAnswer(inv ->
-                Account.builder().id(inv.getArgument(1)).build());
         when(agentRunRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         var proposal = new ProposalDto("Store", LocalDate.now(), new BigDecimal("10.00"), "USD",
-                5L, 7L, "item", List.of(), false);
+                5L, null, "item", List.of(), false);
         var request = new SubmitProposalsRequest(Map.of("total", "15.00"), List.of(proposal));
 
         var result = service.submitProposals(USER_ID, 10L, request);
@@ -169,12 +195,10 @@ class AgentRunServiceTest {
         when(agentRunRepository.findByIdAndUser_Id(10L, USER_ID)).thenReturn(Optional.of(run));
         when(categoryService.findVisibleOrThrow(eq(USER_ID), eq(99L)))
                 .thenThrow(new ResourceNotFoundException("Category not found"));
-        when(accountService.findOwned(eq(USER_ID), any())).thenAnswer(inv ->
-                Account.builder().id(inv.getArgument(1)).build());
         when(agentRunRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         var proposal = new ProposalDto("Store", LocalDate.now(), new BigDecimal("10.00"), "USD",
-                99L, 7L, "item", List.of(), false);
+                99L, null, "item", List.of(), false);
         var request = new SubmitProposalsRequest(Map.of("total", "10.00"), List.of(proposal));
 
         var result = service.submitProposals(USER_ID, 10L, request);
@@ -221,38 +245,53 @@ class AgentRunServiceTest {
     }
 
     @Test
-    void decide_approve_commitsTransactionsThroughTransactionService() {
-        AgentRun run = runInStatus(AgentRunStatus.AWAITING_REVIEW);
+    void decide_approve_commitsAgainstTheRunsBoundAccount() {
+        AgentRun run = runInStatusWithAccount(AgentRunStatus.AWAITING_REVIEW, 7L);
         when(agentRunRepository.findByIdAndUser_Id(10L, USER_ID)).thenReturn(Optional.of(run));
         when(agentServiceClient.isConfigured()).thenReturn(true);
         when(categoryService.findVisibleOrThrow(eq(USER_ID), any())).thenAnswer(inv ->
                 Category.builder().id(inv.getArgument(1)).build());
-        when(accountService.findOwned(eq(USER_ID), any())).thenAnswer(inv ->
-                Account.builder().id(inv.getArgument(1)).build());
         when(transactionService.createWithImportDedupKey(eq(USER_ID), any(), any())).thenReturn(
                 new TransactionResponse(501L, null, null, null, null, null, null, null, null,
                         null, null, null, null, null, null, null, null, null, List.of()));
         when(agentRunRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
+        // accountId on the proposal itself is no longer authoritative — the run's bound account wins.
         var proposal = new ProposalDto("Store", LocalDate.now(), new BigDecimal("10.00"), "USD",
-                5L, 7L, "item", List.of(), false);
+                5L, null, "item", List.of(), false);
         var result = service.decide(USER_ID, 10L, new AgentDecisionRequest(true, List.of(proposal)));
 
         assertThat(result.status()).isEqualTo(AgentRunStatus.COMMITTED);
         assertThat(result.createdTransactionIds()).containsExactly(501L);
-        ArgumentCaptor<String> dedupKeyCaptor = ArgumentCaptor.forClass(String.class);
-        verify(transactionService).createWithImportDedupKey(eq(USER_ID), any(), dedupKeyCaptor.capture());
-        assertThat(dedupKeyCaptor.getValue()).isEqualTo("agent-run:10:0");
+        assertThat(result.accountId()).isEqualTo(7L);
+        ArgumentCaptor<com.fintrack.transaction.web.dto.CreateTransactionRequest> txCaptor =
+                ArgumentCaptor.forClass(com.fintrack.transaction.web.dto.CreateTransactionRequest.class);
+        verify(transactionService).createWithImportDedupKey(eq(USER_ID), txCaptor.capture(), any());
+        assertThat(txCaptor.getValue().accountId()).isEqualTo(7L);
     }
 
     @Test
-    void decide_approve_missingCategoryOrAccount_throws() {
-        AgentRun run = runInStatus(AgentRunStatus.AWAITING_REVIEW);
+    void decide_approve_missingCategory_throws() {
+        AgentRun run = runInStatusWithAccount(AgentRunStatus.AWAITING_REVIEW, 7L);
         when(agentRunRepository.findByIdAndUser_Id(10L, USER_ID)).thenReturn(Optional.of(run));
         when(agentServiceClient.isConfigured()).thenReturn(true);
 
         var proposal = new ProposalDto("Store", LocalDate.now(), new BigDecimal("10.00"), "USD",
                 null, null, "item", List.of(), false);
+
+        assertThatThrownBy(() -> service.decide(USER_ID, 10L, new AgentDecisionRequest(true, List.of(proposal))))
+                .isInstanceOf(IllegalArgumentException.class);
+        verifyNoInteractions(transactionService);
+    }
+
+    @Test
+    void decide_approve_runHasNoBoundAccount_throws() {
+        AgentRun run = runInStatus(AgentRunStatus.AWAITING_REVIEW);
+        when(agentRunRepository.findByIdAndUser_Id(10L, USER_ID)).thenReturn(Optional.of(run));
+        when(agentServiceClient.isConfigured()).thenReturn(true);
+
+        var proposal = new ProposalDto("Store", LocalDate.now(), new BigDecimal("10.00"), "USD",
+                5L, null, "item", List.of(), false);
 
         assertThatThrownBy(() -> service.decide(USER_ID, 10L, new AgentDecisionRequest(true, List.of(proposal))))
                 .isInstanceOf(IllegalArgumentException.class);
