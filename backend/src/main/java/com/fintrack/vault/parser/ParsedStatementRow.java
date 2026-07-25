@@ -21,5 +21,7 @@ public record ParsedStatementRow(
          * fingerprint is built from this alone (see {@code StatementImportService}) instead of the
          * occurrence-ordinal fallback fingerprint.
          */
-        String fitId
+        String fitId,
+        /** Optional category text from a source-provided category column (CSV only). Null when absent. */
+        String category
 ) {}

@@ -81,7 +81,7 @@ public class OfxStatementParser {
             type = "CREDIT".equalsIgnoreCase(trnType) ? TransactionType.INCOME : TransactionType.INCOME;
         }
 
-        return new ParsedStatementRow(date, amount, type, memo.trim(), block.trim(), fitId);
+        return new ParsedStatementRow(date, amount, type, memo.trim(), block.trim(), fitId, null);
     }
 
     private String extract(String block, String tag) {

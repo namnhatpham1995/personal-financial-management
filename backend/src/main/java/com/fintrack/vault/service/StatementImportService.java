@@ -1,6 +1,8 @@
 package com.fintrack.vault.service;
 
 import com.fintrack.audit.support.AuditReplaySignal;
+import com.fintrack.category.domain.Category;
+import com.fintrack.category.repository.CategoryRepository;
 import com.fintrack.common.domain.TransactionType;
 import com.fintrack.common.exception.ResourceNotFoundException;
 import com.fintrack.idempotency.exception.IdempotencyConflictException;
@@ -74,6 +76,7 @@ public class StatementImportService {
     private final OfxStatementParser ofxParser;
     private final TransactionService transactionService;
     private final TransactionRepository transactionRepository;
+    private final CategoryRepository categoryRepository;
     private final IdempotencyKeyValidator keyValidator;
     private final IdempotencyHasher hasher;
     private final MongoTemplate mongoTemplate;
@@ -121,7 +124,7 @@ public class StatementImportService {
         doc.setStatus(VaultDocumentStatus.STAGED);
         vaultDocumentRepository.save(doc);
 
-        return rowMaps.stream().map(this::toStagedRowResponse).toList();
+        return rowMaps.stream().map(r -> toStagedRowResponse(r, userId)).toList();
     }
 
     private List<ParsedStatementRow> parseBinary(VaultDocument doc) throws IOException {
@@ -156,19 +159,40 @@ public class StatementImportService {
         List<Map<String, Object>> rows =
                 (List<Map<String, Object>>) doc.getPayload().get("rows");
 
-        return rows.stream().map(this::toStagedRowResponse).toList();
+        return rows.stream().map(r -> toStagedRowResponse(r, userId)).toList();
     }
 
-    private StagedRowResponse toStagedRowResponse(Map<String, Object> r) {
+    private StagedRowResponse toStagedRowResponse(Map<String, Object> r, Long userId) {
+        String type = (String) r.get("type");
+        String categoryText = (String) r.get("category");
         return new StagedRowResponse(
                 (String) r.get("date"),
                 // MongoDB round-trips this untyped map value as a String, not a Number
                 // (matches the .toString() handling already used in confirm() below).
                 r.get("amount").toString(),
-                (String) r.get("type"),
+                type,
                 (String) r.get("description"),
-                (String) r.get("dedupKey")
+                (String) r.get("dedupKey"),
+                categoryText,
+                matchCategoryId(userId, categoryText, type)
         );
+    }
+
+    /**
+     * Matches parsed category text to an existing category of the row's transaction type
+     * (case-insensitive), scoped to categories visible to the user (system defaults + owned).
+     * Returns null on no text or no match — the row is shown uncategorized and remains editable.
+     */
+    private Long matchCategoryId(Long userId, String categoryText, String transactionType) {
+        if (categoryText == null || categoryText.isBlank()) {
+            return null;
+        }
+        TransactionType type = TransactionType.valueOf(transactionType);
+        return categoryRepository.findVisibleToUser(userId, type).stream()
+                .filter(c -> c.getName().equalsIgnoreCase(categoryText.trim()))
+                .findFirst()
+                .map(Category::getId)
+                .orElse(null);
     }
 
     /**
@@ -184,7 +208,7 @@ public class StatementImportService {
                                           String rawIdempotencyKey) {
         keyValidator.validate(rawIdempotencyKey);
         String keyHash = hasher.hashKey(rawIdempotencyKey);
-        String requestHash = hasher.hashJsonRequest(CONFIRM_OPERATION_NAME, canonicalSelection(req.selectedDedupKeys()));
+        String requestHash = hasher.hashJsonRequest(CONFIRM_OPERATION_NAME, canonicalSelection(req.rows()));
 
         VaultDocument doc = vaultDocumentRepository.findByIdAndUserId(documentId, userId)
                 .orElseThrow(() -> ResourceNotFoundException.of("StagedStatement", documentId));
@@ -234,7 +258,7 @@ public class StatementImportService {
                 metrics.replayed(CONFIRM_OPERATION_NAME);
                 log.debug("Vault operation replay: operation={}", CONFIRM_OPERATION_NAME);
                 auditReplaySignal.markReplayed();
-                yield buildResponse(doc, req.selectedDedupKeys());
+                yield buildResponse(doc, req.rows());
             }
         };
     }
@@ -282,7 +306,7 @@ public class StatementImportService {
         VaultDocument finalDoc = activated != null
                 ? activated
                 : vaultDocumentRepository.findByIdAndUserId(doc.getId(), doc.getUserId()).orElse(doc);
-        return buildResponse(finalDoc, req.selectedDedupKeys());
+        return buildResponse(finalDoc, req.rows());
     }
 
     @SuppressWarnings("unchecked")
@@ -292,8 +316,9 @@ public class StatementImportService {
         Map<String, Map<String, Object>> rowsByKey = allRows.stream()
                 .collect(Collectors.toMap(r -> (String) r.get("dedupKey"), r -> r, (a, b) -> a));
 
-        for (String dedupKey : req.selectedDedupKeys()) {
-            claimAndProcessRow(doc.getId(), doc.getUserId(), accountId, rowsByKey.get(dedupKey), dedupKey);
+        for (ConfirmImportRequest.ConfirmRow row : req.rows()) {
+            claimAndProcessRow(doc.getId(), doc.getUserId(), accountId,
+                    rowsByKey.get(row.dedupKey()), row.dedupKey(), row.categoryId());
         }
     }
 
@@ -305,7 +330,7 @@ public class StatementImportService {
      * terminal outcome instead of reprocessing.
      */
     private RowOutcome claimAndProcessRow(String documentId, Long userId, Long accountId,
-                                           Map<String, Object> row, String dedupKey) {
+                                           Map<String, Object> row, String dedupKey, Long categoryId) {
         String outcomeField = "confirmationRowOutcomes." + dedupKey;
         Query claimQuery = Query.query(Criteria.where("_id").is(documentId).and(outcomeField).exists(false));
         Update claimUpdate = Update.update(outcomeField, RowOutcome.processing());
@@ -317,7 +342,7 @@ public class StatementImportService {
             return awaitRowOutcome(documentId, dedupKey);
         }
 
-        RowOutcome outcome = processOneRow(userId, documentId, accountId, row, dedupKey);
+        RowOutcome outcome = processOneRow(userId, documentId, accountId, row, dedupKey, categoryId);
         mongoTemplate.updateFirst(Query.query(Criteria.where("_id").is(documentId)),
                 Update.update(outcomeField, outcome), VaultDocument.class);
         return outcome;
@@ -350,7 +375,7 @@ public class StatementImportService {
      * "Non-duplicate integrity failure is reported" scenario.
      */
     private RowOutcome processOneRow(Long userId, String documentId, Long accountId,
-                                      Map<String, Object> row, String dedupKey) {
+                                      Map<String, Object> row, String dedupKey, Long categoryId) {
         if (row == null) {
             return RowOutcome.failed("Selected row was not found in the staged document");
         }
@@ -362,7 +387,7 @@ public class StatementImportService {
                     accountId,
                     null,
                     null,
-                    null,
+                    categoryId,
                     (String) row.get("description"));
 
             Set<ConstraintViolation<CreateTransactionRequest>> violations = beanValidator.validate(txReq);
@@ -419,7 +444,7 @@ public class StatementImportService {
         });
     }
 
-    private ConfirmImportResponse buildResponse(VaultDocument doc, List<String> selectedDedupKeys) {
+    private ConfirmImportResponse buildResponse(VaultDocument doc, List<ConfirmImportRequest.ConfirmRow> selectedRows) {
         Map<String, RowOutcome> outcomes = doc.getConfirmationRowOutcomes() == null
                 ? Map.of() : doc.getConfirmationRowOutcomes();
 
@@ -427,7 +452,8 @@ public class StatementImportService {
         int duplicate = 0;
         int failed = 0;
         List<ConfirmImportResponse.RowResult> rows = new ArrayList<>();
-        for (String dedupKey : selectedDedupKeys) {
+        for (ConfirmImportRequest.ConfirmRow selectedRow : selectedRows) {
+            String dedupKey = selectedRow.dedupKey();
             RowOutcome outcome = outcomes.get(dedupKey);
             if (outcome == null || outcome.getStatus() == RowOutcomeStatus.PROCESSING) {
                 failed++;
@@ -447,8 +473,16 @@ public class StatementImportService {
         return new ConfirmImportResponse(created, duplicate, failed, rows);
     }
 
-    private List<String> canonicalSelection(List<String> selectedDedupKeys) {
-        return selectedDedupKeys == null ? List.of() : selectedDedupKeys.stream().sorted().toList();
+    /**
+     * Canonical (sorted) {@code dedupKey|categoryId} tokens — folds each row's chosen category into
+     * the confirm idempotency hash, so the same key with a different category assignment produces a
+     * different hash (and therefore a 409 via {@link #requireMatchingConfirmation}).
+     */
+    private List<String> canonicalSelection(List<ConfirmImportRequest.ConfirmRow> rows) {
+        return rows == null ? List.of() : rows.stream()
+                .map(r -> r.dedupKey() + "|" + (r.categoryId() == null ? "null" : r.categoryId()))
+                .sorted()
+                .toList();
     }
 
     private void sleepPollInterval() {
@@ -476,13 +510,14 @@ public class StatementImportService {
         List<Map<String, Object>> rowMaps = new ArrayList<>(rows.size());
         for (ParsedStatementRow row : rows) {
             String fingerprint = buildFingerprint(userId, accountId, row, occurrenceCounts);
-            rowMaps.add(Map.of(
-                    "date", row.date().toString(),
-                    "amount", row.amount(),
-                    "type", row.type().name(),
-                    "description", row.description(),
-                    "dedupKey", fingerprint
-            ));
+            Map<String, Object> rowMap = new HashMap<>();
+            rowMap.put("date", row.date().toString());
+            rowMap.put("amount", row.amount());
+            rowMap.put("type", row.type().name());
+            rowMap.put("description", row.description());
+            rowMap.put("dedupKey", fingerprint);
+            rowMap.put("category", row.category());
+            rowMaps.add(rowMap);
         }
         return rowMaps;
     }

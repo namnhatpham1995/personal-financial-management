@@ -3,6 +3,7 @@ package com.fintrack.vault;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fintrack.support.HttpTestHelper;
+import com.fintrack.vault.web.dto.ConfirmImportRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -78,6 +79,12 @@ class StatementImportPipelineIntegrationTest {
             "not-a-date,Bad row,???\n" +
             "2026-01-06,Good row expense,-25.00\n";
 
+    private ConfirmImportRequest confirmBody(java.util.List<String> dedupKeys) {
+        return new ConfirmImportRequest(dedupKeys.stream()
+                .map(k -> new ConfirmImportRequest.ConfirmRow(k, null))
+                .toList());
+    }
+
     @Test
     void validCsv_uploadPreviewConfirm_createsTransactionsAndAdjustsBalance() throws Exception {
         String jwt = HttpTestHelper.registerAndLogin(mockMvc, objectMapper, "vault.valid@test.com");
@@ -118,7 +125,7 @@ class StatementImportPipelineIntegrationTest {
                         .header("Authorization", "Bearer " + jwt)
                         .header("Idempotency-Key", "statement-confirm-key-0123456789")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(java.util.Map.of("selectedDedupKeys", dedupKeys))))
+                        .content(objectMapper.writeValueAsString(confirmBody(dedupKeys))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.created").value(2))
                 .andReturn();
@@ -255,7 +262,7 @@ class StatementImportPipelineIntegrationTest {
                         .header("Authorization", "Bearer " + jwt)
                         .header("Idempotency-Key", "statement-confirm-key-0123456789")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(java.util.Map.of("selectedDedupKeys", dedupKeys))))
+                        .content(objectMapper.writeValueAsString(confirmBody(dedupKeys))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.created").value(2))
                 .andReturn();

@@ -82,4 +82,31 @@ class CsvStatementParserTest {
         List<ParsedStatementRow> rows = parse("Date,Description,Amount\n");
         assertThat(rows).isEmpty();
     }
+
+    @Test
+    void parse_categoryColumnPresent_extractedCaseInsensitiveHeader() throws IOException {
+        String csv = "Date,Description,Amount,Category\n2024-01-10,Salary,5000.00,Income\n";
+        List<ParsedStatementRow> rows = parse(csv);
+
+        assertThat(rows).hasSize(1);
+        assertThat(rows.get(0).category()).isEqualTo("Income");
+    }
+
+    @Test
+    void parse_categoryColumnAbsent_categoryIsNull() throws IOException {
+        String csv = "Date,Description,Amount\n2024-01-10,Salary,5000.00\n";
+        List<ParsedStatementRow> rows = parse(csv);
+
+        assertThat(rows).hasSize(1);
+        assertThat(rows.get(0).category()).isNull();
+    }
+
+    @Test
+    void parse_categoryColumnEmptyValue_categoryIsNull() throws IOException {
+        String csv = "Date,Description,Amount,Category\n2024-01-10,Salary,5000.00,\n";
+        List<ParsedStatementRow> rows = parse(csv);
+
+        assertThat(rows).hasSize(1);
+        assertThat(rows.get(0).category()).isNull();
+    }
 }

@@ -1041,7 +1041,7 @@ export interface components {
             transactionType?: "INCOME" | "EXPENSE" | "TRANSFER";
         };
         ConfirmImportRequest: {
-            selectedDedupKeys: string[];
+            rows: components["schemas"]["ConfirmRow"][];
         };
         ConfirmImportResponse: {
             /** Format: int32 */
@@ -1051,6 +1051,11 @@ export interface components {
             /** Format: int32 */
             failed?: number;
             rows?: components["schemas"]["RowResult"][];
+        };
+        ConfirmRow: {
+            /** Format: int64 */
+            categoryId?: number;
+            dedupKey: string;
         };
         ConvertResponse: {
             amount?: number;
@@ -1342,6 +1347,9 @@ export interface components {
         };
         StagedRowResponse: {
             amount?: string;
+            category?: string;
+            /** Format: int64 */
+            categoryId?: number;
             date?: string;
             dedupKey?: string;
             description?: string;
