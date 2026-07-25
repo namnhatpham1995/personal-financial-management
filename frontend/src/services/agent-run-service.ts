@@ -16,7 +16,6 @@ export interface AgentProposal {
   amount: string;
   currency: string;
   categoryId: number | null;
-  accountId: number | null;
   description?: string;
   flags: string[];
   excluded: boolean;
@@ -33,6 +32,8 @@ export interface ExtractionResult {
 export interface AgentRunDetail {
   id: number;
   vaultDocumentId: string;
+  /** Account every non-excluded proposal commits against — bound from the receipt's upload account. */
+  accountId: number | null;
   status: AgentRunStatus;
   extraction: ExtractionResult | null;
   proposals: AgentProposal[];

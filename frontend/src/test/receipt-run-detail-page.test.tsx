@@ -29,6 +29,7 @@ function renderPage(id = "42") {
 const baseRun: AgentRunDetail = {
   id: 42,
   vaultDocumentId: "doc-42",
+  accountId: 10,
   status: "AWAITING_REVIEW",
   extraction: { merchant: "Corner Market", date: "2026-01-05", currency: "USD", lineItems: [], total: "12.50" },
   proposals: [
@@ -38,7 +39,6 @@ const baseRun: AgentRunDetail = {
       amount: "12.50",
       currency: "USD",
       categoryId: null,
-      accountId: 10,
       description: "Milk",
       flags: ["low-confidence"],
       excluded: false,
@@ -94,10 +94,18 @@ describe("ReceiptRunDetailPage", () => {
         42,
         expect.objectContaining({
           approve: true,
-          proposals: [expect.objectContaining({ categoryId: 1, accountId: 10 })],
+          proposals: [expect.objectContaining({ categoryId: 1 })],
         })
       );
     });
+  });
+
+  it("shows the bound account and no per-item account selector", async () => {
+    vi.mocked(agentRunService.getById).mockResolvedValue(baseRun);
+    renderPage();
+
+    expect(await screen.findByText("Checking")).toBeInTheDocument();
+    expect(screen.queryByText("Select account…")).not.toBeInTheDocument();
   });
 
   it("excluding the only item still requires no category on it, but blocks approval with zero included items", async () => {
