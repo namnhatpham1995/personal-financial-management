@@ -698,6 +698,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/vault/by-account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listByAccount"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/vault/by-transactions": {
         parameters: {
             query?: never;
@@ -740,6 +756,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["confirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vault/import/{documentId}/parse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["parse"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1406,6 +1438,8 @@ export interface components {
             preferredLanguage?: string;
         };
         VaultDocumentResponse: {
+            /** Format: int64 */
+            accountId?: number;
             /** Format: date-time */
             capturedAt?: string;
             hasBinary?: boolean;
@@ -1418,7 +1452,7 @@ export interface components {
             };
             source?: string;
             /** @enum {string} */
-            status?: "STAGED" | "CONFIRMING" | "ACTIVE";
+            status?: "UPLOADED" | "STAGED" | "CONFIRMING" | "ACTIVE";
             /** Format: int64 */
             transactionId?: number;
             /** @enum {string} */
@@ -2722,6 +2756,30 @@ export interface operations {
             };
         };
     };
+    listByAccount: {
+        parameters: {
+            query: {
+                accountId: number;
+                type: "RECEIPT" | "STATEMENT";
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PageVaultDocumentResponse"];
+                };
+            };
+        };
+    };
     byTransactions: {
         parameters: {
             query?: never;
@@ -2809,6 +2867,28 @@ export interface operations {
             };
         };
     };
+    parse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                documentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["StagedRowResponse"][];
+                };
+            };
+        };
+    };
     getReviewRows: {
         parameters: {
             query?: never;
@@ -2861,6 +2941,7 @@ export interface operations {
         parameters: {
             query: {
                 type: "RECEIPT" | "STATEMENT";
+                accountId: number;
             };
             header: {
                 /** @description Client-generated key (16-128 URL-safe characters) required for every vault upload; a retry with the same key and file replays the original document instead of storing a duplicate binary. */

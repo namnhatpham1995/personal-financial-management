@@ -1491,6 +1491,10 @@
       },
       "VaultDocumentResponse" : {
         "properties" : {
+          "accountId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
           "capturedAt" : {
             "format" : "date-time",
             "type" : "string"
@@ -1518,7 +1522,7 @@
             "type" : "string"
           },
           "status" : {
-            "enum" : [ "STAGED", "CONFIRMING", "ACTIVE" ],
+            "enum" : [ "UPLOADED", "STAGED", "CONFIRMING", "ACTIVE" ],
             "type" : "string"
           },
           "transactionId" : {
@@ -3450,6 +3454,48 @@
         "tags" : [ "vault-controller" ]
       }
     },
+    "/api/vault/by-account" : {
+      "get" : {
+        "operationId" : "listByAccount",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "accountId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "type",
+          "required" : true,
+          "schema" : {
+            "enum" : [ "RECEIPT", "STATEMENT" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "pageable",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/Pageable"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageVaultDocumentResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "vault-controller" ]
+      }
+    },
     "/api/vault/by-transactions" : {
       "post" : {
         "operationId" : "byTransactions",
@@ -3583,6 +3629,35 @@
         "tags" : [ "statement-import-controller" ]
       }
     },
+    "/api/vault/import/{documentId}/parse" : {
+      "post" : {
+        "operationId" : "parse",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "documentId",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/StagedRowResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "statement-import-controller" ]
+      }
+    },
     "/api/vault/import/{documentId}/rows" : {
       "get" : {
         "operationId" : "getReviewRows",
@@ -3658,6 +3733,14 @@
           "schema" : {
             "enum" : [ "RECEIPT", "STATEMENT" ],
             "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
           }
         }, {
           "description" : "Client-generated key (16-128 URL-safe characters) required for every vault upload; a retry with the same key and file replays the original document instead of storing a duplicate binary.",
