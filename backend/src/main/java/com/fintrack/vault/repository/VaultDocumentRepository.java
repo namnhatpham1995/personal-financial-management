@@ -2,6 +2,7 @@ package com.fintrack.vault.repository;
 
 import com.fintrack.vault.domain.VaultDocument;
 import com.fintrack.vault.domain.VaultDocumentStatus;
+import com.fintrack.vault.domain.VaultDocumentType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
@@ -22,4 +23,7 @@ public interface VaultDocumentRepository extends MongoRepository<VaultDocument, 
     boolean existsByTransactionIdAndUserId(Long transactionId, Long userId);
 
     List<VaultDocument> findByTransactionIdInAndUserId(Collection<Long> transactionIds, Long userId);
+
+    Page<VaultDocument> findByUserIdAndAccountIdAndTypeOrderByCapturedAtDesc(
+            Long userId, Long accountId, VaultDocumentType type, Pageable pageable);
 }

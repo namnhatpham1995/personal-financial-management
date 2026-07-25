@@ -97,6 +97,11 @@ class StatementImportPipelineIntegrationTest {
         String documentId = objectMapper.readTree(uploadResult.getResponse().getContentAsString())
                 .get("documentId").asText();
 
+        // Upload no longer parses — the UPLOADED statement must be parsed on demand.
+        mockMvc.perform(post("/api/vault/import/" + documentId + "/parse")
+                        .header("Authorization", "Bearer " + jwt))
+                .andExpect(status().isOk());
+
         MvcResult rowsResult = mockMvc.perform(get("/api/vault/import/" + documentId + "/rows")
                         .header("Authorization", "Bearer " + jwt))
                 .andExpect(status().isOk())
@@ -135,6 +140,57 @@ class StatementImportPipelineIntegrationTest {
         JsonNode transactions = objectMapper.readTree(txResult.getResponse().getContentAsString());
         // GET /api/v1/transactions returns a paginated envelope, not a bare array
         assertThat(transactions.get("content")).hasSize(2);
+    }
+
+    @Test
+    void upload_createsUploadedDocumentWithoutParsing_thenParseIsSafelyReRunnable() throws Exception {
+        String jwt = HttpTestHelper.registerAndLogin(mockMvc, objectMapper, "vault.uploaded@test.com");
+        String accountId = HttpTestHelper.createAccount(mockMvc, objectMapper, jwt, "USD");
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "statement.csv", MediaType.TEXT_PLAIN_VALUE,
+                VALID_CSV.getBytes(StandardCharsets.UTF_8));
+
+        MvcResult uploadResult = mockMvc.perform(multipart("/api/vault/import/upload")
+                        .file(file)
+                        .param("accountId", accountId)
+                        .header("Authorization", "Bearer " + jwt)
+                        .header("Idempotency-Key", "statement-upload-key-uploaded-01"))
+                .andExpect(status().isCreated())
+                .andReturn();
+        String documentId = objectMapper.readTree(uploadResult.getResponse().getContentAsString())
+                .get("documentId").asText();
+
+        // No rows are parsed yet — the document is UPLOADED, not STAGED.
+        mockMvc.perform(get("/api/vault/import/" + documentId + "/rows")
+                        .header("Authorization", "Bearer " + jwt))
+                .andExpect(status().isNotFound());
+
+        MvcResult firstParse = mockMvc.perform(post("/api/vault/import/" + documentId + "/parse")
+                        .header("Authorization", "Bearer " + jwt))
+                .andExpect(status().isOk())
+                .andReturn();
+        JsonNode firstRows = objectMapper.readTree(firstParse.getResponse().getContentAsString());
+        assertThat(firstRows).hasSize(2);
+
+        // Re-running parse is safe (deterministic, no side effects) and yields the same rows.
+        MvcResult secondParse = mockMvc.perform(post("/api/vault/import/" + documentId + "/parse")
+                        .header("Authorization", "Bearer " + jwt))
+                .andExpect(status().isOk())
+                .andReturn();
+        JsonNode secondRows = objectMapper.readTree(secondParse.getResponse().getContentAsString());
+        assertThat(secondRows).isEqualTo(firstRows);
+
+        MvcResult listResult = mockMvc.perform(get("/api/vault/by-account")
+                        .param("accountId", accountId)
+                        .param("type", "STATEMENT")
+                        .header("Authorization", "Bearer " + jwt))
+                .andExpect(status().isOk())
+                .andReturn();
+        JsonNode listBody = objectMapper.readTree(listResult.getResponse().getContentAsString());
+        assertThat(listBody.get("content")).hasSize(1);
+        assertThat(listBody.get("content").get(0).get("accountId").asLong()).isEqualTo(Long.parseLong(accountId));
+        assertThat(listBody.get("content").get(0).get("status").asText()).isEqualTo("STAGED");
     }
 
     @Test
@@ -179,6 +235,10 @@ class StatementImportPipelineIntegrationTest {
                 .andReturn();
         String documentId = objectMapper.readTree(uploadResult.getResponse().getContentAsString())
                 .get("documentId").asText();
+
+        mockMvc.perform(post("/api/vault/import/" + documentId + "/parse")
+                        .header("Authorization", "Bearer " + jwt))
+                .andExpect(status().isOk());
 
         MvcResult rowsResult = mockMvc.perform(get("/api/vault/import/" + documentId + "/rows")
                         .header("Authorization", "Bearer " + jwt))

@@ -601,6 +601,7 @@
       "OTHER": "other"
     },
     "documentStatus": {
+      "UPLOADED": "Uploaded",
       "STAGED": "Staged",
       "CONFIRMING": "Processing",
       "ACTIVE": "Active"

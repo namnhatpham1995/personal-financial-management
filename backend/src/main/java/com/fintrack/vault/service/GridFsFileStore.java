@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 @Service
 @RequiredArgsConstructor
@@ -59,6 +60,16 @@ public class GridFsFileStore {
             return null;
         }
         return gridFsTemplate.getResource(file);
+    }
+
+    /**
+     * Reads a GridFS binary's raw content scoped to {@code userId}. Returns null if not found or
+     * owned by a different user. Narrower than {@link #load}: callers that only need bytes (e.g.
+     * on-demand statement parsing) don't need to depend on the {@code GridFsResource} type.
+     */
+    public InputStream loadInputStream(String fileId, Long userId) throws IOException {
+        GridFsResource resource = load(fileId, userId);
+        return resource == null ? null : resource.getInputStream();
     }
 
     public void delete(String fileId) {

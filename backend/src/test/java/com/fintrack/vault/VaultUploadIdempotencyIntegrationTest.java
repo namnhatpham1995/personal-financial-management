@@ -107,6 +107,7 @@ class VaultUploadIdempotencyIntegrationTest {
     void vaultUpload_sequentialReplay_sameKeySameFile_returnsSameDocumentAndOneBinary() throws Exception {
         String email = "vault.replay@test.com";
         String jwt = register(email);
+        String accountId = HttpTestHelper.createAccount(mockMvc, objectMapper, jwt, "USD");
         String key = UUID.randomUUID().toString();
         MockMultipartFile file = new MockMultipartFile(
                 "file", "receipt.jpg", MediaType.IMAGE_JPEG_VALUE, "receipt-bytes".getBytes(StandardCharsets.UTF_8));
@@ -114,6 +115,7 @@ class VaultUploadIdempotencyIntegrationTest {
         MvcResult first = mockMvc.perform(multipart("/api/vault/upload")
                         .file(file)
                         .param("type", "RECEIPT")
+                        .param("accountId", accountId)
                         .header("Authorization", "Bearer " + jwt)
                         .header("Idempotency-Key", key))
                 .andExpect(status().isCreated())
@@ -124,6 +126,7 @@ class VaultUploadIdempotencyIntegrationTest {
         MvcResult second = mockMvc.perform(multipart("/api/vault/upload")
                         .file(file)
                         .param("type", "RECEIPT")
+                        .param("accountId", accountId)
                         .header("Authorization", "Bearer " + jwt)
                         .header("Idempotency-Key", key))
                 .andExpect(status().isCreated())
@@ -174,6 +177,7 @@ class VaultUploadIdempotencyIntegrationTest {
     void vaultUpload_concurrentRetries_onlyOneBinaryAndOneDocumentCreated() throws Exception {
         String email = "vault.concurrent@test.com";
         String jwt = register(email);
+        String accountId = HttpTestHelper.createAccount(mockMvc, objectMapper, jwt, "USD");
         String key = UUID.randomUUID().toString();
         byte[] bytes = "concurrent-receipt-bytes".getBytes(StandardCharsets.UTF_8);
 
@@ -189,6 +193,7 @@ class VaultUploadIdempotencyIntegrationTest {
                     return mockMvc.perform(multipart("/api/vault/upload")
                                     .file(file)
                                     .param("type", "RECEIPT")
+                                    .param("accountId", accountId)
                                     .header("Authorization", "Bearer " + jwt)
                                     .header("Idempotency-Key", key))
                             .andReturn();
@@ -216,6 +221,7 @@ class VaultUploadIdempotencyIntegrationTest {
     void vaultUpload_sameKeyDifferentFile_returnsConflictAndNoSecondArtifact() throws Exception {
         String email = "vault.conflict@test.com";
         String jwt = register(email);
+        String accountId = HttpTestHelper.createAccount(mockMvc, objectMapper, jwt, "USD");
         String key = UUID.randomUUID().toString();
         MockMultipartFile fileA = new MockMultipartFile(
                 "file", "receipt-a.jpg", MediaType.IMAGE_JPEG_VALUE, "bytes-a".getBytes(StandardCharsets.UTF_8));
@@ -225,6 +231,7 @@ class VaultUploadIdempotencyIntegrationTest {
         mockMvc.perform(multipart("/api/vault/upload")
                         .file(fileA)
                         .param("type", "RECEIPT")
+                        .param("accountId", accountId)
                         .header("Authorization", "Bearer " + jwt)
                         .header("Idempotency-Key", key))
                 .andExpect(status().isCreated());
@@ -232,6 +239,7 @@ class VaultUploadIdempotencyIntegrationTest {
         mockMvc.perform(multipart("/api/vault/upload")
                         .file(fileB)
                         .param("type", "RECEIPT")
+                        .param("accountId", accountId)
                         .header("Authorization", "Bearer " + jwt)
                         .header("Idempotency-Key", key))
                 .andExpect(status().isConflict())
@@ -249,6 +257,8 @@ class VaultUploadIdempotencyIntegrationTest {
         String emailB = "vault.userB@test.com";
         String jwtA = register(emailA);
         String jwtB = register(emailB);
+        String accountIdA = HttpTestHelper.createAccount(mockMvc, objectMapper, jwtA, "USD");
+        String accountIdB = HttpTestHelper.createAccount(mockMvc, objectMapper, jwtB, "USD");
         String sharedKey = "shared-literal-key-0123456789ab";
 
         MockMultipartFile fileA = new MockMultipartFile(
@@ -259,6 +269,7 @@ class VaultUploadIdempotencyIntegrationTest {
         MvcResult resultA = mockMvc.perform(multipart("/api/vault/upload")
                         .file(fileA)
                         .param("type", "RECEIPT")
+                        .param("accountId", accountIdA)
                         .header("Authorization", "Bearer " + jwtA)
                         .header("Idempotency-Key", sharedKey))
                 .andExpect(status().isCreated())
@@ -266,6 +277,7 @@ class VaultUploadIdempotencyIntegrationTest {
         MvcResult resultB = mockMvc.perform(multipart("/api/vault/upload")
                         .file(fileB)
                         .param("type", "RECEIPT")
+                        .param("accountId", accountIdB)
                         .header("Authorization", "Bearer " + jwtB)
                         .header("Idempotency-Key", sharedKey))
                 .andExpect(status().isCreated())
@@ -280,45 +292,15 @@ class VaultUploadIdempotencyIntegrationTest {
 
     // ── document-save failure compensation ─────────────────────────────────────
 
-    @Test
-    void statementUpload_documentTooLargeToSave_compensatesOrphanedGridFsBinary() throws Exception {
-        String email = "statement.compensate@test.com";
-        String jwt = register(email);
-        String accountId = HttpTestHelper.createAccount(mockMvc, objectMapper, jwt, "USD");
-        String key = UUID.randomUUID().toString();
-
-        // A single BSON document is capped at 16MB. Build a CSV whose parsed "rows" payload alone
-        // exceeds that once embedded in the VaultDocument, forcing a real Mongo-side document-save
-        // failure *after* the (chunked, unbounded-size) GridFS binary has already been stored.
-        StringBuilder csv = new StringBuilder("Date,Description,Amount\n");
-        String filler = "X".repeat(1_000_000); // 1MB of a single field, no commas/newlines
-        for (int i = 0; i < 20; i++) {
-            csv.append("2026-01-0").append((i % 9) + 1).append(",").append(filler).append(",1.00\n");
-        }
-        MockMultipartFile file = new MockMultipartFile(
-                "file", "huge-statement.csv", MediaType.TEXT_PLAIN_VALUE,
-                csv.toString().getBytes(StandardCharsets.UTF_8));
-
-        mockMvc.perform(multipart("/api/vault/import/upload")
-                        .file(file)
-                        .param("accountId", accountId)
-                        .header("Authorization", "Bearer " + jwt)
-                        .header("Idempotency-Key", key))
-                .andExpect(status().is5xxServerError());
-
-        // Compensation must have deleted the orphaned GridFS binary — none survive for this user.
-        assertThat(countGridFsFilesForUser(userIdOf(email))).isEqualTo(0);
-
-        Long userId = userIdOf(email);
-        VaultOperation op = vaultOperationRepository.findAll().stream()
-                .filter(o -> "statement.upload".equals(o.getOperation()) && userId.equals(o.getUserId()))
-                .findFirst()
-                .orElseThrow();
-        assertThat(op.getState()).isEqualTo(VaultOperationState.FAILED);
-        // The operation row retains the id of the binary it compensated, for auditability —
-        // the binary itself is gone (asserted above), not the reference to it.
-        assertThat(op.getGridFsFileId()).isNotNull();
-    }
+    // Upload no longer embeds parsed rows in the vault document (that only happens later, on
+    // demand, via parse — which touches no GridFS binary and so has nothing to compensate), so
+    // the previous "huge parsed-rows payload" trick for forcing a genuine 16MB-BSON-limit
+    // document-save failure no longer applies. An oversized originalFilename was tried as a
+    // replacement but blows up GridFS's own fs.files metadata document during binaryStore.store()
+    // itself, before ever reaching VaultDocument save — it can no longer isolate "GridFS succeeds,
+    // document save fails" through the real HTTP path. That exact compensation branch (GridFS
+    // store succeeds, document save throws) is covered at the unit level instead:
+    // VaultUploadIdempotencyCoordinatorTest#documentSaveFails_afterGridFsStoreSucceeds_compensatesAndMarksFailed().
 
     // ── stale-operation recovery ────────────────────────────────────────────────
 

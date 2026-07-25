@@ -37,6 +37,7 @@ class VaultServiceTest {
     @Mock GridFsFileStore gridFsFileStore;
     @Mock AgentRunRepository agentRunRepository;
     @Mock VaultUploadIdempotencyCoordinator idempotencyCoordinator;
+    @Mock VaultAccountIdBackfillService accountIdBackfillService;
     @InjectMocks VaultService vaultService;
 
     private VaultDocument makeDoc(String id, Long userId) {
@@ -120,11 +121,17 @@ class VaultServiceTest {
         stubCoordinatorToRunWork();
 
         VaultUploadOutcome<VaultDocumentResponse> outcome =
-                vaultService.upload(1L, VaultDocumentType.RECEIPT, file, "test-key-0123456789");
+                vaultService.upload(1L, VaultDocumentType.RECEIPT, 10L, file, "test-key-0123456789");
 
         assertThat(outcome.replayed()).isFalse();
         assertThat(outcome.response().id()).isEqualTo("new-doc");
         assertThat(outcome.response().hasBinary()).isTrue();
+        assertThat(outcome.response().accountId()).isEqualTo(10L);
+
+        var captor = org.mockito.ArgumentCaptor.forClass(VaultDocument.class);
+        verify(vaultDocumentRepository).save(captor.capture());
+        assertThat(captor.getValue().getStatus()).isEqualTo(VaultDocumentStatus.UPLOADED);
+        assertThat(captor.getValue().getAccountId()).isEqualTo(10L);
     }
 
     /**
@@ -158,6 +165,22 @@ class VaultServiceTest {
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).transactionId()).isEqualTo(42L);
+    }
+
+    @Test
+    void listByAccount_scopesToAccountAndType_andTriggersBackfill() {
+        VaultDocument doc = makeDoc("doc7", 1L);
+        doc.setAccountId(10L);
+        var pageable = PageRequest.of(0, 10);
+        when(vaultDocumentRepository.findByUserIdAndAccountIdAndTypeOrderByCapturedAtDesc(
+                1L, 10L, VaultDocumentType.RECEIPT, pageable))
+                .thenReturn(new PageImpl<>(List.of(doc), pageable, 1));
+
+        var page = vaultService.listByAccount(1L, 10L, VaultDocumentType.RECEIPT, pageable);
+
+        assertThat(page.getContent()).hasSize(1);
+        assertThat(page.getContent().get(0).accountId()).isEqualTo(10L);
+        verify(accountIdBackfillService).ensureBackfillOnce();
     }
 
     @Test

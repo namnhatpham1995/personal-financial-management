@@ -1,6 +1,8 @@
 package com.fintrack.vault.domain;
 
 public enum VaultDocumentStatus {
+    /** Binary stored, not yet parsed (statements) or ingested (receipts). */
+    UPLOADED,
     /** Statement upload awaiting user review before normalization. */
     STAGED,
     /**

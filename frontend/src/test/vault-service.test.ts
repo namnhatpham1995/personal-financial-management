@@ -17,9 +17,18 @@ describe("vaultService: requests target the unversioned /api/vault base path", (
 
   it("upload", async () => {
     const spy = vi.spyOn(apiClient, "post").mockImplementation(() => okResponse({}));
-    await vaultService.upload("RECEIPT", new File(["x"], "r.jpg"), "a".repeat(16));
+    await vaultService.upload("RECEIPT", 1, new File(["x"], "r.jpg"), "a".repeat(16));
     expect(spy.mock.calls[0][0]).toBe("/vault/upload");
     expect(spy.mock.calls[0][2]).toMatchObject({ baseURL: VAULT_BASE_URL });
+  });
+
+  it("listByAccount", async () => {
+    const spy = vi
+      .spyOn(apiClient, "get")
+      .mockImplementation(() => okResponse({ content: [], totalElements: 0, totalPages: 0, size: 20, number: 0 }));
+    await vaultService.listByAccount(1, "STATEMENT");
+    expect(spy.mock.calls[0][0]).toBe("/vault/by-account");
+    expect(spy.mock.calls[0][1]).toMatchObject({ baseURL: VAULT_BASE_URL });
   });
 
   it("list", async () => {
@@ -71,6 +80,13 @@ describe("vaultService: requests target the unversioned /api/vault base path", (
     const spy = vi.spyOn(apiClient, "post").mockImplementation(() => okResponse({ documentId: "doc-1" }));
     await vaultService.importUpload(1, new File(["x"], "s.csv"), "a".repeat(16));
     expect(spy.mock.calls[0][0]).toBe("/vault/import/upload");
+    expect(spy.mock.calls[0][2]).toMatchObject({ baseURL: VAULT_BASE_URL });
+  });
+
+  it("parseImport", async () => {
+    const spy = vi.spyOn(apiClient, "post").mockImplementation(() => okResponse([]));
+    await vaultService.parseImport("doc-1");
+    expect(spy.mock.calls[0][0]).toBe("/vault/import/doc-1/parse");
     expect(spy.mock.calls[0][2]).toMatchObject({ baseURL: VAULT_BASE_URL });
   });
 

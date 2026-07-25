@@ -601,6 +601,7 @@
       "OTHER": "其他"
     },
     "documentStatus": {
+      "UPLOADED": "已上传",
       "STAGED": "待处理",
       "CONFIRMING": "处理中",
       "ACTIVE": "活跃"
