@@ -89,6 +89,10 @@
       },
       "AgentRunDetailResponse" : {
         "properties" : {
+          "accountId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
           "createdAt" : {
             "format" : "date-time",
             "type" : "string"
@@ -3853,6 +3857,14 @@
           "name" : "id",
           "required" : true,
           "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "disposition",
+          "required" : false,
+          "schema" : {
+            "default" : "attachment",
             "type" : "string"
           }
         } ],

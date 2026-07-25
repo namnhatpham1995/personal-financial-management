@@ -914,6 +914,8 @@ export interface components {
             proposals?: components["schemas"]["ProposalDto"][];
         };
         AgentRunDetailResponse: {
+            /** Format: int64 */
+            accountId?: number;
             /** Format: date-time */
             createdAt?: string;
             createdTransactionIds?: number[];
@@ -3022,7 +3024,9 @@ export interface operations {
     };
     download: {
         parameters: {
-            query?: never;
+            query?: {
+                disposition?: string;
+            };
             header?: never;
             path: {
                 id: string;

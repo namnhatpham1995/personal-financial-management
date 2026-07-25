@@ -201,6 +201,46 @@ class StatementImportPipelineIntegrationTest {
     }
 
     @Test
+    void download_inlineDisposition_setsInlineHeaderAndScopesToOwner() throws Exception {
+        String jwt = HttpTestHelper.registerAndLogin(mockMvc, objectMapper, "vault.inline@test.com");
+        String accountId = HttpTestHelper.createAccount(mockMvc, objectMapper, jwt, "USD");
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "statement.csv", MediaType.TEXT_PLAIN_VALUE,
+                VALID_CSV.getBytes(StandardCharsets.UTF_8));
+        MvcResult uploadResult = mockMvc.perform(multipart("/api/vault/import/upload")
+                        .file(file)
+                        .param("accountId", accountId)
+                        .header("Authorization", "Bearer " + jwt)
+                        .header("Idempotency-Key", "statement-upload-key-inline-0001"))
+                .andExpect(status().isCreated())
+                .andReturn();
+        String documentId = objectMapper.readTree(uploadResult.getResponse().getContentAsString())
+                .get("documentId").asText();
+
+        // Default disposition is a forced download.
+        mockMvc.perform(get("/api/vault/" + documentId + "/download")
+                        .header("Authorization", "Bearer " + jwt))
+                .andExpect(status().isOk())
+                .andExpect(result -> assertThat(result.getResponse().getHeader("Content-Disposition"))
+                        .startsWith("attachment"));
+
+        // disposition=inline permits in-browser rendering instead.
+        mockMvc.perform(get("/api/vault/" + documentId + "/download")
+                        .param("disposition", "inline")
+                        .header("Authorization", "Bearer " + jwt))
+                .andExpect(status().isOk())
+                .andExpect(result -> assertThat(result.getResponse().getHeader("Content-Disposition"))
+                        .startsWith("inline"));
+
+        // Ownership is respected regardless of disposition — another user gets a plain 404.
+        String otherJwt = HttpTestHelper.registerAndLogin(mockMvc, objectMapper, "vault.inline.other@test.com");
+        mockMvc.perform(get("/api/vault/" + documentId + "/download")
+                        .param("disposition", "inline")
+                        .header("Authorization", "Bearer " + otherJwt))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void unsupportedFormat_xlsx_rejectedWithoutStagingRows() throws Exception {
         String jwt = HttpTestHelper.registerAndLogin(mockMvc, objectMapper, "vault.xlsx@test.com");
         String accountId = HttpTestHelper.createAccount(mockMvc, objectMapper, jwt, "USD");

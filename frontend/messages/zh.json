@@ -327,6 +327,14 @@
     "deleteConfirm": "删除此文档？",
     "delete": "删除",
     "deleteAria": "删除 {fileName}",
+    "documentReader": {
+      "title": "文档",
+      "close": "关闭",
+      "loadFailed": "无法加载此文档。",
+      "retry": "重试",
+      "imageAlt": "文档预览",
+      "downloadFallback": "改为下载"
+    },
     "downloadFallback": "文档",
     "statementSubTabs": {
       "upload": "上传列表",
@@ -495,7 +503,6 @@
         "unrecognized-currency": "无法识别的货币"
       },
       "selectCategory": "选择分类…",
-      "selectAccount": "选择账户…",
       "approve": "批准",
       "approving": "正在批准…",
       "reject": "拒绝",

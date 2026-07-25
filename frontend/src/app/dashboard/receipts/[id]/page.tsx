@@ -38,8 +38,8 @@ export default function ReceiptRunDetailPage({ params }: { params: { id: string 
   const { data: accounts = [] } = useQuery({
     queryKey: ["accounts"],
     queryFn: () => accountService.list(),
-    enabled: run?.status === "AWAITING_REVIEW",
   });
+  const boundAccount = accounts.find((a) => a.id === run?.accountId);
 
   const [proposals, setProposals] = useState<AgentProposal[]>([]);
 
@@ -67,7 +67,7 @@ export default function ReceiptRunDetailPage({ params }: { params: { id: string 
   const includedProposals = proposals.filter((p) => !p.excluded);
   const canApprove =
     includedProposals.length > 0 &&
-    includedProposals.every((p) => p.categoryId != null && p.accountId != null);
+    includedProposals.every((p) => p.categoryId != null);
 
   return (
     <div className="space-y-6">
@@ -95,18 +95,28 @@ export default function ReceiptRunDetailPage({ params }: { params: { id: string 
             <StatusBadge status={run.status} label={t(`status.${run.status}`)} />
           </div>
 
-          {run.extraction && (
+          {(run.extraction || boundAccount) && (
             <div className="flex flex-wrap gap-6 rounded-lg border border-border bg-muted/20 p-4 text-sm">
-              <div>
-                <p className="text-xs text-muted-foreground">{t("detail.extractedMerchant")}</p>
-                <p className="font-medium text-foreground">{run.extraction.merchant}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">{t("detail.extractedTotal")}</p>
-                <p className="font-medium text-foreground">
-                  {run.extraction.total} {run.extraction.currency}
-                </p>
-              </div>
+              {run.extraction && (
+                <>
+                  <div>
+                    <p className="text-xs text-muted-foreground">{t("detail.extractedMerchant")}</p>
+                    <p className="font-medium text-foreground">{run.extraction.merchant}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">{t("detail.extractedTotal")}</p>
+                    <p className="font-medium text-foreground">
+                      {run.extraction.total} {run.extraction.currency}
+                    </p>
+                  </div>
+                </>
+              )}
+              {boundAccount && (
+                <div>
+                  <p className="text-xs text-muted-foreground">{t("detail.account")}</p>
+                  <p className="font-medium text-foreground">{boundAccount.name}</p>
+                </div>
+              )}
             </div>
           )}
 
@@ -132,7 +142,6 @@ export default function ReceiptRunDetailPage({ params }: { params: { id: string 
                       proposal={proposal}
                       editable={run.status === "AWAITING_REVIEW"}
                       categories={categories}
-                      accounts={accounts}
                       locale={locale}
                       t={t}
                       onChange={(patch) => updateProposal(index, patch)}
@@ -201,7 +210,6 @@ function ProposalCard({
   proposal,
   editable,
   categories,
-  accounts,
   locale,
   t,
   onChange,
@@ -209,7 +217,6 @@ function ProposalCard({
   proposal: AgentProposal;
   editable: boolean;
   categories: Array<{ id: number; name: string; transactionType: string }>;
-  accounts: Array<{ id: number; name: string; currency: string }>;
   locale: string;
   t: ReturnType<typeof useTranslations>;
   onChange: (patch: Partial<AgentProposal>) => void;
@@ -285,25 +292,6 @@ function ProposalCard({
           )}
         </Field>
       </div>
-
-      {editable && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Field label={t("detail.account")}>
-            <select
-              value={proposal.accountId ?? ""}
-              onChange={(e) => onChange({ accountId: e.target.value ? Number(e.target.value) : null })}
-              className="w-full rounded-md border border-border bg-card px-2 py-1 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-            >
-              <option value="">{t("detail.selectAccount")}</option>
-              {accounts.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </div>
-      )}
 
       {editable && (
         <button
