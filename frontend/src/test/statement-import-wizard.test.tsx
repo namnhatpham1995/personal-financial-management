@@ -1,8 +1,7 @@
 /**
- * Task 7.4: statement upload and staged-row loading have independent state.
- * A failed rows-GET must be retryable via the rows query alone (refetch()), without
- * re-triggering the upload mutation — proven here by asserting the upload service fn
- * is called exactly once even after the rows-GET is retried.
+ * StatementImportWizard is resume-by-documentId: it always parses (safely re-runnable) the
+ * given document and shows the staged rows for review, with an editable per-row category
+ * suggestion, rather than owning its own upload step.
  */
 import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -10,74 +9,82 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { StatementImportWizard } from "@/components/vault/statement-import-wizard";
 import { vaultService, type StagedRow } from "@/services/vault-service";
+import { categoryService } from "@/services/category-service";
 import { renderWithIntl as render } from "@/test/test-utils";
 
 vi.mock("@/services/vault-service");
+vi.mock("@/services/category-service");
 
-function renderWizard() {
+function renderWizard(documentId = "doc-1") {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
-      <StatementImportWizard accountId={1} />
+      <StatementImportWizard documentId={documentId} />
     </QueryClientProvider>
   );
 }
 
-const file = new File(["date,amount"], "statement.csv", { type: "text/csv" });
-
 const stagedRows: StagedRow[] = [
-  { date: "2026-01-05", amount: "12.50", type: "EXPENSE", description: "Coffee", dedupKey: "k1" },
+  { date: "2026-01-05", amount: "12.50", type: "EXPENSE", description: "Coffee", dedupKey: "k1", category: "Dining", categoryId: 7 },
 ];
 
-async function uploadFile(user: ReturnType<typeof userEvent.setup>) {
-  const input = document.querySelector('input[type="file"]') as HTMLInputElement;
-  await user.upload(input, file);
-}
-
-describe("StatementImportWizard: upload vs. staged-row loading state", () => {
+describe("StatementImportWizard: resume-by-documentId review", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(vaultService.importUpload).mockResolvedValue("doc-1");
+    vi.mocked(categoryService.list).mockResolvedValue([
+      { id: 7, name: "Dining", transactionType: "EXPENSE", system: false },
+      { id: 8, name: "Salary", transactionType: "INCOME", system: false },
+    ]);
   });
 
   afterEach(() => {
     cleanup();
   });
 
-  it("retains documentId after a successful upload and transitions to rows once the query resolves", async () => {
+  it("parses the given documentId on mount and displays its rows with the suggested category", async () => {
     vi.mocked(vaultService.parseImport).mockResolvedValue(stagedRows);
-    const user = userEvent.setup();
     renderWizard();
-
-    await uploadFile(user);
 
     await waitFor(() => {
       expect(screen.getByText("Coffee")).toBeInTheDocument();
     });
-    expect(vaultService.importUpload).toHaveBeenCalledTimes(1);
     expect(vaultService.parseImport).toHaveBeenCalledWith("doc-1");
+    expect(screen.getByRole("combobox")).toHaveValue("7");
   });
 
-  it("a failed rows-GET does not re-trigger the upload and is retryable via the query alone", async () => {
+  it("a failed rows load is retryable via refetch alone", async () => {
     vi.mocked(vaultService.parseImport)
       .mockRejectedValueOnce(new Error("network error"))
       .mockResolvedValueOnce(stagedRows);
     const user = userEvent.setup();
     renderWizard();
 
-    await uploadFile(user);
-
-    await screen.findByText("Couldn't load the parsed rows from this upload.");
-    expect(vaultService.importUpload).toHaveBeenCalledTimes(1);
+    await screen.findByText("Couldn't load the parsed rows from this statement.");
 
     await user.click(screen.getByRole("button", { name: "Retry" }));
 
     await waitFor(() => {
       expect(screen.getByText("Coffee")).toBeInTheDocument();
     });
-
-    // Retrying the rows fetch never re-uploaded the file.
-    expect(vaultService.importUpload).toHaveBeenCalledTimes(1);
     expect(vaultService.parseImport).toHaveBeenCalledTimes(2);
+  });
+
+  it("confirms selected rows with the (possibly edited) category", async () => {
+    vi.mocked(vaultService.parseImport).mockResolvedValue(stagedRows);
+    vi.mocked(vaultService.confirmImport).mockResolvedValue(1);
+    const user = userEvent.setup();
+    renderWizard();
+
+    await screen.findByText("Coffee");
+
+    await user.click(screen.getByRole("button", { name: /Import 1 row/i }));
+
+    await waitFor(() => {
+      expect(vaultService.confirmImport).toHaveBeenCalledWith(
+        "doc-1",
+        [{ dedupKey: "k1", categoryId: 7 }],
+        expect.any(String)
+      );
+    });
   });
 });
