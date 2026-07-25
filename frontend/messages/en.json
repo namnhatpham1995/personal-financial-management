@@ -315,39 +315,28 @@
   "vault": {
     "title": "Vault",
     "tabs": {
-      "browse": "Browse",
-      "import": "Import Statement",
-      "upload": "Upload Receipt"
+      "statement": "Statement",
+      "receipt": "Receipt"
     },
     "toast": {
       "documentDeleted": "Document deleted",
-      "deleteFailed": "Delete failed",
-      "downloadFailed": "Download failed",
-      "receiptSaved": "Receipt saved"
+      "deleteFailed": "Delete failed"
     },
     "account": "Account",
     "selectAccount": "Select account…",
-    "emptyState": {
-      "title": "No documents yet",
-      "body": "Upload a receipt or import a bank statement to get started."
-    },
-    "table": {
-      "type": "Type",
-      "file": "File",
-      "date": "Date",
-      "status": "Status"
-    },
-    "receipt": "Receipt",
-    "statement": "Statement",
-    "download": "Download",
-    "downloadFallback": "document",
     "deleteConfirm": "Delete this document?",
     "delete": "Delete",
-    "downloadAria": "Download {fileName}",
     "deleteAria": "Delete {fileName}",
-    "prev": "Prev",
-    "next": "Next",
-    "pageOf": "{current} / {total}",
+    "downloadFallback": "document",
+    "statementSubTabs": {
+      "upload": "Upload list",
+      "import": "Import list"
+    },
+    "startImport": "Start import",
+    "backToList": "Back to list",
+    "unimported": "Unimported",
+    "noUnimported": "No unimported statements",
+    "importedBucket": "{count, plural, one {# imported statement} other {# imported statements}}",
     "receiptIndicator": {
       "attached": "Receipt attached"
     },
@@ -369,24 +358,26 @@
     },
     "importWizard": {
       "toast": {
-        "parseFailed": "Failed to parse file",
+        "uploaded": "Statement uploaded",
+        "uploadFailed": "Upload failed",
         "importFailed": "Import failed",
         "fileTooLarge": "File is too large (max 10MB)",
         "unsupportedFormat": "Unsupported format — only CSV, OFX, and QFX files are accepted"
       },
       "imported": "{count, plural, one {# transaction imported} other {# transactions imported}}",
-      "importAnother": "Import another file",
       "rowsFound": "{count, plural, one {# row found} other {# rows found}} — select rows to import",
       "selectAll": "Select all",
       "deselectAll": "Deselect all",
       "selectedOfTotal": "{selected} of {total} selected",
       "importRows": "{count, plural, one {Import # row} other {Import # rows}}",
-      "parsingFile": "Parsing file…",
+      "uploadingFile": "Uploading…",
       "uploadPrompt": "Upload bank statement",
       "fileTypesHint": "CSV or OFX/QFX files",
       "loadingRows": "Loading parsed rows…",
-      "rowsLoadFailed": "Couldn't load the parsed rows from this upload.",
-      "retryLoadingRows": "Retry"
+      "rowsLoadFailed": "Couldn't load the parsed rows from this statement.",
+      "retryLoadingRows": "Retry",
+      "toggleRow": "Toggle row selection",
+      "uncategorized": "Uncategorized"
     },
     "ingestion": {
       "notIngested": "Not ingested",

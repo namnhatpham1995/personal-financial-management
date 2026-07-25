@@ -315,39 +315,28 @@
   "vault": {
     "title": "Tresor",
     "tabs": {
-      "browse": "Durchsuchen",
-      "import": "Kontoauszug importieren",
-      "upload": "Beleg hochladen"
+      "statement": "Kontoauszug",
+      "receipt": "Beleg"
     },
     "toast": {
       "documentDeleted": "Dokument gelöscht",
-      "deleteFailed": "Löschen fehlgeschlagen",
-      "downloadFailed": "Download fehlgeschlagen",
-      "receiptSaved": "Beleg gespeichert"
+      "deleteFailed": "Löschen fehlgeschlagen"
     },
     "account": "Konto",
     "selectAccount": "Konto auswählen…",
-    "emptyState": {
-      "title": "Noch keine Dokumente",
-      "body": "Lade einen Beleg hoch oder importiere einen Kontoauszug, um zu starten."
-    },
-    "table": {
-      "type": "Typ",
-      "file": "Datei",
-      "date": "Datum",
-      "status": "Status"
-    },
-    "receipt": "Beleg",
-    "statement": "Kontoauszug",
-    "download": "Herunterladen",
-    "downloadFallback": "Dokument",
     "deleteConfirm": "Dieses Dokument löschen?",
     "delete": "Löschen",
-    "downloadAria": "{fileName} herunterladen",
     "deleteAria": "{fileName} löschen",
-    "prev": "Zurück",
-    "next": "Weiter",
-    "pageOf": "{current} / {total}",
+    "downloadFallback": "Dokument",
+    "statementSubTabs": {
+      "upload": "Hochgeladen",
+      "import": "Import-Liste"
+    },
+    "startImport": "Import starten",
+    "backToList": "Zurück zur Liste",
+    "unimported": "Nicht importiert",
+    "noUnimported": "Keine nicht importierten Kontoauszüge",
+    "importedBucket": "{count, plural, one {# importierter Kontoauszug} other {# importierte Kontoauszüge}}",
     "receiptIndicator": {
       "attached": "Beleg angehängt"
     },
@@ -369,24 +358,26 @@
     },
     "importWizard": {
       "toast": {
-        "parseFailed": "Datei konnte nicht gelesen werden",
+        "uploaded": "Kontoauszug hochgeladen",
+        "uploadFailed": "Hochladen fehlgeschlagen",
         "importFailed": "Import fehlgeschlagen",
         "fileTooLarge": "Datei ist zu groß (max. 10 MB)",
         "unsupportedFormat": "Nicht unterstütztes Format — nur CSV-, OFX- und QFX-Dateien werden akzeptiert"
       },
       "imported": "{count, plural, one {# Transaktion importiert} other {# Transaktionen importiert}}",
-      "importAnother": "Weitere Datei importieren",
       "rowsFound": "{count, plural, one {# Zeile gefunden} other {# Zeilen gefunden}} — Zeilen zum Importieren auswählen",
       "selectAll": "Alle auswählen",
       "deselectAll": "Auswahl aufheben",
       "selectedOfTotal": "{selected} von {total} ausgewählt",
       "importRows": "{count, plural, one {# Zeile importieren} other {# Zeilen importieren}}",
-      "parsingFile": "Datei wird gelesen…",
+      "uploadingFile": "Wird hochgeladen…",
       "uploadPrompt": "Kontoauszug hochladen",
       "fileTypesHint": "CSV- oder OFX/QFX-Dateien",
       "loadingRows": "Analysierte Zeilen werden geladen…",
-      "rowsLoadFailed": "Die analysierten Zeilen aus diesem Upload konnten nicht geladen werden.",
-      "retryLoadingRows": "Erneut versuchen"
+      "rowsLoadFailed": "Die analysierten Zeilen aus diesem Kontoauszug konnten nicht geladen werden.",
+      "retryLoadingRows": "Erneut versuchen",
+      "toggleRow": "Zeilenauswahl umschalten",
+      "uncategorized": "Nicht kategorisiert"
     },
     "ingestion": {
       "notIngested": "Nicht erfasst",

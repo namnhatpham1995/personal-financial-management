@@ -315,39 +315,28 @@
   "vault": {
     "title": "资料库",
     "tabs": {
-      "browse": "浏览",
-      "import": "导入对账单",
-      "upload": "上传收据"
+      "statement": "对账单",
+      "receipt": "收据"
     },
     "toast": {
       "documentDeleted": "文档已删除",
-      "deleteFailed": "删除失败",
-      "downloadFailed": "下载失败",
-      "receiptSaved": "收据已保存"
+      "deleteFailed": "删除失败"
     },
     "account": "账户",
     "selectAccount": "选择账户…",
-    "emptyState": {
-      "title": "暂无文档",
-      "body": "上传收据或导入银行对账单以开始使用。"
-    },
-    "table": {
-      "type": "类型",
-      "file": "文件",
-      "date": "日期",
-      "status": "状态"
-    },
-    "receipt": "收据",
-    "statement": "对账单",
-    "download": "下载",
-    "downloadFallback": "文档",
     "deleteConfirm": "删除此文档？",
     "delete": "删除",
-    "downloadAria": "下载 {fileName}",
     "deleteAria": "删除 {fileName}",
-    "prev": "上一页",
-    "next": "下一页",
-    "pageOf": "{current} / {total}",
+    "downloadFallback": "文档",
+    "statementSubTabs": {
+      "upload": "上传列表",
+      "import": "导入列表"
+    },
+    "startImport": "开始导入",
+    "backToList": "返回列表",
+    "unimported": "未导入",
+    "noUnimported": "没有未导入的对账单",
+    "importedBucket": "{count, plural, other {已导入 # 份对账单}}",
     "receiptIndicator": {
       "attached": "已附加收据"
     },
@@ -369,24 +358,26 @@
     },
     "importWizard": {
       "toast": {
-        "parseFailed": "解析文件失败",
+        "uploaded": "对账单已上传",
+        "uploadFailed": "上传失败",
         "importFailed": "导入失败",
         "fileTooLarge": "文件过大(最大 10MB)",
         "unsupportedFormat": "不支持的格式 — 仅接受 CSV、OFX 和 QFX 文件"
       },
       "imported": "{count, plural, other {已导入 # 笔交易}}",
-      "importAnother": "导入另一个文件",
       "rowsFound": "{count, plural, other {找到 # 行}} — 选择要导入的行",
       "selectAll": "全选",
       "deselectAll": "取消全选",
       "selectedOfTotal": "已选择 {selected} / {total}",
       "importRows": "{count, plural, other {导入 # 行}}",
-      "parsingFile": "正在解析文件…",
+      "uploadingFile": "正在上传…",
       "uploadPrompt": "上传银行对账单",
       "fileTypesHint": "CSV 或 OFX/QFX 文件",
       "loadingRows": "正在加载解析出的行…",
-      "rowsLoadFailed": "无法加载此次上传解析出的行。",
-      "retryLoadingRows": "重试"
+      "rowsLoadFailed": "无法加载此对账单解析出的行。",
+      "retryLoadingRows": "重试",
+      "toggleRow": "切换行选择",
+      "uncategorized": "未分类"
     },
     "ingestion": {
       "notIngested": "尚未导入",

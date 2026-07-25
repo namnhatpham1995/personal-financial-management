@@ -315,39 +315,28 @@
   "vault": {
     "title": "Kho lưu trữ",
     "tabs": {
-      "browse": "Duyệt",
-      "import": "Nhập sao kê",
-      "upload": "Tải hóa đơn"
+      "statement": "Sao kê",
+      "receipt": "Hóa đơn"
     },
     "toast": {
       "documentDeleted": "Đã xóa tài liệu",
-      "deleteFailed": "Xóa thất bại",
-      "downloadFailed": "Tải xuống thất bại",
-      "receiptSaved": "Đã lưu hóa đơn"
+      "deleteFailed": "Xóa thất bại"
     },
     "account": "Tài khoản",
     "selectAccount": "Chọn tài khoản…",
-    "emptyState": {
-      "title": "Chưa có tài liệu nào",
-      "body": "Tải lên hóa đơn hoặc nhập sao kê ngân hàng để bắt đầu."
-    },
-    "table": {
-      "type": "Loại",
-      "file": "Tệp",
-      "date": "Ngày",
-      "status": "Trạng thái"
-    },
-    "receipt": "Hóa đơn",
-    "statement": "Sao kê",
-    "download": "Tải xuống",
-    "downloadFallback": "tài liệu",
     "deleteConfirm": "Xóa tài liệu này?",
     "delete": "Xóa",
-    "downloadAria": "Tải xuống {fileName}",
     "deleteAria": "Xóa {fileName}",
-    "prev": "Trước",
-    "next": "Tiếp",
-    "pageOf": "{current} / {total}",
+    "downloadFallback": "tài liệu",
+    "statementSubTabs": {
+      "upload": "Danh sách đã tải lên",
+      "import": "Danh sách nhập"
+    },
+    "startImport": "Bắt đầu nhập",
+    "backToList": "Quay lại danh sách",
+    "unimported": "Chưa nhập",
+    "noUnimported": "Không có sao kê nào chưa nhập",
+    "importedBucket": "{count, plural, other {# sao kê đã nhập}}",
     "receiptIndicator": {
       "attached": "Đã đính kèm hóa đơn"
     },
@@ -369,24 +358,26 @@
     },
     "importWizard": {
       "toast": {
-        "parseFailed": "Đọc tệp thất bại",
+        "uploaded": "Đã tải lên sao kê",
+        "uploadFailed": "Tải lên thất bại",
         "importFailed": "Nhập thất bại",
         "fileTooLarge": "Tệp quá lớn (tối đa 10MB)",
         "unsupportedFormat": "Định dạng không được hỗ trợ — chỉ chấp nhận tệp CSV, OFX và QFX"
       },
       "imported": "{count, plural, other {Đã nhập # giao dịch}}",
-      "importAnother": "Nhập tệp khác",
       "rowsFound": "{count, plural, other {Tìm thấy # dòng}} — chọn các dòng cần nhập",
       "selectAll": "Chọn tất cả",
       "deselectAll": "Bỏ chọn tất cả",
       "selectedOfTotal": "Đã chọn {selected} / {total}",
       "importRows": "{count, plural, other {Nhập # dòng}}",
-      "parsingFile": "Đang đọc tệp…",
+      "uploadingFile": "Đang tải lên…",
       "uploadPrompt": "Tải lên sao kê ngân hàng",
       "fileTypesHint": "Tệp CSV hoặc OFX/QFX",
       "loadingRows": "Đang tải các dòng đã phân tích…",
-      "rowsLoadFailed": "Không thể tải các dòng đã phân tích từ tệp này.",
-      "retryLoadingRows": "Thử lại"
+      "rowsLoadFailed": "Không thể tải các dòng đã phân tích từ sao kê này.",
+      "retryLoadingRows": "Thử lại",
+      "toggleRow": "Chuyển đổi lựa chọn dòng",
+      "uncategorized": "Chưa phân loại"
     },
     "ingestion": {
       "notIngested": "Chưa nhập vào hệ thống",
