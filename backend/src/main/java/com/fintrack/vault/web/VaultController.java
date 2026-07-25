@@ -79,19 +79,25 @@ public class VaultController {
         return vaultService.getById(principal.getUserId(), id);
     }
 
-    /** Download the raw binary (image / CSV / OFX) stored in GridFS. */
+    /**
+     * Serve the raw binary (image / PDF / CSV / OFX) stored in GridFS. Defaults to a forced
+     * download; pass {@code disposition=inline} to permit in-browser rendering instead (the
+     * frontend's DocumentReader).
+     */
     @GetMapping("/{id}/download")
     public ResponseEntity<org.springframework.core.io.Resource> download(
             @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable String id
+            @PathVariable String id,
+            @RequestParam(defaultValue = "attachment") String disposition
     ) throws IOException {
         GridFsResource resource = vaultService.download(principal.getUserId(), id);
         if (resource == null || !resource.exists()) {
             return ResponseEntity.notFound().build();
         }
+        String safeDisposition = "inline".equalsIgnoreCase(disposition) ? "inline" : "attachment";
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"" + resource.getFilename() + "\"")
+                        safeDisposition + "; filename=\"" + resource.getFilename() + "\"")
                 .contentType(MediaType.parseMediaType(
                         resource.getContentType() != null
                                 ? resource.getContentType()
