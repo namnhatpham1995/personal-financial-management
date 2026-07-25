@@ -327,6 +327,14 @@
     "deleteConfirm": "Delete this document?",
     "delete": "Delete",
     "deleteAria": "Delete {fileName}",
+    "documentReader": {
+      "title": "Document",
+      "close": "Close",
+      "loadFailed": "Couldn't load this document.",
+      "retry": "Retry",
+      "imageAlt": "Document preview",
+      "downloadFallback": "Download instead"
+    },
     "downloadFallback": "document",
     "statementSubTabs": {
       "upload": "Upload list",
@@ -495,7 +503,6 @@
         "unrecognized-currency": "Unrecognized currency"
       },
       "selectCategory": "Select category…",
-      "selectAccount": "Select account…",
       "approve": "Approve",
       "approving": "Approving…",
       "reject": "Reject",

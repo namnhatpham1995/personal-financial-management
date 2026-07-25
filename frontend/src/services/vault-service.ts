@@ -97,6 +97,21 @@ export const vaultService = {
     return URL.createObjectURL(data);
   },
 
+  /** Fetches the stored binary for in-browser reading (not a forced download). */
+  async getInlineContent(id: string): Promise<{ blob: Blob; contentType: string }> {
+    const response = await apiClient.get<Blob>(`/vault/${id}/download`, {
+      baseURL: VAULT_BASE_URL,
+      params: { disposition: "inline" },
+      responseType: "blob",
+    });
+    const rawContentType = response.headers["content-type"];
+    const contentType =
+      (typeof rawContentType === "string" ? rawContentType : undefined) ??
+      response.data.type ??
+      "application/octet-stream";
+    return { blob: response.data, contentType };
+  },
+
   async linkToTransaction(id: string, transactionId: number): Promise<VaultDocument> {
     const { data } = await apiClient.patch<VaultDocument>(`/vault/${id}/link`, null, {
       baseURL: VAULT_BASE_URL,

@@ -327,6 +327,14 @@
     "deleteConfirm": "Xóa tài liệu này?",
     "delete": "Xóa",
     "deleteAria": "Xóa {fileName}",
+    "documentReader": {
+      "title": "Tài liệu",
+      "close": "Đóng",
+      "loadFailed": "Không thể tải tài liệu này.",
+      "retry": "Thử lại",
+      "imageAlt": "Xem trước tài liệu",
+      "downloadFallback": "Tải xuống thay thế"
+    },
     "downloadFallback": "tài liệu",
     "statementSubTabs": {
       "upload": "Danh sách đã tải lên",
@@ -495,7 +503,6 @@
         "unrecognized-currency": "Loại tiền không xác định"
       },
       "selectCategory": "Chọn danh mục…",
-      "selectAccount": "Chọn tài khoản…",
       "approve": "Phê duyệt",
       "approving": "Đang phê duyệt…",
       "reject": "Từ chối",

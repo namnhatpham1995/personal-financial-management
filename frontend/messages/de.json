@@ -327,6 +327,14 @@
     "deleteConfirm": "Dieses Dokument löschen?",
     "delete": "Löschen",
     "deleteAria": "{fileName} löschen",
+    "documentReader": {
+      "title": "Dokument",
+      "close": "Schließen",
+      "loadFailed": "Dieses Dokument konnte nicht geladen werden.",
+      "retry": "Erneut versuchen",
+      "imageAlt": "Dokumentvorschau",
+      "downloadFallback": "Stattdessen herunterladen"
+    },
     "downloadFallback": "Dokument",
     "statementSubTabs": {
       "upload": "Hochgeladen",
@@ -495,7 +503,6 @@
         "unrecognized-currency": "Unbekannte Währung"
       },
       "selectCategory": "Kategorie auswählen…",
-      "selectAccount": "Konto auswählen…",
       "approve": "Genehmigen",
       "approving": "Wird genehmigt…",
       "reject": "Ablehnen",
