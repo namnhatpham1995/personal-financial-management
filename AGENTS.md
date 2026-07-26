@@ -5,6 +5,12 @@
 - Start every pull request title with a conventional change type such as `feat:`, `fix:`, `refactor:`, `docs:`, `test:`, or `chore:` so its purpose is immediately clear.
 - Keep the title concise and describe the user-visible or engineering outcome after the prefix.
 
+## What's New Coverage
+
+- Every improvement that changes what a user sees or how they interact with the UI must add a new, localized What's New entry in the same change.
+- Run `npm run check:changelog-coverage -- --base <base-revision> --head <head-revision>` from `frontend` before submitting a UI change.
+- Use the `skip-whats-new` pull-request label only for a detected frontend change with no visible or interactive effect, and explain the exemption in the pull request. Never use it for a UI improvement.
+
 ## FinTrack MCP Smoke Testing
 
 - Use the local `.env` values for MCP smoke tests:

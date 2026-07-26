@@ -113,12 +113,13 @@ npm run test:watch                               # watch mode during development
 
 ## CI/CD Pipeline
 
-GitHub Actions runs six jobs on every push to `main` (PRs run backend + frontend + MCP server + agent-service only):
+GitHub Actions runs validation and deployment jobs on every push to `main` (PRs run the validation jobs only):
 
 | Job | What it does |
 |---|---|
 | **Backend** | `mvn clean verify` with a live PostgreSQL 16 service; checks `mcp-server/openapi.json` matches the live OpenAPI contract; uploads Surefire + JaCoCo reports |
 | **Frontend** | Type-check → lint → Vitest → design-token gate (no raw palette classes) → `next build` |
+| **Changelog Coverage** | Detects UI-bearing frontend changes and requires a newer, fully localized What's New entry; `skip-whats-new` is only for reviewed non-visible maintenance |
 | **MCP Server** | `npm install` → type-check → Vitest → checks generated API types are up to date → `npm run build` in `mcp-server/` |
 | **Agent Service** | `npm install` → type-check → Vitest (unit, graph-level via a real Postgres Testcontainer, contract tests — all against `LLM_PROVIDER=stub`, no live model call in CI) → `npm run build` in `agent-service/` |
 | **Docker** | `docker compose build --no-cache` — verifies the full image stack compiles |

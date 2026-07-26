@@ -16,4 +16,9 @@ describe("changelog entries", () => {
   it("exposes the highest version as latestChangelogVersion", () => {
     expect(latestChangelogVersion).toBe(Math.max(...changelogEntries.map((e) => e.version)));
   });
+
+  it("includes announcements released after the original version 3 entries", () => {
+    expect(changelogEntries.filter((entry) => entry.version > 3)).not.toHaveLength(0);
+    expect(latestChangelogVersion).toBeGreaterThan(3);
+  });
 });

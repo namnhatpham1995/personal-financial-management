@@ -590,6 +590,30 @@
       "3": {
         "title": "Multi-language interface",
         "body": "Fintrack is now available in English, Vietnamese, German, and Chinese (Simplified). It matches your browser language by default, and your choice follows you across devices once you pick one."
+      },
+      "4": {
+        "title": "Simpler API token access",
+        "body": "API token management now has one clear home in the sidebar."
+      },
+      "5": {
+        "title": "Transfers across currencies",
+        "body": "Move money between accounts in different currencies with automatic conversion, clearer transfer directions, and currency detail views."
+      },
+      "6": {
+        "title": "Review receipt suggestions",
+        "body": "Upload a receipt, review suggested transactions, and approve only the details you want to save."
+      },
+      "7": {
+        "title": "Safer retry recovery",
+        "body": "If a save or import is interrupted, Fintrack can safely resume it without creating duplicates."
+      },
+      "8": {
+        "title": "Smoother sign-in and language choices",
+        "body": "Stay signed in across browser restarts, go straight to your dashboard when already signed in, and see more of Fintrack in your selected language."
+      },
+      "9": {
+        "title": "A redesigned Vault",
+        "body": "Receipts and statements now have dedicated views, easier uploads, account selection, inline reading, and clearer import review."
       }
     }
   },

@@ -16,6 +16,48 @@ export interface ChangelogEntry {
  */
 const unsortedEntries: ChangelogEntry[] = [
   {
+    version: 9,
+    date: "2026-07-25",
+    titleKey: "changelog.entries.9.title",
+    bodyKey: "changelog.entries.9.body",
+    tag: "new",
+  },
+  {
+    version: 8,
+    date: "2026-07-22",
+    titleKey: "changelog.entries.8.title",
+    bodyKey: "changelog.entries.8.body",
+    tag: "improved",
+  },
+  {
+    version: 7,
+    date: "2026-07-20",
+    titleKey: "changelog.entries.7.title",
+    bodyKey: "changelog.entries.7.body",
+    tag: "improved",
+  },
+  {
+    version: 6,
+    date: "2026-07-16",
+    titleKey: "changelog.entries.6.title",
+    bodyKey: "changelog.entries.6.body",
+    tag: "new",
+  },
+  {
+    version: 5,
+    date: "2026-07-16",
+    titleKey: "changelog.entries.5.title",
+    bodyKey: "changelog.entries.5.body",
+    tag: "new",
+  },
+  {
+    version: 4,
+    date: "2026-07-15",
+    titleKey: "changelog.entries.4.title",
+    bodyKey: "changelog.entries.4.body",
+    tag: "improved",
+  },
+  {
     version: 3,
     date: "2026-07-13",
     titleKey: "changelog.entries.3.title",

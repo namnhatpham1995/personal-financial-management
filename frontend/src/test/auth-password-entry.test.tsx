@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import LoginPage from "@/app/login/page";
 import RegisterPage from "@/app/register/page";
+import { latestChangelogVersion } from "@/changelog/changelog-entries";
 import { renderWithIntl as render } from "@/test/test-utils";
 
 const mocks = vi.hoisted(() => ({
@@ -166,7 +167,8 @@ describe("auth password entry", () => {
     await user.click(screen.getByRole("button", { name: "Create account" }));
 
     await waitFor(() => expect(mocks.markChangelogSeen).toHaveBeenCalled());
-    expect(mocks.setLastSeenChangelogVersion).toHaveBeenCalled();
+    expect(mocks.markChangelogSeen).toHaveBeenCalledWith(latestChangelogVersion);
+    expect(mocks.setLastSeenChangelogVersion).toHaveBeenCalledWith(latestChangelogVersion);
   });
 });
 
