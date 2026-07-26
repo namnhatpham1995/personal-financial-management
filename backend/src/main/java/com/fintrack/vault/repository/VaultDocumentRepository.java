@@ -26,4 +26,7 @@ public interface VaultDocumentRepository extends MongoRepository<VaultDocument, 
 
     Page<VaultDocument> findByUserIdAndAccountIdAndTypeOrderByCapturedAtDesc(
             Long userId, Long accountId, VaultDocumentType type, Pageable pageable);
+
+    Page<VaultDocument> findByUserIdAndTypeAndAccountIdIsNullOrderByCapturedAtDesc(
+            Long userId, VaultDocumentType type, Pageable pageable);
 }

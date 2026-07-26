@@ -3,6 +3,7 @@ package com.fintrack.vault.service;
 import com.fintrack.agent.domain.AgentRun;
 import com.fintrack.agent.domain.AgentRunStatus;
 import com.fintrack.agent.repository.AgentRunRepository;
+import com.fintrack.account.service.AccountService;
 import com.fintrack.common.exception.ResourceNotFoundException;
 import com.fintrack.vault.domain.VaultDocument;
 import com.fintrack.vault.domain.VaultDocumentStatus;
@@ -17,6 +18,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.mongodb.core.FindAndModifyOptions;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -38,6 +43,8 @@ class VaultServiceTest {
     @Mock AgentRunRepository agentRunRepository;
     @Mock VaultUploadIdempotencyCoordinator idempotencyCoordinator;
     @Mock VaultAccountIdBackfillService accountIdBackfillService;
+    @Mock AccountService accountService;
+    @Mock MongoTemplate mongoTemplate;
     @InjectMocks VaultService vaultService;
 
     private VaultDocument makeDoc(String id, Long userId) {
@@ -181,6 +188,54 @@ class VaultServiceTest {
         assertThat(page.getContent()).hasSize(1);
         assertThat(page.getContent().get(0).accountId()).isEqualTo(10L);
         verify(accountIdBackfillService).ensureBackfillOnce();
+    }
+
+    @Test
+    void listUnassignedReceipts_surfacesLegacyAccountlessReceipts() {
+        VaultDocument legacyReceipt = makeDoc("legacy-receipt", 1L);
+        var pageable = PageRequest.of(0, 10);
+        when(vaultDocumentRepository.findByUserIdAndTypeAndAccountIdIsNullOrderByCapturedAtDesc(
+                1L, VaultDocumentType.RECEIPT, pageable))
+                .thenReturn(new PageImpl<>(List.of(legacyReceipt), pageable, 1));
+
+        var page = vaultService.listUnassignedReceipts(1L, pageable);
+
+        assertThat(page.getContent()).hasSize(1);
+        assertThat(page.getContent().get(0).id()).isEqualTo("legacy-receipt");
+        assertThat(page.getContent().get(0).accountId()).isNull();
+    }
+
+    @Test
+    void assignReceiptAccount_assignsOwnedLegacyReceiptToOwnedAccount() {
+        VaultDocument legacyReceipt = makeDoc("legacy-receipt", 1L);
+        when(vaultDocumentRepository.findByIdAndUserId("legacy-receipt", 1L))
+                .thenReturn(Optional.of(legacyReceipt));
+        when(mongoTemplate.findAndModify(
+                any(Query.class), any(Update.class), any(FindAndModifyOptions.class), eq(VaultDocument.class)))
+                .thenAnswer(inv -> {
+                    legacyReceipt.setAccountId(10L);
+                    return legacyReceipt;
+                });
+
+        var response = vaultService.assignReceiptAccount(1L, "legacy-receipt", 10L);
+
+        verify(accountService).findOwned(1L, 10L);
+        assertThat(legacyReceipt.getAccountId()).isEqualTo(10L);
+        assertThat(response.accountId()).isEqualTo(10L);
+    }
+
+    @Test
+    void assignReceiptAccount_cannotMoveAlreadyAssignedReceipt() {
+        VaultDocument assignedReceipt = makeDoc("assigned-receipt", 1L);
+        assignedReceipt.setAccountId(20L);
+        when(vaultDocumentRepository.findByIdAndUserId("assigned-receipt", 1L))
+                .thenReturn(Optional.of(assignedReceipt));
+
+        assertThatThrownBy(() -> vaultService.assignReceiptAccount(1L, "assigned-receipt", 10L))
+                .isInstanceOf(com.fintrack.common.exception.ConflictException.class);
+
+        verify(accountService).findOwned(1L, 10L);
+        verifyNoInteractions(mongoTemplate);
     }
 
     @Test

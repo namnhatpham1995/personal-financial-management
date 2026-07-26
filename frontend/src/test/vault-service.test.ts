@@ -40,6 +40,25 @@ describe("vaultService: requests target the unversioned /api/vault base path", (
     expect(spy.mock.calls[0][1]).toMatchObject({ baseURL: VAULT_BASE_URL });
   });
 
+  it("listUnassignedReceipts", async () => {
+    const spy = vi
+      .spyOn(apiClient, "get")
+      .mockImplementation(() => okResponse({ content: [], totalElements: 0, totalPages: 0, size: 20, number: 0 }));
+    await vaultService.listUnassignedReceipts();
+    expect(spy.mock.calls[0][0]).toBe("/vault/unassigned-receipts");
+    expect(spy.mock.calls[0][1]).toMatchObject({ baseURL: VAULT_BASE_URL });
+  });
+
+  it("assignAccount", async () => {
+    const spy = vi.spyOn(apiClient, "patch").mockImplementation(() => okResponse({}));
+    await vaultService.assignAccount("doc-1", 42);
+    expect(spy.mock.calls[0][0]).toBe("/vault/doc-1/account");
+    expect(spy.mock.calls[0][2]).toMatchObject({
+      baseURL: VAULT_BASE_URL,
+      params: { accountId: 42 },
+    });
+  });
+
   it("getById", async () => {
     const spy = vi.spyOn(apiClient, "get").mockImplementation(() => okResponse({}));
     await vaultService.getById("doc-1");

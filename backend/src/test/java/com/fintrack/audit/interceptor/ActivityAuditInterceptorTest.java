@@ -135,6 +135,18 @@ class ActivityAuditInterceptorTest {
     }
 
     @Test
+    void afterCompletion_vaultPatch_writesUpdatedAuditEntry() throws Exception {
+        authenticateAs(14L);
+        when(request.getMethod()).thenReturn("PATCH");
+        when(request.getRequestURI()).thenReturn("/api/vault/legacy-receipt/account");
+        when(response.getStatus()).thenReturn(200);
+
+        interceptor.afterCompletion(request, response, null, null);
+
+        verify(auditLogWriter).write(eq(14L), eq("vault.updated"), any(), any());
+    }
+
+    @Test
     void afterCompletion_updateLanguage_writesAuditEntry() throws Exception {
         authenticateAs(9L);
         when(request.getMethod()).thenReturn("PUT");

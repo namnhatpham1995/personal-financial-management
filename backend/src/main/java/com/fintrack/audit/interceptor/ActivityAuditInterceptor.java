@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Records one audit entry per authenticated mutation (POST/PUT/DELETE returning 2xx).
+ * Records one audit entry per authenticated mutation (POST/PUT/PATCH/DELETE returning 2xx).
  * Capture happens in afterCompletion so we only write events for requests that actually
  * succeeded; the write goes to PostgreSQL via AuditLogWriter in its own transaction.
  */
@@ -26,7 +26,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class ActivityAuditInterceptor implements HandlerInterceptor {
 
-    private static final Set<String> MUTATION_METHODS = Set.of("POST", "PUT", "DELETE");
+    private static final Set<String> MUTATION_METHODS = Set.of("POST", "PUT", "PATCH", "DELETE");
 
     private final AuditLogWriter auditLogWriter;
     private final AuditReplaySignal auditReplaySignal;
@@ -88,7 +88,7 @@ public class ActivityAuditInterceptor implements HandlerInterceptor {
 
         return switch (method) {
             case "POST"   -> resource + ".created";
-            case "PUT"    -> resource + ".updated";
+            case "PUT", "PATCH" -> resource + ".updated";
             case "DELETE" -> resource + ".deleted";
             default       -> resource + ".mutated";
         };
