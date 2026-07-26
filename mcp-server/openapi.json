@@ -3747,6 +3747,32 @@
         "tags" : [ "vault-controller" ]
       }
     },
+    "/api/vault/unassigned-receipts" : {
+      "get" : {
+        "operationId" : "listUnassignedReceipts",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "pageable",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/Pageable"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageVaultDocumentResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "vault-controller" ]
+      }
+    },
     "/api/vault/upload" : {
       "post" : {
         "operationId" : "upload",
@@ -3832,6 +3858,40 @@
           "required" : true,
           "schema" : {
             "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VaultDocumentResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "vault-controller" ]
+      }
+    },
+    "/api/vault/{id}/account" : {
+      "patch" : {
+        "operationId" : "assignReceiptAccount",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
           }
         } ],
         "responses" : {

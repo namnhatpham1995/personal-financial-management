@@ -7,6 +7,7 @@ import { accountService } from "@/services/account-service";
 import { agentRunService, isAgentFeatureUnavailable } from "@/services/agent-run-service";
 import { ReceiptUploadViewer } from "@/components/vault/receipt-upload-viewer";
 import { DocumentReaderModal } from "@/components/vault/document-reader-modal";
+import { LegacyReceiptRecovery } from "@/components/vault/legacy-receipt-recovery";
 import { formatDate } from "@/lib/utils";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
@@ -54,6 +55,11 @@ export function ReceiptTab() {
 
   return (
     <div className="space-y-4">
+      <LegacyReceiptRecovery
+        accounts={accounts ?? []}
+        onRead={(document) => setReadingDoc(document)}
+      />
+
       <div className="max-w-sm space-y-2">
         <label className="text-sm font-medium text-foreground">{t("account")}</label>
         <select
@@ -78,7 +84,7 @@ export function ReceiptTab() {
             <div className="rounded-lg border border-border divide-y divide-border">
               {receipts.map((doc) => (
                 <div key={doc.id} className="flex items-center gap-3 px-3 py-2">
-                  <Receipt className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <Receipt className="h-4 w-4 shrink-0 text-muted-foreground" />
                   <button
                     onClick={() => setReadingDoc({ id: doc.id, filename: doc.originalFilename })}
                     className="min-w-0 flex-1 truncate text-left text-sm text-foreground hover:underline"

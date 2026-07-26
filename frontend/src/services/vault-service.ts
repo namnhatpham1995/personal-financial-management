@@ -83,6 +83,24 @@ export const vaultService = {
     return data;
   },
 
+  /** Lists legacy receipts uploaded before account assignment became mandatory. */
+  async listUnassignedReceipts(page = 0, size = 20): Promise<PageResponse<VaultDocument>> {
+    const { data } = await apiClient.get<PageResponse<VaultDocument>>("/vault/unassigned-receipts", {
+      baseURL: VAULT_BASE_URL,
+      params: { page, size },
+    });
+    return data;
+  },
+
+  /** Permanently assigns an account-less legacy receipt to one owned account. */
+  async assignAccount(id: string, accountId: number): Promise<VaultDocument> {
+    const { data } = await apiClient.patch<VaultDocument>(`/vault/${id}/account`, null, {
+      baseURL: VAULT_BASE_URL,
+      params: { accountId },
+    });
+    return data;
+  },
+
   async getById(id: string): Promise<VaultDocument> {
     const { data } = await apiClient.get<VaultDocument>(`/vault/${id}`, { baseURL: VAULT_BASE_URL });
     return data;

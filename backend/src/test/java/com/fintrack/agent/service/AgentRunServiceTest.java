@@ -271,6 +271,40 @@ class AgentRunServiceTest {
     }
 
     @Test
+    void decide_approve_legacyRunBindsRecoveredReceiptAccount() {
+        AgentRun run = runInStatus(AgentRunStatus.AWAITING_REVIEW);
+        when(agentRunRepository.findByIdAndUser_Id(10L, USER_ID)).thenReturn(Optional.of(run));
+        when(agentServiceClient.isConfigured()).thenReturn(true);
+        VaultDocument recoveredReceipt = VaultDocument.builder()
+                .id("doc-1")
+                .userId(USER_ID)
+                .accountId(7L)
+                .type(VaultDocumentType.RECEIPT)
+                .build();
+        when(vaultDocumentRepository.findByIdAndUserId("doc-1", USER_ID))
+                .thenReturn(Optional.of(recoveredReceipt));
+        Account account = Account.builder().id(7L).build();
+        when(accountRepository.findByIdAndUserId(7L, USER_ID)).thenReturn(Optional.of(account));
+        when(categoryService.findVisibleOrThrow(eq(USER_ID), any())).thenAnswer(inv ->
+                Category.builder().id(inv.getArgument(1)).build());
+        when(transactionService.createWithImportDedupKey(eq(USER_ID), any(), any())).thenReturn(
+                new TransactionResponse(501L, null, null, null, null, null, null, null, null,
+                        null, null, null, null, null, null, null, null, null, List.of()));
+        when(agentRunRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var proposal = new ProposalDto("Store", LocalDate.now(), new BigDecimal("10.00"), "USD",
+                5L, null, "item", List.of(), false);
+        var result = service.decide(USER_ID, 10L, new AgentDecisionRequest(true, List.of(proposal)));
+
+        assertThat(result.accountId()).isEqualTo(7L);
+        ArgumentCaptor<com.fintrack.transaction.web.dto.CreateTransactionRequest> txCaptor =
+                ArgumentCaptor.forClass(com.fintrack.transaction.web.dto.CreateTransactionRequest.class);
+        verify(transactionService).createWithImportDedupKey(eq(USER_ID), txCaptor.capture(), any());
+        assertThat(txCaptor.getValue().accountId()).isEqualTo(7L);
+        verify(agentRunRepository, atLeastOnce()).save(run);
+    }
+
+    @Test
     void decide_approve_missingCategory_throws() {
         AgentRun run = runInStatusWithAccount(AgentRunStatus.AWAITING_REVIEW, 7L);
         when(agentRunRepository.findByIdAndUser_Id(10L, USER_ID)).thenReturn(Optional.of(run));

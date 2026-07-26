@@ -215,6 +215,8 @@ The vault is a polyglot persistence layer that stores financial documents alongs
 3. User links to an existing transaction → `PATCH /api/vault/{id}/link?transactionId=...`
 4. Transaction row gains `source_document_id`; `VaultDocument.transactionId` is set (bidirectional)
 
+**Legacy receipt recovery:** a small set of receipts predates required account assignment. They remain recoverable through the owner-scoped `GET /api/vault/unassigned-receipts` listing, which only returns unassigned receipt documents. The user must pick one of their own accounts and bind it once via `PATCH /api/vault/{id}/account?accountId=...`. That assignment is atomic and one-time: once a receipt has an account, it cannot be moved to another one. The backend does not attempt arbitrary automatic backfill for these legacy receipts because they do not carry a trustworthy source account.
+
 **Statement import flow:**
 1. User uploads CSV or OFX file → `POST /api/vault/import/upload?accountId=...`
 2. File stored in GridFS; parser runs (`CsvStatementParser` or `OfxStatementParser`)

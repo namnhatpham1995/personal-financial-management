@@ -810,6 +810,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/vault/unassigned-receipts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listUnassignedReceipts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/vault/upload": {
         parameters: {
             query?: never;
@@ -840,6 +856,22 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/vault/{id}/account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["assignReceiptAccount"];
         trace?: never;
     };
     "/api/vault/{id}/download": {
@@ -2947,6 +2979,28 @@ export interface operations {
             };
         };
     };
+    listUnassignedReceipts: {
+        parameters: {
+            query: {
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PageVaultDocumentResponse"];
+                };
+            };
+        };
+    };
     upload: {
         parameters: {
             query: {
@@ -3019,6 +3073,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    assignReceiptAccount: {
+        parameters: {
+            query: {
+                accountId: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["VaultDocumentResponse"];
+                };
             };
         };
     };

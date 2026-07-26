@@ -36,6 +36,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Owns the ingestion run lifecycle. The agent process is never trusted more than the LLM it
@@ -103,10 +104,10 @@ public class AgentRunService {
                 .toList();
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public AgentRunDetailResponse get(Long userId, Long runId) {
         requireConfigured();
-        AgentRun run = findOwned(userId, runId);
+        AgentRun run = bindLegacyRunAccountIfAvailable(userId, findOwned(userId, runId));
         return AgentRunDetailResponse.from(run, toProposalDtos(run.getProposals()));
     }
 
@@ -164,6 +165,7 @@ public class AgentRunService {
             return AgentRunDetailResponse.from(run, toProposalDtos(run.getProposals()));
         }
 
+        run = bindLegacyRunAccountIfAvailable(userId, run);
         List<ProposalDto> edited = request.proposals() != null ? request.proposals() : toProposalDtos(run.getProposals());
         return doCommit(userId, run, edited);
     }
@@ -178,6 +180,7 @@ public class AgentRunService {
         if (run.getStatus() != AgentRunStatus.AWAITING_REVIEW) {
             throw new ConflictException("Run is not awaiting review");
         }
+        run = bindLegacyRunAccountIfAvailable(userId, run);
         return doCommit(userId, run, toProposalDtos(run.getProposals()));
     }
 
@@ -324,6 +327,29 @@ public class AgentRunService {
     private AgentRun findOwned(Long userId, Long runId) {
         return agentRunRepository.findByIdAndUser_Id(runId, userId)
                 .orElseThrow(() -> ResourceNotFoundException.of("AgentRun", runId));
+    }
+
+    /**
+     * Repairs runs created before receipt account binding existed. Receipt recovery assigns the
+     * Mongo document first; the next read or approval then durably binds the same owned account
+     * to the PostgreSQL run, so an interrupted cross-store recovery cannot strand the run.
+     */
+    private AgentRun bindLegacyRunAccountIfAvailable(Long userId, AgentRun run) {
+        if (run.getAccount() != null) {
+            return run;
+        }
+        Optional<VaultDocument> document =
+                vaultDocumentRepository.findByIdAndUserId(run.getVaultDocumentId(), userId);
+        if (document.isEmpty() || document.get().getAccountId() == null) {
+            return run;
+        }
+        Optional<Account> account =
+                accountRepository.findByIdAndUserId(document.get().getAccountId(), userId);
+        if (account.isEmpty()) {
+            return run;
+        }
+        run.setAccount(account.get());
+        return agentRunRepository.save(run);
     }
 
     private void requireConfigured() {

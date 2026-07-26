@@ -71,6 +71,25 @@ public class VaultController {
         return vaultService.listByAccount(principal.getUserId(), accountId, type, pageable);
     }
 
+    /** Lists legacy receipt uploads that still need an account assignment. */
+    @GetMapping("/unassigned-receipts")
+    public Page<VaultDocumentResponse> listUnassignedReceipts(
+            @AuthenticationPrincipal UserPrincipal principal,
+            Pageable pageable
+    ) {
+        return vaultService.listUnassignedReceipts(principal.getUserId(), pageable);
+    }
+
+    /** Assigns a legacy receipt to one owned account. Existing assignments cannot be moved. */
+    @PatchMapping("/{id}/account")
+    public VaultDocumentResponse assignReceiptAccount(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String id,
+            @RequestParam Long accountId
+    ) {
+        return vaultService.assignReceiptAccount(principal.getUserId(), id, accountId);
+    }
+
     @GetMapping("/{id}")
     public VaultDocumentResponse getById(
             @AuthenticationPrincipal UserPrincipal principal,

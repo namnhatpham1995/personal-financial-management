@@ -8,12 +8,14 @@ import com.fintrack.vault.domain.VaultOperationState;
 import com.fintrack.vault.repository.VaultOperationRepository;
 import com.fintrack.vault.service.GridFsFileStore;
 import com.fintrack.vault.service.VaultOperationRecoveryScheduler;
+import org.bson.Document;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.gridfs.GridFsTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
@@ -86,6 +88,7 @@ class VaultUploadIdempotencyIntegrationTest {
     @Autowired GridFsFileStore gridFsFileStore;
     @Autowired VaultOperationRecoveryScheduler recoveryScheduler;
     @Autowired UserRepository userRepository;
+    @Autowired MongoTemplate mongoTemplate;
 
     private String register(String email) throws Exception {
         return HttpTestHelper.registerAndLogin(mockMvc, objectMapper, email);
@@ -99,6 +102,56 @@ class VaultUploadIdempotencyIntegrationTest {
         return gridFsTemplate.find(Query.query(Criteria.where("metadata.userId").is(userId)))
                 .into(new ArrayList<>())
                 .size();
+    }
+
+    @Test
+    void legacyReceipt_canBeListedAndAssignedOnce_withoutCrossUserAccess() throws Exception {
+        String ownerEmail = "vault.legacy.owner@test.com";
+        String ownerJwt = register(ownerEmail);
+        Long ownerId = userIdOf(ownerEmail);
+        String ownerAccountId = HttpTestHelper.createAccount(mockMvc, objectMapper, ownerJwt, "USD");
+        String secondOwnerAccountId = HttpTestHelper.createAccount(mockMvc, objectMapper, ownerJwt, "EUR");
+
+        String legacyReceiptId = "legacy-receipt-" + UUID.randomUUID();
+        mongoTemplate.insert(new Document("_id", legacyReceiptId)
+                .append("userId", ownerId)
+                .append("type", "RECEIPT")
+                .append("status", "ACTIVE")
+                .append("source", "manual")
+                .append("capturedAt", java.util.Date.from(Instant.now()))
+                .append("originalFilename", "old-receipt.pdf"), "vault_documents");
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .get("/api/vault/unassigned-receipts")
+                        .header("Authorization", "Bearer " + ownerJwt))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value(legacyReceiptId))
+                .andExpect(jsonPath("$.content[0].accountId").doesNotExist());
+
+        String otherJwt = register("vault.legacy.other@test.com");
+        String otherAccountId = HttpTestHelper.createAccount(mockMvc, objectMapper, otherJwt, "USD");
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .patch("/api/vault/{id}/account", legacyReceiptId)
+                        .param("accountId", otherAccountId)
+                        .header("Authorization", "Bearer " + otherJwt))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .patch("/api/vault/{id}/account", legacyReceiptId)
+                        .param("accountId", ownerAccountId)
+                        .header("Authorization", "Bearer " + ownerJwt))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accountId").value(Long.parseLong(ownerAccountId)));
+
+        Document assigned = mongoTemplate.findById(legacyReceiptId, Document.class, "vault_documents");
+        assertThat(assigned).isNotNull();
+        assertThat(assigned.get("accountId")).isEqualTo(Long.parseLong(ownerAccountId));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .patch("/api/vault/{id}/account", legacyReceiptId)
+                        .param("accountId", secondOwnerAccountId)
+                        .header("Authorization", "Bearer " + ownerJwt))
+                .andExpect(status().isConflict());
     }
 
     // ── sequential replay ───────────────────────────────────────────────────────

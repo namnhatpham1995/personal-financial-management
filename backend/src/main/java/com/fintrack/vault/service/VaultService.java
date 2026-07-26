@@ -3,6 +3,8 @@ package com.fintrack.vault.service;
 import com.fintrack.agent.domain.AgentRun;
 import com.fintrack.agent.domain.AgentRunStatus;
 import com.fintrack.agent.repository.AgentRunRepository;
+import com.fintrack.account.service.AccountService;
+import com.fintrack.common.exception.ConflictException;
 import com.fintrack.common.exception.ResourceNotFoundException;
 import com.fintrack.vault.domain.VaultDocument;
 import com.fintrack.vault.domain.VaultDocumentStatus;
@@ -14,6 +16,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.gridfs.GridFsResource;
+import org.springframework.data.mongodb.core.FindAndModifyOptions;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -33,6 +40,8 @@ public class VaultService {
     private final AgentRunRepository agentRunRepository;
     private final VaultUploadIdempotencyCoordinator idempotencyCoordinator;
     private final VaultAccountIdBackfillService accountIdBackfillService;
+    private final AccountService accountService;
+    private final MongoTemplate mongoTemplate;
 
     /**
      * Upload a binary file (receipt image or statement file) and create a VaultDocument in the
@@ -102,6 +111,56 @@ public class VaultService {
                 .findByUserIdAndAccountIdAndTypeOrderByCapturedAtDesc(userId, accountId, type, pageable);
         Map<String, AgentRunStatus> statuses = latestIngestionStatuses(userId, page.getContent());
         return page.map(doc -> toResponse(doc, statuses.get(doc.getId())));
+    }
+
+    /** Lists legacy receipts that predate required account assignment. */
+    public Page<VaultDocumentResponse> listUnassignedReceipts(Long userId, Pageable pageable) {
+        Page<VaultDocument> page = vaultDocumentRepository
+                .findByUserIdAndTypeAndAccountIdIsNullOrderByCapturedAtDesc(
+                        userId, VaultDocumentType.RECEIPT, pageable);
+        Map<String, AgentRunStatus> statuses = latestIngestionStatuses(userId, page.getContent());
+        return page.map(doc -> toResponse(doc, statuses.get(doc.getId())));
+    }
+
+    /**
+     * Assigns an owner-selected account to a legacy receipt exactly once. The conditional Mongo
+     * update prevents two concurrent recovery requests from moving the same financial document
+     * to different accounts.
+     */
+    public VaultDocumentResponse assignReceiptAccount(Long userId, String id, Long accountId) {
+        accountService.findOwned(userId, accountId);
+
+        VaultDocument current = findOwned(userId, id);
+        if (current.getType() != VaultDocumentType.RECEIPT) {
+            throw new ConflictException("Only receipt documents can be assigned through receipt recovery");
+        }
+        if (accountId.equals(current.getAccountId())) {
+            return toResponse(current, latestIngestionStatus(userId, id));
+        }
+        if (current.getAccountId() != null) {
+            throw new ConflictException("Receipt is already assigned to another account");
+        }
+
+        Query query = Query.query(new Criteria().andOperator(
+                Criteria.where("_id").is(id),
+                Criteria.where("userId").is(userId),
+                Criteria.where("type").is(VaultDocumentType.RECEIPT),
+                new Criteria().orOperator(
+                        Criteria.where("accountId").exists(false),
+                        Criteria.where("accountId").is(null))));
+        VaultDocument updated = mongoTemplate.findAndModify(
+                query,
+                Update.update("accountId", accountId),
+                FindAndModifyOptions.options().returnNew(true),
+                VaultDocument.class);
+        if (updated == null) {
+            VaultDocument concurrentlyUpdated = findOwned(userId, id);
+            if (accountId.equals(concurrentlyUpdated.getAccountId())) {
+                return toResponse(concurrentlyUpdated, latestIngestionStatus(userId, id));
+            }
+            throw new ConflictException("Receipt was assigned to another account");
+        }
+        return toResponse(updated, latestIngestionStatus(userId, id));
     }
 
     public Page<VaultDocumentResponse> search(Long userId, VaultSearchRequest req, Pageable pageable) {
