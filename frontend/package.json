@@ -9,6 +9,8 @@
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
+    "check:changelog-coverage": "node scripts/check-ui-changelog-coverage.cjs",
+    "test:changelog-coverage": "node --test scripts/check-ui-changelog-coverage.node.cjs",
     "test:watch": "vitest"
   },
   "dependencies": {

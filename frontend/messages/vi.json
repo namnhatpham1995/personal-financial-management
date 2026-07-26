@@ -590,6 +590,30 @@
       "3": {
         "title": "Giao diện đa ngôn ngữ",
         "body": "Fintrack hiện có sẵn bằng tiếng Anh, tiếng Việt, tiếng Đức và tiếng Trung (giản thể). Ứng dụng tự động khớp với ngôn ngữ trình duyệt của bạn theo mặc định, và lựa chọn của bạn sẽ được đồng bộ trên mọi thiết bị sau khi bạn chọn."
+      },
+      "4": {
+        "title": "Truy cập mã thông báo API dễ hơn",
+        "body": "Quản lý mã thông báo API giờ có một vị trí rõ ràng duy nhất trong thanh bên."
+      },
+      "5": {
+        "title": "Chuyển tiền giữa các loại tiền tệ",
+        "body": "Chuyển tiền giữa các tài khoản dùng tiền tệ khác nhau với quy đổi tự động, hướng chuyển rõ ràng hơn và trang chi tiết tiền tệ."
+      },
+      "6": {
+        "title": "Xem lại đề xuất từ hóa đơn",
+        "body": "Tải hóa đơn lên, xem lại các giao dịch được đề xuất và chỉ phê duyệt những chi tiết bạn muốn lưu."
+      },
+      "7": {
+        "title": "Khôi phục khi thử lại an toàn hơn",
+        "body": "Nếu thao tác lưu hoặc nhập bị gián đoạn, Fintrack có thể tiếp tục an toàn mà không tạo bản sao trùng lặp."
+      },
+      "8": {
+        "title": "Đăng nhập và chọn ngôn ngữ mượt mà hơn",
+        "body": "Duy trì đăng nhập sau khi khởi động lại trình duyệt, vào thẳng bảng điều khiển khi đã đăng nhập và xem nhiều phần hơn của Fintrack bằng ngôn ngữ bạn chọn."
+      },
+      "9": {
+        "title": "Kho lưu trữ được thiết kế lại",
+        "body": "Biên lai và sao kê giờ có các màn hình riêng, tải lên dễ hơn, chọn tài khoản, đọc nội tuyến và xem lại việc nhập rõ ràng hơn."
       }
     }
   },

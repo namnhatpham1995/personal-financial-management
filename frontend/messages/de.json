@@ -590,6 +590,30 @@
       "3": {
         "title": "Mehrsprachige Benutzeroberfläche",
         "body": "Fintrack ist jetzt auf Englisch, Vietnamesisch, Deutsch und Chinesisch (vereinfacht) verfügbar. Die Sprache wird standardmäßig an Ihre Browsersprache angepasst, und Ihre Auswahl folgt Ihnen geräteübergreifend, sobald Sie eine getroffen haben."
+      },
+      "4": {
+        "title": "Einfacherer Zugriff auf API-Token",
+        "body": "Die Verwaltung von API-Token hat jetzt einen klaren, zentralen Platz in der Seitenleiste."
+      },
+      "5": {
+        "title": "Überweisungen zwischen Währungen",
+        "body": "Verschieben Sie Geld zwischen Konten in verschiedenen Währungen – mit automatischer Umrechnung, klareren Überweisungsrichtungen und Detailansichten für Währungen."
+      },
+      "6": {
+        "title": "Belegvorschläge prüfen",
+        "body": "Laden Sie einen Beleg hoch, prüfen Sie vorgeschlagene Transaktionen und bestätigen Sie nur die Details, die Sie speichern möchten."
+      },
+      "7": {
+        "title": "Sicherere Wiederaufnahme",
+        "body": "Wird ein Speichern oder Import unterbrochen, kann Fintrack ihn sicher fortsetzen, ohne Duplikate zu erzeugen."
+      },
+      "8": {
+        "title": "Reibungslosere Anmeldung und Sprachauswahl",
+        "body": "Bleiben Sie nach einem Browser-Neustart angemeldet, gelangen Sie direkt zum Dashboard und sehen Sie mehr von Fintrack in Ihrer gewählten Sprache."
+      },
+      "9": {
+        "title": "Ein neu gestalteter Tresor",
+        "body": "Belege und Kontoauszüge haben jetzt eigene Ansichten, einfachere Uploads, Kontoauswahl, integrierte Vorschau und eine klarere Importprüfung."
       }
     }
   },
