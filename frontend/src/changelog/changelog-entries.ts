@@ -9,12 +9,19 @@ export interface ChangelogEntry {
 }
 
 /**
- * Ordered newest-first. `version` is a monotonically increasing integer —
+ * Ordered newest-first. `version` is a monotonically increasing integer â€”
  * the sole source of truth for "has the user seen this" (see auth-context's
  * lastSeenChangelogVersion). Bump it by 1 for every new entry, never reuse.
  * Title/body text lives in messages/{en,vi,de,zh}.json under "changelog.entries.<version>".
  */
 const unsortedEntries: ChangelogEntry[] = [
+  {
+    version: 11,
+    date: "2026-07-27",
+    titleKey: "changelog.entries.11.title",
+    bodyKey: "changelog.entries.11.body",
+    tag: "improved",
+  },
   {
     version: 10,
     date: "2026-07-27",

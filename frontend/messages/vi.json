@@ -328,6 +328,38 @@
     },
     "account": "Tài khoản",
     "selectAccount": "Chọn tài khoản…",
+    "accountFilter": "Hiển thị tệp của",
+    "allAccounts": "Tất cả tài khoản",
+    "uploadAccount": "Tải lên vào tài khoản",
+    "selectAccountToUpload": "Chọn tài khoản trước khi tải tệp lên.",
+    "availableFiles": "Tệp hiện có",
+    "noUploaded": "Chưa có sao kê nào được tải lên.",
+    "noReceipts": "Chưa có biên lai nào.",
+    "loadFailed": "Không thể tải các tệp trong Kho lưu trữ. Hãy thử lại.",
+    "pagination": {
+      "prevAria": "Trang trước",
+      "nextAria": "Trang sau",
+      "pageOf": "Trang {current} / {total}"
+    },
+    "unassigned": "Chưa gán",
+    "reassignment": {
+      "open": "Chuyển",
+      "title": "Chuyển tệp sang tài khoản khác",
+      "description": "Chọn tài khoản mới cho {fileName}.",
+      "close": "Đóng",
+      "targetAccount": "Tài khoản mới",
+      "selectTarget": "Chọn tài khoản...",
+      "loading": "Đang kiểm tra giao dịch liên quan...",
+      "previewFailed": "Không thể kiểm tra thao tác chuyển. Hãy thử lại.",
+      "imports": "{count, plural, =0 {Không có giao dịch đã nhập nào bị xóa} other {Sẽ xóa # giao dịch đã nhập}}",
+      "detachLink": "Giao dịch được liên kết thủ công sẽ bị tách.",
+      "currencyWarning": "Đơn vị tiền tệ đổi từ {from} sang {to}. Hãy xem lại tệp sau khi chuyển.",
+      "rerunRequired": "Các lượt nhập hoặc xử lý biên lai liên quan sẽ bị vô hiệu hóa và cần xem lại.",
+      "cancel": "Hủy",
+      "moving": "Đang chuyển...",
+      "confirm": "Chuyển tệp",
+      "toast": { "success": "Đã chuyển tệp", "failed": "Không thể chuyển tệp" }
+    },
     "unassignedReceipts": {
       "title": "Biên lai chưa gắn tài khoản",
       "body": "Các biên lai này được tải lên trước khi việc chọn tài khoản là bắt buộc. Hãy chọn đúng tài khoản để khôi phục chúng trong danh sách.",
@@ -493,7 +525,8 @@
       "AWAITING_REVIEW": "Chờ xem xét",
       "COMMITTED": "Đã hoàn tất",
       "REJECTED": "Đã từ chối",
-      "FAILED": "Thất bại"
+      "FAILED": "Thất bại",
+      "INVALIDATED": "Cần xem lại"
     },
     "table": {
       "receipt": "Hóa đơn",
@@ -529,7 +562,8 @@
       "failureReason": "Lý do thất bại",
       "retryHint": "Lượt xử lý này đã thất bại. Bạn có thể bắt đầu lượt xử lý mới cho hóa đơn này từ Kho lưu trữ.",
       "retryableBadge": "Có thể thử lại",
-      "notRetryableBadge": "Không thể thử lại"
+      "notRetryableBadge": "Không thể thử lại",
+      "invalidatedReason": "Lượt xử lý cần được xem lại sau khi tệp được chuyển"
     },
     "toast": {
       "decisionFailed": "Không thể gửi quyết định — hãy thử lại",
@@ -583,6 +617,10 @@
       "improved": "Cải tiến"
     },
     "entries": {
+      "11": {
+        "title": "Tổng quan Kho lưu trữ đầy đủ",
+        "body": "Xem mọi sao kê và biên lai trên các tài khoản, lọc theo tài khoản và chuyển tệp an toàn khi tệp thuộc tài khoản khác."
+      },
       "1": {
         "title": "Ngân sách đa tiền tệ",
         "body": "Đặt ngân sách bằng bất kỳ loại tiền tệ nào và xem nó được tự động quy đổi trên tổng quan bảng điều khiển, cùng với các ngân sách khác của bạn."
@@ -655,7 +693,8 @@
       "AWAITING_REVIEW": "Chờ xem xét",
       "COMMITTED": "Đã hoàn tất",
       "REJECTED": "Đã từ chối",
-      "FAILED": "Thất bại"
+      "FAILED": "Thất bại",
+      "INVALIDATED": "Cần xem lại"
     }
   },
   "systemCategories": {

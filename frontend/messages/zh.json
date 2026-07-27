@@ -328,6 +328,38 @@
     },
     "account": "账户",
     "selectAccount": "选择账户…",
+    "accountFilter": "显示文件范围",
+    "allAccounts": "所有账户",
+    "uploadAccount": "上传到账户",
+    "selectAccountToUpload": "上传文件前请选择账户。",
+    "availableFiles": "可用文件",
+    "noUploaded": "暂无已上传的对账单。",
+    "noReceipts": "暂无收据。",
+    "loadFailed": "无法加载资料库文件，请重试。",
+    "pagination": {
+      "prevAria": "上一页",
+      "nextAria": "下一页",
+      "pageOf": "第 {current} 页，共 {total} 页"
+    },
+    "unassigned": "未分配",
+    "reassignment": {
+      "open": "移动",
+      "title": "将文件移动到其他账户",
+      "description": "为 {fileName} 选择新账户。",
+      "close": "关闭",
+      "targetAccount": "新账户",
+      "selectTarget": "选择账户...",
+      "loading": "正在检查相关导入...",
+      "previewFailed": "无法检查此次移动，请重试。",
+      "imports": "{count, plural, =0 {不会删除已导入的交易} other {将删除 # 笔已导入交易}}",
+      "detachLink": "手动关联的交易将被解除关联。",
+      "currencyWarning": "账户货币将从 {from} 更改为 {to}。移动后请重新检查文件。",
+      "rerunRequired": "相关导入或收据处理将失效，需要重新审核。",
+      "cancel": "取消",
+      "moving": "正在移动...",
+      "confirm": "移动文件",
+      "toast": { "success": "文件已移动", "failed": "无法移动文件" }
+    },
     "unassignedReceipts": {
       "title": "未分配的收据",
       "body": "这些收据上传于必须选择账户之前。请选择正确的账户，以在账户视图中恢复显示。",
@@ -493,7 +525,8 @@
       "AWAITING_REVIEW": "待审核",
       "COMMITTED": "已完成",
       "REJECTED": "已拒绝",
-      "FAILED": "失败"
+      "FAILED": "失败",
+      "INVALIDATED": "需要审核"
     },
     "table": {
       "receipt": "收据",
@@ -529,7 +562,8 @@
       "failureReason": "失败原因",
       "retryHint": "此次处理失败。您可以在资料库中为此收据重新开始一次导入。",
       "retryableBadge": "可重试",
-      "notRetryableBadge": "不可重试"
+      "notRetryableBadge": "不可重试",
+      "invalidatedReason": "文件移动后，此处理记录需要重新审核"
     },
     "toast": {
       "decisionFailed": "无法提交您的决定 — 请重试",
@@ -583,6 +617,10 @@
       "improved": "改进"
     },
     "entries": {
+      "11": {
+        "title": "完整的资料库总览",
+        "body": "查看所有账户中的对账单和收据，按账户筛选，并在文件归属变化时安全地移动文件。"
+      },
       "1": {
         "title": "多币种预算",
         "body": "使用任意货币设置预算，系统会在仪表盘概览中自动换算，并与您的其他预算一并显示。"
@@ -655,7 +693,8 @@
       "AWAITING_REVIEW": "待审核",
       "COMMITTED": "已完成",
       "REJECTED": "已拒绝",
-      "FAILED": "失败"
+      "FAILED": "失败",
+      "INVALIDATED": "需要审核"
     }
   },
   "systemCategories": {

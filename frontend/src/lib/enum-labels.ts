@@ -32,7 +32,7 @@ export function useDocumentStatusLabel() {
 
 export function useIngestionStatusLabel() {
   const t = useTranslations("enums.ingestionStatus");
-  return (value: "EXTRACTING" | "AWAITING_REVIEW" | "COMMITTED" | "REJECTED" | "FAILED"): string => {
+  return (value: "EXTRACTING" | "AWAITING_REVIEW" | "COMMITTED" | "REJECTED" | "FAILED" | "INVALIDATED"): string => {
     return t(value);
   };
 }

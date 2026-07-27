@@ -7,29 +7,32 @@ import { accountService } from "@/services/account-service";
 import { agentRunService, isAgentFeatureUnavailable } from "@/services/agent-run-service";
 import { ReceiptUploadViewer } from "@/components/vault/receipt-upload-viewer";
 import { DocumentReaderModal } from "@/components/vault/document-reader-modal";
-import { LegacyReceiptRecovery } from "@/components/vault/legacy-receipt-recovery";
+import { VaultAccountFilter } from "@/components/vault/vault-account-filter";
+import { VaultReassignmentDialog } from "@/components/vault/vault-reassignment-dialog";
 import { formatDate } from "@/lib/utils";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
-import { Receipt, Sparkles, Loader2 } from "lucide-react";
+import { Receipt, Sparkles, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { useIngestionStatusLabel } from "@/lib/enum-labels";
 
 export function ReceiptTab() {
   const t = useTranslations("vault");
+  const tCommon = useTranslations("common");
   const locale = useLocale();
   const qc = useQueryClient();
   const getIngestionStatusLabel = useIngestionStatusLabel();
   const [accountId, setAccountId] = useState<number | null>(null);
+  const [uploadAccountId, setUploadAccountId] = useState<number | null>(null);
+  const [page, setPage] = useState(0);
   const [readingDoc, setReadingDoc] = useState<{ id: string; filename?: string } | null>(null);
 
   const { data: accounts } = useQuery({ queryKey: ["accounts"], queryFn: () => accountService.list() });
-
-  const listQueryKey = ["vault-by-account", accountId, "RECEIPT"] as const;
+  const accountList = accounts ?? [];
+  const listQueryKey = ["vault-by-type", "RECEIPT", ...(accountId == null ? [] : [accountId]), page] as const;
   const listQuery = useQuery({
     queryKey: listQueryKey,
-    queryFn: () => vaultService.listByAccount(accountId!, "RECEIPT", 0, 100),
-    enabled: !!accountId,
+    queryFn: () => vaultService.listByType("RECEIPT", accountId ?? undefined, page, 100),
   });
 
   const { error: agentRunsError } = useQuery({
@@ -38,8 +41,7 @@ export function ReceiptTab() {
     retry: false,
   });
   const agentFeatureUnavailable = isAgentFeatureUnavailable(agentRunsError);
-
-  const invalidateList = () => qc.invalidateQueries({ queryKey: listQueryKey });
+  const invalidateList = () => qc.invalidateQueries({ queryKey: ["vault-by-type", "RECEIPT"] });
 
   const startIngestionMut = useMutation({
     mutationFn: (documentId: string) => agentRunService.start(documentId),
@@ -52,36 +54,52 @@ export function ReceiptTab() {
   });
 
   const receipts = listQuery.data?.content ?? [];
+  const accountName = (id?: number) =>
+    id == null ? t("unassigned") : accountList.find((account) => account.id === id)?.name ?? t("unassigned");
 
   return (
     <div className="space-y-4">
-      <LegacyReceiptRecovery
-        accounts={accounts ?? []}
-        onRead={(document) => setReadingDoc(document)}
+      <VaultAccountFilter
+        accounts={accountList}
+        accountId={accountId}
+        onChange={(nextAccountId) => {
+          setAccountId(nextAccountId);
+          setUploadAccountId(nextAccountId);
+          setPage(0);
+        }}
       />
+      {listQuery.isLoading && <p className="text-sm text-muted-foreground">{tCommon("loading")}</p>}
+      {listQuery.isError && <p className="text-sm text-destructive">{t("loadFailed")}</p>}
 
-      <div className="max-w-sm space-y-2">
-        <label className="text-sm font-medium text-foreground">{t("account")}</label>
-        <select
-          className="w-full rounded-md border border-border bg-card px-3.5 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-          value={accountId ?? ""}
-          onChange={(e) => setAccountId(Number(e.target.value) || null)}
-        >
-          <option value="">{t("selectAccount")}</option>
-          {(accounts ?? []).map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.name}
-            </option>
-          ))}
-        </select>
-      </div>
+      <div className="max-w-lg space-y-4">
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground" htmlFor="receipt-upload-account">
+            {t("uploadAccount")}
+          </label>
+          <select
+            id="receipt-upload-account"
+            className="w-full rounded-md border border-border bg-card px-3.5 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+            value={uploadAccountId ?? ""}
+            onChange={(event) => setUploadAccountId(Number(event.target.value) || null)}
+          >
+            <option value="">{t("selectAccount")}</option>
+            {accountList.map((account) => (
+              <option key={account.id} value={account.id}>{account.name}</option>
+            ))}
+          </select>
+        </div>
+        {uploadAccountId ? (
+          <ReceiptUploadViewer accountId={uploadAccountId} onLinked={invalidateList} />
+        ) : (
+          <p className="text-sm text-muted-foreground">{t("selectAccountToUpload")}</p>
+        )}
 
-      {accountId && (
-        <div className="max-w-lg space-y-4">
-          <ReceiptUploadViewer accountId={accountId} onLinked={invalidateList} />
-
-          {receipts.length > 0 && (
-            <div className="rounded-lg border border-border divide-y divide-border">
+        <div>
+          <h3 className="mb-2 text-sm font-semibold text-foreground">{t("availableFiles")}</h3>
+          {receipts.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t("noReceipts")}</p>
+          ) : (
+            <div className="divide-y divide-border rounded-lg border border-border">
               {receipts.map((doc) => (
                 <div key={doc.id} className="flex items-center gap-3 px-3 py-2">
                   <Receipt className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -91,19 +109,14 @@ export function ReceiptTab() {
                   >
                     {doc.originalFilename ?? doc.id}
                   </button>
+                  <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">{accountName(doc.accountId)}</span>
                   <span className="shrink-0 text-xs text-muted-foreground">
                     {formatDate(doc.capturedAt.split("T")[0], locale)}
                   </span>
                   {!agentFeatureUnavailable &&
                     (doc.ingestionStatus ? (
-                      <Link
-                        href="/dashboard/receipts"
-                        className="shrink-0 text-xs font-medium text-primary hover:underline"
-                      >
-                        {t("ingestion.viewRun")} —{" "}
-                        {getIngestionStatusLabel(
-                          doc.ingestionStatus as "EXTRACTING" | "AWAITING_REVIEW" | "COMMITTED" | "REJECTED" | "FAILED"
-                        )}
+                      <Link href="/dashboard/receipts" className="shrink-0 text-xs font-medium text-primary hover:underline">
+                        {t("ingestion.viewRun")} - {getIngestionStatusLabel(doc.ingestionStatus)}
                       </Link>
                     ) : (
                       <button
@@ -121,18 +134,43 @@ export function ReceiptTab() {
                           : t("ingestion.start")}
                       </button>
                     ))}
+                  <VaultReassignmentDialog document={doc} accounts={accountList} onSuccess={invalidateList} />
                 </div>
               ))}
             </div>
           )}
         </div>
+      </div>
+
+      {(listQuery.data?.totalPages ?? 0) > 1 && (
+        <div className="flex max-w-lg items-center justify-between border-t border-border pt-3">
+          <span className="text-xs text-muted-foreground">
+            {t("pagination.pageOf", { current: page + 1, total: listQuery.data?.totalPages ?? 1 })}
+          </span>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              aria-label={t("pagination.prevAria")}
+              disabled={page === 0}
+              onClick={() => setPage((value) => Math.max(0, value - 1))}
+              className="inline-flex min-h-9 min-w-9 items-center justify-center rounded border border-border text-muted-foreground hover:bg-secondary disabled:opacity-40"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              aria-label={t("pagination.nextAria")}
+              disabled={page >= (listQuery.data?.totalPages ?? 1) - 1}
+              onClick={() => setPage((value) => value + 1)}
+              className="inline-flex min-h-9 min-w-9 items-center justify-center rounded border border-border text-muted-foreground hover:bg-secondary disabled:opacity-40"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
       )}
 
-      <DocumentReaderModal
-        documentId={readingDoc?.id ?? null}
-        originalFilename={readingDoc?.filename}
-        onClose={() => setReadingDoc(null)}
-      />
+      <DocumentReaderModal documentId={readingDoc?.id ?? null} originalFilename={readingDoc?.filename} onClose={() => setReadingDoc(null)} />
     </div>
   );
 }

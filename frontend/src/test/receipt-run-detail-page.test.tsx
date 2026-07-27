@@ -47,6 +47,8 @@ const baseRun: AgentRunDetail = {
   failureReason: null,
   retryable: false,
   createdTransactionIds: null,
+  invalidatedAt: null,
+  invalidationReason: null,
   createdAt: "2026-01-05T00:00:00Z",
   updatedAt: "2026-01-05T00:00:00Z",
 };
