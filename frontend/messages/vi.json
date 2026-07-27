@@ -205,7 +205,11 @@
         "to": "Đến",
         "rateLoading": "Đang lấy tỷ giá…",
         "rateFetchFailed": "Không thể lấy tỷ giá — vui lòng nhập số tiền thủ công",
-        "useFetchedRate": "Dùng tỷ giá đã lấy"
+        "customAmount": "Đang dùng số tiền tùy chỉnh",
+        "restoreSuggestedAmount": "Khôi phục số tiền đề xuất",
+        "customRate": "Tỷ giá tùy chỉnh",
+        "fetchedRate": "Tỷ giá đã lấy",
+        "suggestedAmount": "Số tiền đề xuất"
       }
     },
     "recurring": {
@@ -614,6 +618,10 @@
       "9": {
         "title": "Kho lưu trữ được thiết kế lại",
         "body": "Biên lai và sao kê giờ có các màn hình riêng, tải lên dễ hơn, chọn tài khoản, đọc nội tuyến và xem lại việc nhập rõ ràng hơn."
+      },
+      "10": {
+        "title": "Lựa chọn tỷ giá khi chuyển tiền rõ ràng hơn",
+        "body": "Chuyển tiền khác loại tiền tệ giờ giúp bạn dễ thấy và so sánh số tiền tùy chỉnh với đề xuất từ tỷ giá đã lấy."
       }
     }
   },

@@ -174,6 +174,9 @@ describe("Manual override", () => {
     await user.clear(destInput);
     await user.type(destInput, "12500000");
 
+    expect(screen.getByText("Custom amount in use")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Restore suggested amount" })).toBeInTheDocument();
+
     await user.clear(amountInput);
     await user.type(amountInput, "600");
     await act(async () => {
@@ -196,10 +199,10 @@ describe("Manual override", () => {
 
     await user.clear(destInput);
     await user.type(destInput, "1");
-    expect(screen.getByRole("button", { name: "Use fetched rate" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Restore suggested amount" })).toBeInTheDocument();
 
     convertMock.mockResolvedValue({ from: "USD", to: "VND", amount: 500, convertedAmount: 13500000, rate: 27000, asOf: null });
-    await user.click(screen.getByRole("button", { name: "Use fetched rate" }));
+    await user.click(screen.getByRole("button", { name: "Restore suggested amount" }));
     await act(async () => {
       await vi.advanceTimersByTimeAsync(600);
     });
@@ -227,11 +230,56 @@ describe("Editing an existing cross-currency transfer", () => {
 
     const destInput = await screen.findByLabelText(/Destination Amount \(VND\)/) as HTMLInputElement;
     expect(destInput.value).toBe("13095258");
+    expect(screen.getByText("Custom amount in use")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Restore suggested amount" })).toBeInTheDocument();
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(600);
     });
     expect(convertMock).not.toHaveBeenCalled();
     expect(destInput.value).toBe("13095258");
+  });
+
+  it("keeps custom and fetched rate provenance separate", async () => {
+    convertMock.mockResolvedValue({ from: "USD", to: "VND", amount: 500, convertedAmount: 13095258, rate: 26190.515774, asOf: "2026-07-15T00:00:00Z" });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    await openTransferWithAmount(user, "500");
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(600);
+    });
+
+    const destInput = await screen.findByLabelText(/Destination Amount \(VND\)/) as HTMLInputElement;
+    await waitFor(() => expect(destInput.value).toBe("13095258"));
+    await user.clear(destInput);
+    await user.type(destInput, "13100000");
+
+    expect(screen.getByText("Custom rate:")).toBeInTheDocument();
+    const fetchedSummary = screen.getByText("Fetched rate:").parentElement;
+    expect(fetchedSummary?.textContent).toContain("Jul 15, 2026");
+    const customSummary = screen.getByText("Custom rate:").parentElement;
+    expect(customSummary?.textContent).toContain("13,100,000.00 VND");
+    expect(customSummary?.textContent).toContain("1 USD = 26,200 VND");
+    expect(customSummary?.textContent).not.toContain("Jul 15, 2026");
+  });
+
+  it("keeps the existing transfer override state free of invented fetched provenance", async () => {
+    const editingTx: Transaction = {
+      id: 10,
+      accountId: usdChecking.id,
+      accountName: usdChecking.name,
+      currency: "USD",
+      transactionType: "TRANSFER",
+      amount: "500",
+      destinationAmount: "13095258",
+      destinationCurrency: "VND",
+      transactionDate: "2026-05-01",
+      transferAccountId: vndWallet.id,
+      transferAccountName: vndWallet.name,
+    };
+    render(<TransactionForm {...baseProps()} editingTx={editingTx} />);
+
+    expect(screen.getByText("Custom amount in use")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Restore suggested amount" })).toBeInTheDocument();
+    expect(screen.queryByText(/Fetched rate:/)).not.toBeInTheDocument();
   });
 });

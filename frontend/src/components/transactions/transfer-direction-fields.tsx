@@ -1,10 +1,12 @@
 "use client";
 
-import { ArrowRight, Loader2 } from "lucide-react";
+import { ArrowRight, Loader2, RefreshCw } from "lucide-react";
 import type { UseFormRegister, FieldErrors } from "react-hook-form";
+import { Button } from "@/components/ui/button";
 import { Field, fieldInputCls, inputCls } from "@/components/transactions/transaction-field";
 import type { Account } from "@/services/account-service";
 import type { TransactionFormValues } from "@/app/dashboard/transactions/transaction-form-schema";
+import type { ConversionLine } from "@/components/transactions/use-auto-conversion";
 
 interface Props {
   accounts: Account[];
@@ -17,7 +19,7 @@ interface Props {
   overridden: boolean;
   onRevertToFetchedRate: () => void;
   onDestinationAmountEdited: () => void;
-  conversionLine: { amountText: string; destText: string; rateText: string } | null;
+  conversionLine: ConversionLine | null;
   register: UseFormRegister<TransactionFormValues>;
   errors: FieldErrors<TransactionFormValues>;
   labels: {
@@ -28,7 +30,11 @@ interface Props {
     destinationAmount: string;
     rateLoading: string;
     rateFetchFailed: string;
-    useFetchedRate: string;
+    customAmount: string;
+    restoreSuggestedAmount: string;
+    customRate: string;
+    fetchedRate: string;
+    suggestedAmount: string;
     destinationAmountError?: string;
     transferAccountError?: string;
   };
@@ -39,7 +45,7 @@ interface Props {
  * flow visually into the destination account (and, cross-currency, the
  * destination amount) instead of being scattered across a generic grid.
  * The destination amount auto-fills from a debounced exchange-rate fetch;
- * a manual edit overrides it until the user explicitly reverts.
+ * a manual edit overrides it until the user explicitly restores the suggestion.
  */
 export function TransferDirectionFields({
   accounts,
@@ -128,19 +134,43 @@ export function TransferDirectionFields({
               )}
             </div>
             {rateError && <p className="mt-1 text-xs text-destructive">{labels.rateFetchFailed}</p>}
-            {overridden && !rateError && (
-              <button
-                type="button"
-                onClick={onRevertToFetchedRate}
-                className="mt-1 text-xs font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            {overridden && (
+              <div
+                aria-live="polite"
+                className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-primary/20 bg-primary/5 px-3 py-2"
               >
-                {labels.useFetchedRate}
-              </button>
+                <span className="text-sm font-medium text-foreground">{labels.customAmount}</span>
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="md"
+                  disabled={isRateLoading}
+                  onClick={onRevertToFetchedRate}
+                  className="w-full rounded-full sm:w-auto"
+                >
+                  <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                  {labels.restoreSuggestedAmount}
+                </Button>
+              </div>
             )}
             {conversionLine && (
-              <p className="mt-1.5 font-mono tabular-nums text-xs text-muted-foreground">
-                {conversionLine.amountText} → {conversionLine.destText} ({conversionLine.rateText})
-              </p>
+              <div className="mt-2 space-y-1 font-mono tabular-nums text-xs text-muted-foreground">
+                <p>
+                  {conversionLine.mode === "custom" && (
+                    <span className="font-sans font-medium text-foreground">{labels.customRate}: </span>
+                  )}
+                  {conversionLine.amountText} → {conversionLine.destText} ({conversionLine.rateText})
+                  {conversionLine.asOfText ? ` · ${conversionLine.asOfText}` : ""}
+                </p>
+                {conversionLine.mode === "custom" && conversionLine.fetchedRateText && (
+                  <p>
+                    <span className="font-sans font-medium text-foreground">{labels.fetchedRate}: </span>
+                    {conversionLine.fetchedDestinationText && `${labels.suggestedAmount}: ${conversionLine.fetchedDestinationText} · `}
+                    {conversionLine.fetchedRateText}
+                    {conversionLine.fetchedAsOfText ? ` · ${conversionLine.fetchedAsOfText}` : ""}
+                  </p>
+                )}
+              </div>
             )}
           </Field>
         )}

@@ -159,7 +159,11 @@ export function TransactionForm({ editingTx, accounts, categories, isPending, on
               destinationAmount: t("fields.destinationAmount"),
               rateLoading: t("transfer.rateLoading"),
               rateFetchFailed: t("transfer.rateFetchFailed"),
-              useFetchedRate: t("transfer.useFetchedRate"),
+              customAmount: t("transfer.customAmount"),
+              restoreSuggestedAmount: t("transfer.restoreSuggestedAmount"),
+              customRate: t("transfer.customRate"),
+              fetchedRate: t("transfer.fetchedRate"),
+              suggestedAmount: t("transfer.suggestedAmount"),
               destinationAmountError: destinationAmountErrorMessage,
               transferAccountError: transferAccountIdErrorMessage,
             }}
