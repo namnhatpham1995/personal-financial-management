@@ -5,7 +5,11 @@ import com.fintrack.idempotency.exception.MissingIdempotencyKeyException;
 import com.fintrack.vault.domain.VaultDocumentType;
 import com.fintrack.vault.service.VaultService;
 import com.fintrack.vault.web.dto.VaultDocumentResponse;
+import com.fintrack.vault.web.dto.VaultReassignmentPreviewResponse;
+import com.fintrack.vault.web.dto.VaultReassignmentRequest;
+import com.fintrack.vault.web.dto.VaultReassignmentResponse;
 import com.fintrack.vault.web.dto.VaultSearchRequest;
+import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Parameter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -28,6 +32,7 @@ import java.util.List;
 public class VaultController {
 
     private final VaultService vaultService;
+    private final com.fintrack.vault.service.VaultReassignmentService vaultReassignmentService;
 
     /** Upload a receipt image or statement file. Requires an {@code Idempotency-Key} header. */
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -55,9 +60,17 @@ public class VaultController {
     @GetMapping
     public Page<VaultDocumentResponse> list(
             @AuthenticationPrincipal UserPrincipal principal,
+            @RequestParam(required = false) VaultDocumentType type,
+            @RequestParam(required = false) Long accountId,
             Pageable pageable
     ) {
-        return vaultService.list(principal.getUserId(), pageable);
+        if (type == null) {
+            if (accountId != null) {
+                throw new IllegalArgumentException("accountId requires a type filter");
+            }
+            return vaultService.list(principal.getUserId(), pageable);
+        }
+        return vaultService.listByType(principal.getUserId(), type, accountId, pageable);
     }
 
     /** Lists vault documents for one account and type — backs the per-account Statement/Receipt tabs. */
@@ -80,14 +93,46 @@ public class VaultController {
         return vaultService.listUnassignedReceipts(principal.getUserId(), pageable);
     }
 
-    /** Assigns a legacy receipt to one owned account. Existing assignments cannot be moved. */
+    /**
+     * Compatibility assignment route for legacy receipts. New clients may provide an
+     * Idempotency-Key to use the full reassignment workflow; callers that omit it retain the
+     * one-time legacy behavior for backward compatibility.
+     */
     @PatchMapping("/{id}/account")
     public VaultDocumentResponse assignReceiptAccount(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable String id,
-            @RequestParam Long accountId
+            @RequestParam Long accountId,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey
     ) {
+        if (idempotencyKey != null) {
+            return vaultReassignmentService.reassign(
+                    principal.getUserId(), id,
+                    new VaultReassignmentRequest(accountId), idempotencyKey).document();
+        }
         return vaultService.assignReceiptAccount(principal.getUserId(), id, accountId);
+    }
+
+    @GetMapping("/{id}/reassignment-preview")
+    public VaultReassignmentPreviewResponse reassignmentPreview(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String id,
+            @RequestParam Long targetAccountId
+    ) {
+        return vaultReassignmentService.preview(principal.getUserId(), id, targetAccountId);
+    }
+
+    @PostMapping("/{id}/reassign")
+    public VaultReassignmentResponse reassign(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String id,
+            @Valid @RequestBody VaultReassignmentRequest request,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey
+    ) {
+        if (idempotencyKey == null) {
+            throw new MissingIdempotencyKeyException("Idempotency-Key header is required for Vault reassignment");
+        }
+        return vaultReassignmentService.reassign(principal.getUserId(), id, request, idempotencyKey);
     }
 
     @GetMapping("/{id}")

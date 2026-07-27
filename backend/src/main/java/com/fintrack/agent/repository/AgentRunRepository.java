@@ -21,4 +21,6 @@ public interface AgentRunRepository extends JpaRepository<AgentRun, Long> {
             String vaultDocumentId, Long userId);
 
     List<AgentRun> findByVaultDocumentIdInAndUser_Id(List<String> vaultDocumentIds, Long userId);
+
+    List<AgentRun> findByVaultDocumentIdAndUser_Id(String vaultDocumentId, Long userId);
 }

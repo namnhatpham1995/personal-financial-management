@@ -41,6 +41,16 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
 
     boolean existsByIdAndUserId(Long id, Long userId);
 
+    List<Transaction> findByUserIdAndSourceDocumentId(Long userId, String sourceDocumentId);
+
+    List<Transaction> findByUserIdAndImportDedupKeyIn(Long userId, List<String> importDedupKeys);
+
+    List<Transaction> findByUserIdAndImportDedupKeyStartingWith(Long userId, String importDedupKeyPrefix);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT t FROM Transaction t WHERE t.user.id = :userId AND t.id IN :ids ORDER BY t.id")
+    List<Transaction> findByIdInAndUserIdForUpdate(@Param("ids") List<Long> ids, @Param("userId") Long userId);
+
     boolean existsByRecurringIdAndOccurrenceDate(Long recurringId, LocalDate occurrenceDate);
 
     long countByAccountId(Long accountId);

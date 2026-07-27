@@ -39,7 +39,11 @@ import jakarta.validation.Validator;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -89,10 +93,25 @@ public class TransactionService {
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public TransactionResponse createWithImportDedupKey(Long userId, CreateTransactionRequest req, String importDedupKey) {
-        return createInternal(userId, req, importDedupKey);
+        return createWithImportMetadata(userId, req, importDedupKey, null);
+    }
+
+    /**
+     * Internal ingestion create that records both the idempotent import fingerprint and the
+     * source Vault document in the same PostgreSQL transaction as the financial row.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public TransactionResponse createWithImportMetadata(Long userId, CreateTransactionRequest req,
+                                                        String importDedupKey, String sourceDocumentId) {
+        return createInternal(userId, req, importDedupKey, sourceDocumentId);
     }
 
     private TransactionResponse createInternal(Long userId, CreateTransactionRequest req, String importDedupKey) {
+        return createInternal(userId, req, importDedupKey, null);
+    }
+
+    private TransactionResponse createInternal(Long userId, CreateTransactionRequest req,
+                                               String importDedupKey, String sourceDocumentId) {
         User user = userRepository.getReferenceById(userId);
         Account account = accountService.findOwned(userId, req.accountId());
         List<MutationWarning> warnings = new ArrayList<>();
@@ -111,6 +130,7 @@ public class TransactionService {
                 .transactionDate(req.transactionDate())
                 .note(req.note())
                 .importDedupKey(importDedupKey)
+                .sourceDocumentId(sourceDocumentId)
                 .build();
 
         if (req.categoryId() != null) {
@@ -296,6 +316,38 @@ public class TransactionService {
         reverseBalanceDelta(tx, tx.getAmount(), tx.getDestinationAmount());
         transactionRepository.delete(tx);
         cacheVersionService.bump(userId);
+    }
+
+    /**
+     * Deletes a deduplicated set of internal import transactions in one balance-safe transaction.
+     * Missing ids are ignored so a reassignment retry can safely resume after a prior commit.
+     */
+    @Transactional
+    public int deleteImportedTransactions(Long userId, Collection<Long> transactionIds) {
+        if (transactionIds == null || transactionIds.isEmpty()) {
+            return 0;
+        }
+        List<Long> ids = transactionIds.stream().filter(java.util.Objects::nonNull).distinct().sorted().toList();
+        if (ids.isEmpty()) {
+            return 0;
+        }
+        List<Transaction> transactions = transactionRepository.findByIdInAndUserIdForUpdate(ids, userId);
+        Set<Long> accountIds = new HashSet<>();
+        for (Transaction tx : transactions) {
+            accountIds.add(tx.getAccount().getId());
+            if (tx.getTransferAccount() != null) {
+                accountIds.add(tx.getTransferAccount().getId());
+            }
+        }
+        accountIds.stream().sorted().forEach(id -> accountService.findOwnedForUpdate(userId, id));
+        transactions.stream().sorted(Comparator.comparing(Transaction::getId)).forEach(tx -> {
+            reverseBalanceDelta(tx, tx.getAmount(), tx.getDestinationAmount());
+            transactionRepository.delete(tx);
+        });
+        if (!transactions.isEmpty()) {
+            cacheVersionService.bump(userId);
+        }
+        return transactions.size();
     }
 
     // ─── Internal balance helpers ──────────────────────────────────────────────

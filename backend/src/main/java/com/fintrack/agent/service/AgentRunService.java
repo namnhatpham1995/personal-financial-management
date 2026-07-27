@@ -33,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -71,6 +72,9 @@ public class AgentRunService {
                 .orElseThrow(() -> ResourceNotFoundException.of("VaultDocument", vaultDocumentId));
         if (doc.getType() != VaultDocumentType.RECEIPT) {
             throw ResourceNotFoundException.of("VaultDocument", vaultDocumentId);
+        }
+        if (doc.getReassignmentOperationId() != null) {
+            throw new ConflictException("Vault document is being reassigned; retry after the operation completes");
         }
 
         List<AgentRun> active = agentRunRepository
@@ -184,6 +188,29 @@ public class AgentRunService {
         return doCommit(userId, run, toProposalDtos(run.getProposals()));
     }
 
+    /** Marks all runs bound to an old account as terminal before a Vault document moves. */
+    @Transactional
+    public int invalidateRunsForReassignment(Long userId, String vaultDocumentId, Long sourceAccountId,
+                                             String reason) {
+        int invalidated = 0;
+        for (AgentRun run : agentRunRepository.findByVaultDocumentIdAndUser_Id(vaultDocumentId, userId)) {
+            boolean matchesSource = sourceAccountId == null
+                    ? run.getAccount() == null
+                    : run.getAccount() != null && sourceAccountId.equals(run.getAccount().getId());
+            if (!matchesSource) {
+                continue;
+            }
+            if (run.getStatus() != AgentRunStatus.INVALIDATED) {
+                run.setStatus(AgentRunStatus.INVALIDATED);
+                run.setInvalidatedAt(Instant.now());
+                run.setInvalidationReason(reason);
+                agentRunRepository.save(run);
+                invalidated++;
+            }
+        }
+        return invalidated;
+    }
+
     // ── internal ─────────────────────────────────────────────────────────────
 
     private AgentRunDetailResponse doCommit(Long userId, AgentRun run, List<ProposalDto> editedProposals) {
@@ -221,7 +248,8 @@ public class AgentRunService {
                     buildNote(p)
             );
             try {
-                var response = transactionService.createWithImportDedupKey(userId, txReq, dedupKey);
+                var response = transactionService.createWithImportMetadata(
+                        userId, txReq, dedupKey, run.getVaultDocumentId());
                 createdIds.add(response.id());
             } catch (DataIntegrityViolationException e) {
                 log.debug("Skipping already-committed proposal for run {} index {}", run.getId(), i);

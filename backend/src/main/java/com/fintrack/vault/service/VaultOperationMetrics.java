@@ -55,6 +55,18 @@ class VaultOperationMetrics {
         increment("vault_operation.recovery.compensated", "Orphaned GridFS binaries deleted while recovering a stale operation, per operation", operation);
     }
 
+    void reassignmentCompleted() {
+        increment("vault_reassignment.completed", "Vault reassignment operations completed", "vault.reassign");
+    }
+
+    void reassignmentCleanupFailed() {
+        increment("vault_reassignment.cleanup_failed", "Vault reassignment PostgreSQL cleanup failures", "vault.reassign");
+    }
+
+    void reassignmentRecovered() {
+        increment("vault_reassignment.recovered", "Vault reassignment operations finalized by recovery", "vault.reassign");
+    }
+
     private void increment(String name, String description, String operation) {
         Counter.builder(name)
                 .tag("operation", operation)

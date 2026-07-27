@@ -18,6 +18,12 @@ public interface VaultDocumentRepository extends MongoRepository<VaultDocument, 
 
     Page<VaultDocument> findByUserIdOrderByCapturedAtDesc(Long userId, Pageable pageable);
 
+    Page<VaultDocument> findByUserIdAndTypeOrderByCapturedAtDesc(
+            Long userId, VaultDocumentType type, Pageable pageable);
+
+    Page<VaultDocument> findByUserIdAndTypeAndAccountIdOrderByCapturedAtDesc(
+            Long userId, VaultDocumentType type, Long accountId, Pageable pageable);
+
     Optional<VaultDocument> findByIdAndUserIdAndStatus(String id, Long userId, VaultDocumentStatus status);
 
     boolean existsByTransactionIdAndUserId(Long transactionId, Long userId);
