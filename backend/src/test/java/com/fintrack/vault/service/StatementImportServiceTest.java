@@ -4,7 +4,6 @@ import com.fintrack.audit.support.AuditReplaySignal;
 import com.fintrack.common.domain.TransactionType;
 import com.fintrack.common.exception.ConflictException;
 import com.fintrack.common.exception.ResourceNotFoundException;
-import com.fintrack.transaction.repository.TransactionRepository;
 import com.fintrack.transaction.service.TransactionService;
 import com.fintrack.vault.domain.VaultDocument;
 import com.fintrack.vault.domain.VaultDocumentStatus;
@@ -58,7 +57,6 @@ class StatementImportServiceTest {
     @Mock CsvStatementParser csvParser;
     @Mock OfxStatementParser ofxParser;
     @Mock TransactionService transactionService;
-    @Mock TransactionRepository transactionRepository;
     @Mock com.fintrack.category.repository.CategoryRepository categoryRepository;
     @Mock MongoTemplate mongoTemplate;
 
@@ -73,7 +71,6 @@ class StatementImportServiceTest {
                 csvParser,
                 ofxParser,
                 transactionService,
-                transactionRepository,
                 categoryRepository,
                 new com.fintrack.idempotency.service.IdempotencyKeyValidator(),
                 new com.fintrack.idempotency.service.IdempotencyHasher(),

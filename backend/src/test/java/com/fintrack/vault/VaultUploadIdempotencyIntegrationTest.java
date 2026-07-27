@@ -42,6 +42,8 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -152,6 +154,47 @@ class VaultUploadIdempotencyIntegrationTest {
                         .param("accountId", secondOwnerAccountId)
                         .header("Authorization", "Bearer " + ownerJwt))
                 .andExpect(status().isConflict());
+    }
+
+    @Test
+    void overallReceiptListing_andReassignment_keepBinaryAndSupportReplay() throws Exception {
+        String email = "vault.receipt.reassign@test.com";
+        String jwt = register(email);
+        Long userId = userIdOf(email);
+        String sourceAccountId = HttpTestHelper.createAccount(mockMvc, objectMapper, jwt, "USD");
+        String targetAccountId = HttpTestHelper.createAccount(mockMvc, objectMapper, jwt, "EUR");
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "receipt-to-move.jpg", MediaType.IMAGE_JPEG_VALUE, "receipt-to-move".getBytes(StandardCharsets.UTF_8));
+
+        MvcResult upload = mockMvc.perform(multipart("/api/vault/upload").file(file)
+                        .param("type", "RECEIPT").param("accountId", sourceAccountId)
+                        .header("Authorization", "Bearer " + jwt)
+                        .header("Idempotency-Key", "receipt-reassign-upload-0123"))
+                .andExpect(status().isCreated()).andReturn();
+        String documentId = objectMapper.readTree(upload.getResponse().getContentAsString()).get("id").asText();
+
+        mockMvc.perform(get("/api/vault").param("type", "RECEIPT")
+                        .header("Authorization", "Bearer " + jwt))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value(documentId))
+                .andExpect(jsonPath("$.content[0].accountId").value(Long.parseLong(sourceAccountId)));
+
+        String moveKey = "receipt-reassign-key-012345";
+        mockMvc.perform(post("/api/vault/" + documentId + "/reassign")
+                        .header("Authorization", "Bearer " + jwt)
+                        .header("Idempotency-Key", moveKey)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"targetAccountId\":" + targetAccountId + "}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.document.accountId").value(Long.parseLong(targetAccountId)))
+                .andExpect(jsonPath("$.removedImportedTransactions").value(0));
+        mockMvc.perform(post("/api/vault/" + documentId + "/reassign")
+                        .header("Authorization", "Bearer " + jwt)
+                        .header("Idempotency-Key", moveKey)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"targetAccountId\":" + targetAccountId + "}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.replayed").value(true));
+        assertThat(countGridFsFilesForUser(userId)).isEqualTo(1);
     }
 
     // ── sequential replay ───────────────────────────────────────────────────────
