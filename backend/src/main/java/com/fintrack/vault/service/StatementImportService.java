@@ -9,7 +9,6 @@ import com.fintrack.idempotency.exception.IdempotencyConflictException;
 import com.fintrack.idempotency.service.IdempotencyHasher;
 import com.fintrack.idempotency.service.IdempotencyKeyValidator;
 import com.fintrack.transaction.domain.Transaction;
-import com.fintrack.transaction.repository.TransactionRepository;
 import com.fintrack.transaction.service.TransactionService;
 import com.fintrack.transaction.web.dto.CreateTransactionRequest;
 import com.fintrack.transaction.web.dto.TransactionResponse;
@@ -75,7 +74,6 @@ public class StatementImportService {
     private final CsvStatementParser csvParser;
     private final OfxStatementParser ofxParser;
     private final TransactionService transactionService;
-    private final TransactionRepository transactionRepository;
     private final CategoryRepository categoryRepository;
     private final IdempotencyKeyValidator keyValidator;
     private final IdempotencyHasher hasher;
@@ -111,6 +109,7 @@ public class StatementImportService {
         if (doc.getType() != VaultDocumentType.STATEMENT) {
             throw ResourceNotFoundException.of("UploadedStatement", documentId);
         }
+        vaultService.assertNotReassigning(doc);
         if (doc.getStatus() == VaultDocumentStatus.CONFIRMING || doc.getStatus() == VaultDocumentStatus.ACTIVE) {
             throw new com.fintrack.common.exception.ConflictException(
                     "Statement has already been confirmed and cannot be re-parsed");
@@ -155,6 +154,7 @@ public class StatementImportService {
         VaultDocument doc = vaultDocumentRepository
                 .findByIdAndUserIdAndStatus(documentId, userId, VaultDocumentStatus.STAGED)
                 .orElseThrow(() -> ResourceNotFoundException.of("StagedStatement", documentId));
+        vaultService.assertNotReassigning(doc);
 
         List<Map<String, Object>> rows =
                 (List<Map<String, Object>>) doc.getPayload().get("rows");
@@ -212,6 +212,7 @@ public class StatementImportService {
 
         VaultDocument doc = vaultDocumentRepository.findByIdAndUserId(documentId, userId)
                 .orElseThrow(() -> ResourceNotFoundException.of("StagedStatement", documentId));
+        vaultService.assertNotReassigning(doc);
 
         return resolveConfirmation(doc, userId, documentId, req, keyHash, requestHash);
     }
@@ -399,7 +400,7 @@ public class StatementImportService {
             try {
                 // dedupKey (import_dedup_key) — the sole signal for re-import dedup; passed
                 // separately since CreateTransactionRequest carries no import fingerprint field.
-                created = transactionService.createWithImportDedupKey(userId, txReq, dedupKey);
+                created = transactionService.createWithImportMetadata(userId, txReq, dedupKey, documentId);
             } catch (DataIntegrityViolationException e) {
                 if (isDedupConstraintViolation(e)) {
                     log.debug("Skipping duplicate row with dedup key {}", dedupKey);
@@ -408,7 +409,6 @@ public class StatementImportService {
                 return RowOutcome.failed(rootMessage(e));
             }
 
-            linkSourceDocument(created.id(), documentId);
             return RowOutcome.created(created.id());
         } catch (RuntimeException e) {
             return RowOutcome.failed(rootMessage(e));
@@ -432,17 +432,6 @@ public class StatementImportService {
         return message == null || message.isBlank() ? e.getClass().getSimpleName() : message;
     }
 
-    /**
-     * {@code TransactionService.createWithImportDedupKey} has no source-document parameter (it is
-     * shared, unmodified idempotency infrastructure), so the link is recorded with a direct
-     * follow-up save instead.
-     */
-    private void linkSourceDocument(Long transactionId, String documentId) {
-        transactionRepository.findById(transactionId).ifPresent(t -> {
-            t.setSourceDocumentId(documentId);
-            transactionRepository.save(t);
-        });
-    }
 
     private ConfirmImportResponse buildResponse(VaultDocument doc, List<ConfirmImportRequest.ConfirmRow> selectedRows) {
         Map<String, RowOutcome> outcomes = doc.getConfirmationRowOutcomes() == null

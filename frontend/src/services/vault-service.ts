@@ -19,6 +19,28 @@ export interface VaultDocument {
   ingestionStatus?: AgentRunStatus | null;
 }
 
+export interface VaultReassignmentPreview {
+  documentId: string;
+  type: VaultDocumentType;
+  originalFilename?: string;
+  sourceAccountId?: number;
+  sourceAccountName?: string;
+  sourceCurrency?: string;
+  targetAccountId: number;
+  targetAccountName: string;
+  targetCurrency: string;
+  currencyChanged: boolean;
+  importedTransactionCount: number;
+  detachManualLink: boolean;
+}
+
+export interface VaultReassignmentResult {
+  document: VaultDocument;
+  removedImportedTransactions: number;
+  manualLinkDetached: boolean;
+  replayed: boolean;
+}
+
 export interface StagedRow {
   date: string;
   amount: string;
@@ -69,6 +91,20 @@ export const vaultService = {
     return data;
   },
 
+  /** Lists one document type overall, or narrowed to one account when accountId is supplied. */
+  async listByType(
+    type: VaultDocumentType,
+    accountId?: number,
+    page = 0,
+    size = 20
+  ): Promise<PageResponse<VaultDocument>> {
+    const { data } = await apiClient.get<PageResponse<VaultDocument>>("/vault", {
+      baseURL: VAULT_BASE_URL,
+      params: { type, ...(accountId == null ? {} : { accountId }), page, size },
+    });
+    return data;
+  },
+
   /** Lists vault documents for one account and type — backs the per-account Statement/Receipt tabs. */
   async listByAccount(
     accountId: number,
@@ -80,6 +116,27 @@ export const vaultService = {
       baseURL: VAULT_BASE_URL,
       params: { accountId, type, page, size },
     });
+    return data;
+  },
+
+  async previewReassignment(documentId: string, targetAccountId: number): Promise<VaultReassignmentPreview> {
+    const { data } = await apiClient.get<VaultReassignmentPreview>(
+      `/vault/${documentId}/reassignment-preview`,
+      { baseURL: VAULT_BASE_URL, params: { targetAccountId } }
+    );
+    return data;
+  },
+
+  async reassign(
+    documentId: string,
+    targetAccountId: number,
+    idempotencyKey: string
+  ): Promise<VaultReassignmentResult> {
+    const { data } = await apiClient.post<VaultReassignmentResult>(
+      `/vault/${documentId}/reassign`,
+      { targetAccountId },
+      { baseURL: VAULT_BASE_URL, headers: { "Idempotency-Key": idempotencyKey } }
+    );
     return data;
   },
 

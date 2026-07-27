@@ -117,6 +117,13 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "invalidatedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "invalidationReason" : {
+            "type" : "string"
+          },
           "proposals" : {
             "items" : {
               "$ref" : "#/components/schemas/ProposalDto"
@@ -127,7 +134,7 @@
             "type" : "boolean"
           },
           "status" : {
-            "enum" : [ "EXTRACTING", "AWAITING_REVIEW", "COMMITTED", "REJECTED", "FAILED" ],
+            "enum" : [ "EXTRACTING", "AWAITING_REVIEW", "COMMITTED", "REJECTED", "FAILED", "INVALIDATED" ],
             "type" : "string"
           },
           "updatedAt" : {
@@ -151,7 +158,7 @@
             "type" : "integer"
           },
           "status" : {
-            "enum" : [ "EXTRACTING", "AWAITING_REVIEW", "COMMITTED", "REJECTED", "FAILED" ],
+            "enum" : [ "EXTRACTING", "AWAITING_REVIEW", "COMMITTED", "REJECTED", "FAILED", "INVALIDATED" ],
             "type" : "string"
           },
           "updatedAt" : {
@@ -1530,7 +1537,7 @@
             "type" : "string"
           },
           "ingestionStatus" : {
-            "enum" : [ "EXTRACTING", "AWAITING_REVIEW", "COMMITTED", "REJECTED", "FAILED" ],
+            "enum" : [ "EXTRACTING", "AWAITING_REVIEW", "COMMITTED", "REJECTED", "FAILED", "INVALIDATED" ],
             "type" : "string"
           },
           "originalFilename" : {
@@ -1556,6 +1563,79 @@
           "type" : {
             "enum" : [ "RECEIPT", "STATEMENT" ],
             "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "VaultReassignmentPreviewResponse" : {
+        "properties" : {
+          "currencyChanged" : {
+            "type" : "boolean"
+          },
+          "detachManualLink" : {
+            "type" : "boolean"
+          },
+          "documentId" : {
+            "type" : "string"
+          },
+          "importedTransactionCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "originalFilename" : {
+            "type" : "string"
+          },
+          "sourceAccountId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "sourceAccountName" : {
+            "type" : "string"
+          },
+          "sourceCurrency" : {
+            "type" : "string"
+          },
+          "targetAccountId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "targetAccountName" : {
+            "type" : "string"
+          },
+          "targetCurrency" : {
+            "type" : "string"
+          },
+          "type" : {
+            "enum" : [ "RECEIPT", "STATEMENT" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "VaultReassignmentRequest" : {
+        "properties" : {
+          "targetAccountId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "targetAccountId" ],
+        "type" : "object"
+      },
+      "VaultReassignmentResponse" : {
+        "properties" : {
+          "document" : {
+            "$ref" : "#/components/schemas/VaultDocumentResponse"
+          },
+          "manualLinkDetached" : {
+            "type" : "boolean"
+          },
+          "removedImportedTransactions" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "replayed" : {
+            "type" : "boolean"
           }
         },
         "type" : "object"
@@ -3457,6 +3537,22 @@
         "operationId" : "list",
         "parameters" : [ {
           "in" : "query",
+          "name" : "type",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "RECEIPT", "STATEMENT" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountId",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
           "name" : "pageable",
           "required" : true,
           "schema" : {
@@ -3893,6 +3989,13 @@
             "format" : "int64",
             "type" : "integer"
           }
+        }, {
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
         } ],
         "responses" : {
           "200" : {
@@ -3969,6 +4072,83 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/VaultDocumentResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "vault-controller" ]
+      }
+    },
+    "/api/vault/{id}/reassign" : {
+      "post" : {
+        "operationId" : "reassign",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VaultReassignmentRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VaultReassignmentResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "vault-controller" ]
+      }
+    },
+    "/api/vault/{id}/reassignment-preview" : {
+      "get" : {
+        "operationId" : "reassignmentPreview",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "targetAccountId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VaultReassignmentPreviewResponse"
                 }
               }
             },

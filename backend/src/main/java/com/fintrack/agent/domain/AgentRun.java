@@ -63,6 +63,12 @@ public class AgentRun {
     @Column(name = "created_transaction_ids", columnDefinition = "jsonb")
     private List<Long> createdTransactionIds;
 
+    @Column(name = "invalidated_at")
+    private Instant invalidatedAt;
+
+    @Column(name = "invalidation_reason", length = 2000)
+    private String invalidationReason;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

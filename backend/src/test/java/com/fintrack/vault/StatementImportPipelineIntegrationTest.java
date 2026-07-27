@@ -317,4 +317,67 @@ class StatementImportPipelineIntegrationTest {
                         .get("currentBalance").asText());
         assertThat(balance).isEqualByComparingTo(new BigDecimal("475.00"));
     }
+
+    @Test
+    void overallListing_andStatementReassignment_removesImportedRowsKeepsBinaryAndReplays() throws Exception {
+        String jwt = HttpTestHelper.registerAndLogin(mockMvc, objectMapper, "vault.reassign.statement@test.com");
+        String sourceAccountId = HttpTestHelper.createAccount(mockMvc, objectMapper, jwt, "USD");
+        String targetAccountId = HttpTestHelper.createAccount(mockMvc, objectMapper, jwt, "EUR");
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "move-me.csv", MediaType.TEXT_PLAIN_VALUE, VALID_CSV.getBytes(StandardCharsets.UTF_8));
+
+        MvcResult uploadResult = mockMvc.perform(multipart("/api/vault/import/upload")
+                        .file(file).param("accountId", sourceAccountId)
+                        .header("Authorization", "Bearer " + jwt)
+                        .header("Idempotency-Key", "statement-reassign-upload-0123"))
+                .andExpect(status().isCreated()).andReturn();
+        String documentId = objectMapper.readTree(uploadResult.getResponse().getContentAsString())
+                .get("documentId").asText();
+        mockMvc.perform(post("/api/vault/import/" + documentId + "/parse")
+                        .header("Authorization", "Bearer " + jwt)).andExpect(status().isOk());
+        JsonNode rows = objectMapper.readTree(mockMvc.perform(get("/api/vault/import/" + documentId + "/rows")
+                        .header("Authorization", "Bearer " + jwt)).andReturn().getResponse().getContentAsString());
+        java.util.List<String> keys = new java.util.ArrayList<>();
+        rows.forEach(row -> keys.add(row.get("dedupKey").asText()));
+        mockMvc.perform(post("/api/vault/import/" + documentId + "/confirm")
+                        .header("Authorization", "Bearer " + jwt)
+                        .header("Idempotency-Key", "statement-reassign-confirm-0123")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(confirmBody(keys))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.created").value(2));
+
+        mockMvc.perform(get("/api/vault").param("type", "STATEMENT")
+                        .header("Authorization", "Bearer " + jwt))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value(documentId))
+                .andExpect(jsonPath("$.content[0].accountId").value(Long.parseLong(sourceAccountId)));
+
+        String moveKey = "statement-reassign-key-012345";
+        mockMvc.perform(post("/api/vault/" + documentId + "/reassign")
+                        .header("Authorization", "Bearer " + jwt)
+                        .header("Idempotency-Key", moveKey)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"targetAccountId\":" + targetAccountId + "}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.document.accountId").value(Long.parseLong(targetAccountId)))
+                .andExpect(jsonPath("$.document.status").value("UPLOADED"))
+                .andExpect(jsonPath("$.removedImportedTransactions").value(2))
+                .andExpect(jsonPath("$.replayed").value(false));
+
+        mockMvc.perform(post("/api/vault/" + documentId + "/reassign")
+                        .header("Authorization", "Bearer " + jwt)
+                        .header("Idempotency-Key", moveKey)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"targetAccountId\":" + targetAccountId + "}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.replayed").value(true));
+
+        mockMvc.perform(get("/api/v1/transactions").header("Authorization", "Bearer " + jwt))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content").isEmpty());
+        mockMvc.perform(get("/api/vault/" + documentId + "/download")
+                        .header("Authorization", "Bearer " + jwt))
+                .andExpect(status().isOk());
+        String otherJwt = HttpTestHelper.registerAndLogin(mockMvc, objectMapper, "vault.reassign.statement.other@test.com");
+        mockMvc.perform(get("/api/vault/" + documentId).header("Authorization", "Bearer " + otherJwt))
+                .andExpect(status().isNotFound());
+    }
 }

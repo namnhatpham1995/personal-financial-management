@@ -131,6 +131,13 @@ export default function ReceiptRunDetailPage({ params }: { params: { id: string 
             </div>
           )}
 
+          {run.status === "INVALIDATED" && (
+            <div className="rounded-lg border border-orange-500/20 bg-orange-500/5 p-4 text-sm">
+              <p className="font-medium text-orange-600 dark:text-orange-400">{t("detail.invalidatedReason")}</p>
+              <p className="text-muted-foreground">{run.invalidationReason}</p>
+            </div>
+          )}
+
           {(run.status === "AWAITING_REVIEW" || run.status === "COMMITTED" || run.status === "REJECTED") &&
             proposals.length > 0 && (
               <div className="space-y-3">
@@ -198,6 +205,7 @@ function StatusBadge({ status, label }: { status: string; label: string }) {
     COMMITTED: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
     REJECTED: "bg-secondary text-muted-foreground",
     FAILED: "bg-destructive/10 text-destructive",
+    INVALIDATED: "bg-orange-500/10 text-orange-600 dark:text-orange-400",
   };
   return (
     <span className={cn("inline-flex rounded-full px-3 py-1 text-xs font-medium", cls[status])}>

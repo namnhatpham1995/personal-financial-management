@@ -77,4 +77,9 @@ public class VaultDocument {
      * confirmation never reprocesses an already-decided row.
      */
     private Map<String, RowOutcome> confirmationRowOutcomes;
+
+    /** Durable claim id while a cross-database account reassignment is in progress. */
+    private String reassignmentOperationId;
+
+    private Instant reassignmentStartedAt;
 }

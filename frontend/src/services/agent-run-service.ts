@@ -1,6 +1,12 @@
 import { apiClient } from "@/lib/api-client";
 
-export type AgentRunStatus = "EXTRACTING" | "AWAITING_REVIEW" | "COMMITTED" | "REJECTED" | "FAILED";
+export type AgentRunStatus =
+  | "EXTRACTING"
+  | "AWAITING_REVIEW"
+  | "COMMITTED"
+  | "REJECTED"
+  | "FAILED"
+  | "INVALIDATED";
 
 export interface AgentRunSummary {
   id: number;
@@ -40,6 +46,8 @@ export interface AgentRunDetail {
   failureReason: string | null;
   retryable: boolean;
   createdTransactionIds: number[] | null;
+  invalidatedAt: string | null;
+  invalidationReason: string | null;
   createdAt: string;
   updatedAt: string;
 }

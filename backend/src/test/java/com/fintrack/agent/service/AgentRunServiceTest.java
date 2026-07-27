@@ -31,6 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -168,6 +169,20 @@ class AgentRunServiceTest {
         assertThat(captor.getValue().getAccount()).isEqualTo(account);
     }
 
+    @Test
+    void invalidateRunsForReassignment_makesMatchingRunTerminalAndRejectsLateCommit() {
+        AgentRun run = runInStatusWithAccount(AgentRunStatus.AWAITING_REVIEW, 7L);
+        when(agentRunRepository.findByVaultDocumentIdAndUser_Id("doc-1", USER_ID)).thenReturn(List.of(run));
+        when(agentRunRepository.findByIdAndUser_Id(10L, USER_ID)).thenReturn(Optional.of(run));
+        when(agentRunRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        assertThat(service.invalidateRunsForReassignment(USER_ID, "doc-1", 7L, "moved")).isEqualTo(1);
+        assertThat(run.getStatus()).isEqualTo(AgentRunStatus.INVALIDATED);
+        assertThat(run.getInvalidatedAt()).isBeforeOrEqualTo(Instant.now());
+        assertThat(run.getInvalidationReason()).isEqualTo("moved");
+        assertThatThrownBy(() -> service.commit(USER_ID, 10L)).isInstanceOf(ConflictException.class);
+    }
+
     // ── submitProposals: deterministic validation ───────────────────────────
 
     @Test
@@ -251,7 +266,7 @@ class AgentRunServiceTest {
         when(agentServiceClient.isConfigured()).thenReturn(true);
         when(categoryService.findVisibleOrThrow(eq(USER_ID), any())).thenAnswer(inv ->
                 Category.builder().id(inv.getArgument(1)).build());
-        when(transactionService.createWithImportDedupKey(eq(USER_ID), any(), any())).thenReturn(
+        when(transactionService.createWithImportMetadata(eq(USER_ID), any(), any(), any())).thenReturn(
                 new TransactionResponse(501L, null, null, null, null, null, null, null, null,
                         null, null, null, null, null, null, null, null, null, List.of()));
         when(agentRunRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -266,7 +281,7 @@ class AgentRunServiceTest {
         assertThat(result.accountId()).isEqualTo(7L);
         ArgumentCaptor<com.fintrack.transaction.web.dto.CreateTransactionRequest> txCaptor =
                 ArgumentCaptor.forClass(com.fintrack.transaction.web.dto.CreateTransactionRequest.class);
-        verify(transactionService).createWithImportDedupKey(eq(USER_ID), txCaptor.capture(), any());
+        verify(transactionService).createWithImportMetadata(eq(USER_ID), txCaptor.capture(), any(), eq("doc-1"));
         assertThat(txCaptor.getValue().accountId()).isEqualTo(7L);
     }
 
@@ -287,7 +302,7 @@ class AgentRunServiceTest {
         when(accountRepository.findByIdAndUserId(7L, USER_ID)).thenReturn(Optional.of(account));
         when(categoryService.findVisibleOrThrow(eq(USER_ID), any())).thenAnswer(inv ->
                 Category.builder().id(inv.getArgument(1)).build());
-        when(transactionService.createWithImportDedupKey(eq(USER_ID), any(), any())).thenReturn(
+        when(transactionService.createWithImportMetadata(eq(USER_ID), any(), any(), any())).thenReturn(
                 new TransactionResponse(501L, null, null, null, null, null, null, null, null,
                         null, null, null, null, null, null, null, null, null, List.of()));
         when(agentRunRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -299,7 +314,7 @@ class AgentRunServiceTest {
         assertThat(result.accountId()).isEqualTo(7L);
         ArgumentCaptor<com.fintrack.transaction.web.dto.CreateTransactionRequest> txCaptor =
                 ArgumentCaptor.forClass(com.fintrack.transaction.web.dto.CreateTransactionRequest.class);
-        verify(transactionService).createWithImportDedupKey(eq(USER_ID), txCaptor.capture(), any());
+        verify(transactionService).createWithImportMetadata(eq(USER_ID), txCaptor.capture(), any(), eq("doc-1"));
         assertThat(txCaptor.getValue().accountId()).isEqualTo(7L);
         verify(agentRunRepository, atLeastOnce()).save(run);
     }

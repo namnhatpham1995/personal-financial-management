@@ -18,6 +18,8 @@ public record AgentRunDetailResponse(
         String failureReason,
         boolean retryable,
         List<Long> createdTransactionIds,
+        Instant invalidatedAt,
+        String invalidationReason,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -32,6 +34,8 @@ public record AgentRunDetailResponse(
                 run.getFailureReason(),
                 run.isRetryable(),
                 run.getCreatedTransactionIds(),
+                run.getInvalidatedAt(),
+                run.getInvalidationReason(),
                 run.getCreatedAt(),
                 run.getUpdatedAt());
     }

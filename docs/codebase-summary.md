@@ -16,6 +16,7 @@
 - `V1__baseline_schema.sql` — full schema: users, roles, accounts, categories, transactions, budgets, recurring_transactions
 - `V2__seed_roles_and_default_categories.sql` — ROLE_USER, ROLE_ADMIN, 13 expense + 7 income system categories
 - `V3__rename_other_default_categories.sql` — renames "Other Income"/"Other Expense" defaults to "Other" (type field distinguishes them)
+- `V19__add_agent_run_invalidation.sql` — records terminal receipt-run invalidation timestamps and reasons during safe Vault reassignment
 
 ### Feature Modules
 
@@ -29,7 +30,8 @@
 | budget | `BudgetController` → `BudgetService` | Real-time progress via `sumSpentInPeriod()` |
 | recurring | `RecurringTransactionController` + `RecurringTransactionScheduler` + `RecurringOccurrenceProcessor` | Daily scheduler, per-occurrence `@Transactional` boundary, idempotent via unique constraint; no destination-account field, so recurring TRANSFER is same-currency by construction |
 | analytics | `AnalyticsController` → `AnalyticsService` | Per-currency analytics, converted balance summaries, budget progress; JPQL queries in `AnalyticsRepository` |
-| agent | `AgentRunController` → `AgentRunService` | Receipt ingestion run lifecycle (`agent_run` table); agent-token endpoints (`/proposals`, `/commit`, `/fail`) authenticated by `AgentAuthenticationFilter`/`AgentEndpointPolicy`; see `docs/system-architecture.md#receipt-ingestion-agent` |
+| agent | `AgentRunController` → `AgentRunService` | Receipt ingestion run lifecycle (`agent_run` table), including terminal `INVALIDATED` runs; agent-token endpoints (`/proposals`, `/commit`, `/fail`) authenticated by `AgentAuthenticationFilter`/`AgentEndpointPolicy`; see `docs/system-architecture.md#receipt-ingestion-agent` |
+| vault reassignment | `VaultReassignmentService` + `VaultReassignmentRecoveryScheduler` | Type-first all-account listing, preview/execute move workflow, PostgreSQL import cleanup before Mongo finalization, idempotent replay, stale recovery |
 
 ### Common Infrastructure
 - `JwtAuthenticationFilter` — extract Bearer, validate, set SecurityContext
@@ -66,6 +68,10 @@
 | `src/app/dashboard/settings/page.tsx` | Settings landing page: language switcher (backend-synced) + link to API Tokens |
 | `messages/{en,vi,de,zh}.json` | Translation message files, one per locale, namespaced by feature |
 | `src/services/agent-run-service.ts` | Typed API service for `/agent-runs` (start, list, detail, decision) |
+| `src/services/vault-service.ts` | Type-first Vault listing, upload/import operations, reassignment preview and idempotent execute |
+| `src/components/vault/statement-tab.tsx` | Overall statement list, account filter, upload destination, import flow, move actions |
+| `src/components/vault/receipt-tab.tsx` | Overall receipt list, account filter, upload destination, ingestion status, move actions |
+| `src/components/vault/vault-reassignment-dialog.tsx` | Shared localized impact preview and explicit file move confirmation |
 | `src/app/dashboard/receipts/page.tsx` | Ingestion runs list — `AWAITING_REVIEW` prioritized, empty/loading/unavailable/error states |
 | `src/app/dashboard/receipts/[id]/page.tsx` | Review detail: proposed transactions with inline edit, flags, approve/reject |
 

@@ -191,6 +191,40 @@ class VaultServiceTest {
     }
 
     @Test
+    void listByType_withoutAccount_returnsOverallTypePage() {
+        VaultDocument statement = makeDoc("statement-1", 1L);
+        statement.setType(VaultDocumentType.STATEMENT);
+        var pageable = PageRequest.of(0, 10);
+        when(vaultDocumentRepository.findByUserIdAndTypeOrderByCapturedAtDesc(
+                1L, VaultDocumentType.STATEMENT, pageable))
+                .thenReturn(new PageImpl<>(List.of(statement), pageable, 1));
+
+        var page = vaultService.listByType(1L, VaultDocumentType.STATEMENT, null, pageable);
+
+        assertThat(page.getContent()).singleElement().extracting(VaultDocumentResponse::id)
+                .isEqualTo("statement-1");
+        verify(vaultDocumentRepository).findByUserIdAndTypeOrderByCapturedAtDesc(
+                1L, VaultDocumentType.STATEMENT, pageable);
+        verify(accountService, never()).findOwned(anyLong(), anyLong());
+    }
+
+    @Test
+    void listByType_withAccount_validatesOwnershipAndScopesPage() {
+        VaultDocument receipt = makeDoc("receipt-1", 1L);
+        receipt.setAccountId(10L);
+        var pageable = PageRequest.of(0, 10);
+        when(vaultDocumentRepository.findByUserIdAndTypeAndAccountIdOrderByCapturedAtDesc(
+                1L, VaultDocumentType.RECEIPT, 10L, pageable))
+                .thenReturn(new PageImpl<>(List.of(receipt), pageable, 1));
+
+        var page = vaultService.listByType(1L, VaultDocumentType.RECEIPT, 10L, pageable);
+
+        assertThat(page.getContent()).singleElement().extracting(VaultDocumentResponse::accountId)
+                .isEqualTo(10L);
+        verify(accountService).findOwned(1L, 10L);
+    }
+
+    @Test
     void listUnassignedReceipts_surfacesLegacyAccountlessReceipts() {
         VaultDocument legacyReceipt = makeDoc("legacy-receipt", 1L);
         var pageable = PageRequest.of(0, 10);

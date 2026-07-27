@@ -210,12 +210,25 @@ Daily at 01:00 UTC (`@Scheduled(cron="0 0 1 * * *")`):
 The vault is a polyglot persistence layer that stores financial documents alongside the relational core.
 
 **Receipt flow:**
-1. User uploads image/PDF → `POST /api/vault/upload?type=RECEIPT`
-2. Binary stored in GridFS; `VaultDocument` created in MongoDB (status: `ACTIVE`)
-3. User links to an existing transaction → `PATCH /api/vault/{id}/link?transactionId=...`
-4. Transaction row gains `source_document_id`; `VaultDocument.transactionId` is set (bidirectional)
+1. User uploads image/PDF → `POST /api/vault/upload?type=RECEIPT&accountId=...`
+2. Binary stored in GridFS; `VaultDocument` created in MongoDB (status: `UPLOADED`)
+3. The Vault overview lists all receipts with their owning account; an optional `accountId` query
+   narrows the same type-first page. Legacy account-less receipts remain visible as `Unassigned`.
+4. User links to an existing transaction → `PATCH /api/vault/{id}/link?transactionId=...`
 
-**Legacy receipt recovery:** a small set of receipts predates required account assignment. They remain recoverable through the owner-scoped `GET /api/vault/unassigned-receipts` listing, which only returns unassigned receipt documents. The user must pick one of their own accounts and bind it once via `PATCH /api/vault/{id}/account?accountId=...`. That assignment is atomic and one-time: once a receipt has an account, it cannot be moved to another one. The backend does not attempt arbitrary automatic backfill for these legacy receipts because they do not carry a trustworthy source account.
+**Legacy receipt recovery:** the compatibility `GET /api/vault/unassigned-receipts` and one-time
+`PATCH /api/vault/{id}/account?accountId=...` routes remain available. New UI flows use the shared
+reassignment preview/execute workflow, so assigned and legacy rows have the same safe move behavior.
+
+**Account reassignment:** `GET /api/vault/{id}/reassignment-preview?targetAccountId=...` reports the
+source/target accounts, currency changes, imported transaction count, and manual-link impact.
+`POST /api/vault/{id}/reassign` requires an `Idempotency-Key`. A Mongo claim serializes competing
+mutations, then a PostgreSQL transaction locks and removes all transactions proven to originate from
+the document (source-document id, statement row outcomes/dedup keys, and receipt-run ids/prefixes),
+reverses balances once, and marks related receipt runs `INVALIDATED`. Mongo finalization follows:
+the binary is retained, incompatible manual links are cleared, and statement payload/confirmation
+state returns to `UPLOADED`. Same-key retries replay the result; stale processing claims are resumed
+by a bounded ShedLock scheduler.
 
 **Statement import flow:**
 1. User uploads CSV or OFX file → `POST /api/vault/import/upload?accountId=...`
@@ -225,6 +238,11 @@ The vault is a polyglot persistence layer that stores financial documents alongs
 5. Each selected row inserted as a PostgreSQL transaction via `TransactionService` with a SHA-256 `importDedupKey`
 6. Partial unique index on `transactions.import_dedup_key WHERE NOT NULL` silently skips duplicates on re-import
 7. MongoDB document promoted to `ACTIVE`
+
+Import-created transactions persist both `import_dedup_key` and `source_document_id` atomically.
+Receipt agent runs retain their created transaction ids and are marked `INVALIDATED` (with timestamp
+and reason) when their source file moves, preserving an audit-visible history while preventing late
+callbacks from committing against the old account.
 
 **Cross-user isolation:** All repository queries include `userId` (Mongo: `findByIdAndUserId`; GridFS: metadata field).
 

@@ -104,6 +104,21 @@ public class VaultService {
         return page.map(doc -> toResponse(doc, statuses.get(doc.getId())));
     }
 
+    /** Lists one document type overall or narrowed to one owned account. */
+    public Page<VaultDocumentResponse> listByType(Long userId, VaultDocumentType type, Long accountId,
+                                                   Pageable pageable) {
+        accountIdBackfillService.ensureBackfillOnce();
+        if (accountId != null) {
+            accountService.findOwned(userId, accountId);
+        }
+        Page<VaultDocument> page = accountId == null
+                ? vaultDocumentRepository.findByUserIdAndTypeOrderByCapturedAtDesc(userId, type, pageable)
+                : vaultDocumentRepository.findByUserIdAndTypeAndAccountIdOrderByCapturedAtDesc(
+                        userId, type, accountId, pageable);
+        Map<String, AgentRunStatus> statuses = latestIngestionStatuses(userId, page.getContent());
+        return page.map(doc -> toResponse(doc, statuses.get(doc.getId())));
+    }
+
     /** Lists a user's vault documents for one account and type — backs the per-account Statement/Receipt tabs. */
     public Page<VaultDocumentResponse> listByAccount(Long userId, Long accountId, VaultDocumentType type, Pageable pageable) {
         accountIdBackfillService.ensureBackfillOnce();
@@ -131,6 +146,7 @@ public class VaultService {
         accountService.findOwned(userId, accountId);
 
         VaultDocument current = findOwned(userId, id);
+        assertNotReassigning(current);
         if (current.getType() != VaultDocumentType.RECEIPT) {
             throw new ConflictException("Only receipt documents can be assigned through receipt recovery");
         }
@@ -189,6 +205,7 @@ public class VaultService {
     /** Link an existing vault document to a PostgreSQL transaction. */
     public VaultDocumentResponse linkToTransaction(Long userId, String id, Long transactionId) {
         VaultDocument doc = findOwned(userId, id);
+        assertNotReassigning(doc);
         doc.setTransactionId(transactionId);
         VaultDocument saved = vaultDocumentRepository.save(doc);
         return toResponse(saved, latestIngestionStatus(userId, saved.getId()));
@@ -205,6 +222,7 @@ public class VaultService {
 
     public void delete(Long userId, String id) {
         VaultDocument doc = findOwned(userId, id);
+        assertNotReassigning(doc);
         if (doc.getGridFsFileId() != null) {
             gridFsFileStore.delete(doc.getGridFsFileId());
         }
@@ -216,6 +234,13 @@ public class VaultService {
     VaultDocument findOwned(Long userId, String id) {
         return vaultDocumentRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> ResourceNotFoundException.of("VaultDocument", id));
+    }
+
+    void assertNotReassigning(VaultDocument doc) {
+        if (doc.getReassignmentOperationId() != null) {
+            throw new com.fintrack.common.exception.ConflictException(
+                    "Vault document is being reassigned; retry after the operation completes");
+        }
     }
 
     /**

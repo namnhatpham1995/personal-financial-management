@@ -14,6 +14,7 @@ const statusOrder: Record<AgentRunStatus, number> = {
   FAILED: 2,
   COMMITTED: 3,
   REJECTED: 4,
+  INVALIDATED: 5,
 };
 
 const statusBadgeClass: Record<AgentRunStatus, string> = {
@@ -22,6 +23,7 @@ const statusBadgeClass: Record<AgentRunStatus, string> = {
   COMMITTED: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
   REJECTED: "bg-secondary text-muted-foreground",
   FAILED: "bg-destructive/10 text-destructive",
+  INVALIDATED: "bg-orange-500/10 text-orange-600 dark:text-orange-400",
 };
 
 export default function ReceiptsPage() {

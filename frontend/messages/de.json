@@ -328,6 +328,38 @@
     },
     "account": "Konto",
     "selectAccount": "Konto auswählen…",
+    "accountFilter": "Dateien anzeigen für",
+    "allAccounts": "Alle Konten",
+    "uploadAccount": "Hochladen in Konto",
+    "selectAccountToUpload": "Wähle vor dem Hochladen ein Konto aus.",
+    "availableFiles": "Verfügbare Dateien",
+    "noUploaded": "Noch keine Kontoauszüge hochgeladen.",
+    "noReceipts": "Noch keine Belege.",
+    "loadFailed": "Tresordateien konnten nicht geladen werden. Versuche es erneut.",
+    "pagination": {
+      "prevAria": "Vorherige Seite",
+      "nextAria": "Nächste Seite",
+      "pageOf": "Seite {current} von {total}"
+    },
+    "unassigned": "Nicht zugeordnet",
+    "reassignment": {
+      "open": "Verschieben",
+      "title": "Datei in ein anderes Konto verschieben",
+      "description": "Wähle ein neues Konto für {fileName}.",
+      "close": "Schließen",
+      "targetAccount": "Neues Konto",
+      "selectTarget": "Konto auswählen...",
+      "loading": "Zugehörige Importe werden geprüft...",
+      "previewFailed": "Diese Verschiebung konnte nicht geprüft werden. Versuche es erneut.",
+      "imports": "{count, plural, =0 {Keine importierten Transaktionen werden entfernt} one {# importierte Transaktion wird entfernt} other {# importierte Transaktionen werden entfernt}}",
+      "detachLink": "Die manuell verknüpfte Transaktion wird getrennt.",
+      "currencyWarning": "Die Kontowährung ändert sich von {from} zu {to}. Prüfe die Datei nach dem Verschieben erneut.",
+      "rerunRequired": "Zugehörige Importe oder Belegläufe werden ungültig und müssen erneut geprüft werden.",
+      "cancel": "Abbrechen",
+      "moving": "Wird verschoben...",
+      "confirm": "Datei verschieben",
+      "toast": { "success": "Datei verschoben", "failed": "Datei konnte nicht verschoben werden" }
+    },
     "unassignedReceipts": {
       "title": "Nicht zugeordnete Belege",
       "body": "Diese Belege wurden hochgeladen, bevor eine Kontozuordnung erforderlich war. Wähle das richtige Konto, um sie wieder in der Kontoansicht anzuzeigen.",
@@ -493,7 +525,8 @@
       "AWAITING_REVIEW": "Prüfung ausstehend",
       "COMMITTED": "Abgeschlossen",
       "REJECTED": "Abgelehnt",
-      "FAILED": "Fehlgeschlagen"
+      "FAILED": "Fehlgeschlagen",
+      "INVALIDATED": "Prüfung erforderlich"
     },
     "table": {
       "receipt": "Beleg",
@@ -529,7 +562,8 @@
       "failureReason": "Fehlerursache",
       "retryHint": "Dieser Lauf ist fehlgeschlagen. Du kannst für diesen Beleg einen neuen Erfassungslauf im Tresor starten.",
       "retryableBadge": "Wiederholbar",
-      "notRetryableBadge": "Nicht wiederholbar"
+      "notRetryableBadge": "Nicht wiederholbar",
+      "invalidatedReason": "Dieser Lauf muss nach dem Verschieben der Datei erneut geprüft werden"
     },
     "toast": {
       "decisionFailed": "Entscheidung konnte nicht übermittelt werden — bitte erneut versuchen",
@@ -583,6 +617,10 @@
       "improved": "Verbessert"
     },
     "entries": {
+      "11": {
+        "title": "Eine vollständige Tresorübersicht",
+        "body": "Sieh alle Kontoauszüge und Belege über deine Konten hinweg, filtere nach Konto und verschiebe Dateien sicher in das richtige Konto."
+      },
       "1": {
         "title": "Budgets in mehreren Währungen",
         "body": "Legen Sie ein Budget in jeder Währung fest und sehen Sie es automatisch umgerechnet in Ihrer Dashboard-Übersicht, zusammen mit Ihren anderen Budgets."
@@ -655,7 +693,8 @@
       "AWAITING_REVIEW": "Prüfung ausstehend",
       "COMMITTED": "Abgeschlossen",
       "REJECTED": "Abgelehnt",
-      "FAILED": "Fehlgeschlagen"
+      "FAILED": "Fehlgeschlagen",
+      "INVALIDATED": "Prüfung erforderlich"
     }
   },
   "systemCategories": {

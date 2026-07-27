@@ -327,6 +327,41 @@
       "deleteFailed": "Delete failed"
     },
     "account": "Account",
+    "accountFilter": "Show files for",
+    "allAccounts": "All accounts",
+    "uploadAccount": "Upload to account",
+    "selectAccountToUpload": "Choose an account before uploading a file.",
+    "availableFiles": "Available files",
+    "noUploaded": "No uploaded statements yet.",
+    "noReceipts": "No receipts yet.",
+    "loadFailed": "Couldn't load Vault files. Please try again.",
+    "pagination": {
+      "prevAria": "Previous page",
+      "nextAria": "Next page",
+      "pageOf": "Page {current} of {total}"
+    },
+    "unassigned": "Unassigned",
+    "reassignment": {
+      "open": "Move",
+      "title": "Move file to another account",
+      "description": "Choose a new account for {fileName}.",
+      "close": "Close",
+      "targetAccount": "New account",
+      "selectTarget": "Select an account...",
+      "loading": "Checking related imports...",
+      "previewFailed": "Couldn't check this move. Please try again.",
+      "imports": "{count, plural, =0 {No imported transactions will be removed} one {# imported transaction will be removed} other {# imported transactions will be removed}}",
+      "detachLink": "The manually linked transaction will be detached.",
+      "currencyWarning": "The account currency changes from {from} to {to}. Review the file again after moving it.",
+      "rerunRequired": "Any related import or receipt run will be invalidated and must be reviewed again.",
+      "cancel": "Cancel",
+      "moving": "Moving...",
+      "confirm": "Move file",
+      "toast": {
+        "success": "File moved",
+        "failed": "Could not move file"
+      }
+    },
     "selectAccount": "Select account…",
     "unassignedReceipts": {
       "title": "Unassigned receipts",
@@ -493,7 +528,8 @@
       "AWAITING_REVIEW": "Awaiting review",
       "COMMITTED": "Committed",
       "REJECTED": "Rejected",
-      "FAILED": "Failed"
+      "FAILED": "Failed",
+      "INVALIDATED": "Needs review"
     },
     "table": {
       "receipt": "Receipt",
@@ -529,7 +565,8 @@
       "failureReason": "Failure reason",
       "retryHint": "This run failed. You can start a new ingestion run for this receipt from the Vault.",
       "retryableBadge": "Retryable",
-      "notRetryableBadge": "Not retryable"
+      "notRetryableBadge": "Not retryable",
+      "invalidatedReason": "This run needs review after the file moved"
     },
     "toast": {
       "decisionFailed": "Could not submit your decision — try again",
@@ -583,6 +620,10 @@
       "improved": "Improved"
     },
     "entries": {
+      "11": {
+        "title": "A complete Vault overview",
+        "body": "See every statement and receipt across your accounts, filter by account, and move a file safely when it belongs somewhere else."
+      },
       "1": {
         "title": "Multi-currency budgets",
         "body": "Set a budget in any currency and see it converted automatically on your dashboard overview, alongside your other budgets."
@@ -655,7 +696,8 @@
       "AWAITING_REVIEW": "Awaiting Review",
       "COMMITTED": "Committed",
       "REJECTED": "Rejected",
-      "FAILED": "Failed"
+      "FAILED": "Failed",
+      "INVALIDATED": "Needs review"
     }
   },
   "systemCategories": {

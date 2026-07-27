@@ -906,6 +906,38 @@ export interface paths {
         patch: operations["linkToTransaction"];
         trace?: never;
     };
+    "/api/vault/{id}/reassign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reassign"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vault/{id}/reassignment-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["reassignmentPreview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -957,10 +989,13 @@ export interface components {
             failureReason?: string;
             /** Format: int64 */
             id?: number;
+            /** Format: date-time */
+            invalidatedAt?: string;
+            invalidationReason?: string;
             proposals?: components["schemas"]["ProposalDto"][];
             retryable?: boolean;
             /** @enum {string} */
-            status?: "EXTRACTING" | "AWAITING_REVIEW" | "COMMITTED" | "REJECTED" | "FAILED";
+            status?: "EXTRACTING" | "AWAITING_REVIEW" | "COMMITTED" | "REJECTED" | "FAILED" | "INVALIDATED";
             /** Format: date-time */
             updatedAt?: string;
             vaultDocumentId?: string;
@@ -971,7 +1006,7 @@ export interface components {
             /** Format: int64 */
             id?: number;
             /** @enum {string} */
-            status?: "EXTRACTING" | "AWAITING_REVIEW" | "COMMITTED" | "REJECTED" | "FAILED";
+            status?: "EXTRACTING" | "AWAITING_REVIEW" | "COMMITTED" | "REJECTED" | "FAILED" | "INVALIDATED";
             /** Format: date-time */
             updatedAt?: string;
             vaultDocumentId?: string;
@@ -1487,7 +1522,7 @@ export interface components {
             hasBinary?: boolean;
             id?: string;
             /** @enum {string} */
-            ingestionStatus?: "EXTRACTING" | "AWAITING_REVIEW" | "COMMITTED" | "REJECTED" | "FAILED";
+            ingestionStatus?: "EXTRACTING" | "AWAITING_REVIEW" | "COMMITTED" | "REJECTED" | "FAILED" | "INVALIDATED";
             originalFilename?: string;
             payload?: {
                 [key: string]: Record<string, never>;
@@ -1499,6 +1534,35 @@ export interface components {
             transactionId?: number;
             /** @enum {string} */
             type?: "RECEIPT" | "STATEMENT";
+        };
+        VaultReassignmentPreviewResponse: {
+            currencyChanged?: boolean;
+            detachManualLink?: boolean;
+            documentId?: string;
+            /** Format: int32 */
+            importedTransactionCount?: number;
+            originalFilename?: string;
+            /** Format: int64 */
+            sourceAccountId?: number;
+            sourceAccountName?: string;
+            sourceCurrency?: string;
+            /** Format: int64 */
+            targetAccountId?: number;
+            targetAccountName?: string;
+            targetCurrency?: string;
+            /** @enum {string} */
+            type?: "RECEIPT" | "STATEMENT";
+        };
+        VaultReassignmentRequest: {
+            /** Format: int64 */
+            targetAccountId: number;
+        };
+        VaultReassignmentResponse: {
+            document?: components["schemas"]["VaultDocumentResponse"];
+            manualLinkDetached?: boolean;
+            /** Format: int32 */
+            removedImportedTransactions?: number;
+            replayed?: boolean;
         };
         VaultSearchRequest: {
             /** Format: date-time */
@@ -2779,6 +2843,8 @@ export interface operations {
     list: {
         parameters: {
             query: {
+                type?: "RECEIPT" | "STATEMENT";
+                accountId?: number;
                 pageable: components["schemas"]["Pageable"];
             };
             header?: never;
@@ -3081,7 +3147,9 @@ export interface operations {
             query: {
                 accountId: number;
             };
-            header?: never;
+            header?: {
+                "Idempotency-Key"?: string;
+            };
             path: {
                 id: string;
             };
@@ -3144,6 +3212,58 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["VaultDocumentResponse"];
+                };
+            };
+        };
+    };
+    reassign: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultReassignmentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["VaultReassignmentResponse"];
+                };
+            };
+        };
+    };
+    reassignmentPreview: {
+        parameters: {
+            query: {
+                targetAccountId: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["VaultReassignmentPreviewResponse"];
                 };
             };
         };

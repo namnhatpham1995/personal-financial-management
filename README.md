@@ -139,7 +139,7 @@ The design-token gate fails the build if any `.tsx`/`.ts` file uses raw Tailwind
 | Recurring | CRUD + POST /{id}/pause, /{id}/resume |
 | Analytics | GET spending-by-category, incoming-transfer-total, income-vs-expense, budget-progress, balances, overview |
 | API Tokens | POST/GET /tokens, DELETE /tokens/{id} — scoped personal access tokens for API/MCP clients (JWT session only) |
-| Vault | POST /vault/upload, GET /vault, GET /vault/{id}, GET /vault/{id}/download, PATCH /vault/{id}/link, POST /vault/search, DELETE /vault/{id} |
+| Vault | POST /vault/upload, GET /vault?type=STATEMENT|RECEIPT[&accountId=...], GET /vault/{id}, GET /vault/{id}/download, GET /vault/{id}/reassignment-preview, POST /vault/{id}/reassign, PATCH /vault/{id}/link, POST /vault/search, DELETE /vault/{id} |
 | Statement Import | POST /vault/import/upload, GET /vault/import/{id}/rows, POST /vault/import/{id}/confirm |
 | Agent Runs | POST /agent-runs, GET /agent-runs, GET /agent-runs/{id}, POST /agent-runs/{id}/decision — see [Receipt Ingestion Agent](#receipt-ingestion-agent) |
 
@@ -174,6 +174,17 @@ fixtures, no external calls) unless you set `ANTHROPIC_API_KEY` — see the Rail
 tables above for enabling it against the real Anthropic API in a deployed environment.
 
 More detail: [`docs/system-architecture.md`](docs/system-architecture.md#receipt-ingestion-agent).
+
+### Vault overview and reassignment
+
+The Vault Statement and Receipt tabs load a type-wide overview by default. Each row includes its
+owning account (or **Unassigned** for legacy receipts), and the account filter narrows the same
+listing without changing the upload destination. Moving a file requires an explicit target account
+and idempotency key. The backend previews affected imports first, removes imported transactions and
+invalidates related receipt runs before finalizing the MongoDB account change; statement parsing and
+confirmation metadata are reset so the file can be reviewed again. GridFS binaries are retained,
+manual links are detached only when the target account differs, and a bounded recovery job resumes
+operations interrupted between the PostgreSQL and MongoDB phases.
 
 ## Project Structure
 

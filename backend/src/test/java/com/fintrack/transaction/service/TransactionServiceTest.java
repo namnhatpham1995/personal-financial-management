@@ -18,10 +18,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -156,6 +158,42 @@ class TransactionServiceTest {
 
         assertThat(result).isNotNull();
         verify(accountService).adjustBalance(10L, amount);
+    }
+
+    @Test
+    void createWithImportMetadata_persistsOriginAlongsideTransaction() {
+        when(transactionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        var req = new CreateTransactionRequest(TransactionType.EXPENSE, BigDecimal.TEN,
+                LocalDate.now(), 10L, null, null, null, "Coffee");
+
+        transactionService.createWithImportMetadata(1L, req, "dedup-1", "vault-doc-1");
+
+        ArgumentCaptor<Transaction> captor = ArgumentCaptor.forClass(Transaction.class);
+        verify(transactionRepository).save(captor.capture());
+        assertThat(captor.getValue().getImportDedupKey()).isEqualTo("dedup-1");
+        assertThat(captor.getValue().getSourceDocumentId()).isEqualTo("vault-doc-1");
+    }
+
+    @Test
+    void deleteImportedTransactions_locksAndReversesRowsInDeterministicOrder() {
+        Transaction later = Transaction.builder().id(20L).account(destAccount)
+                .transactionType(TransactionType.INCOME).amount(new BigDecimal("7.00")).build();
+        Transaction earlier = Transaction.builder().id(10L).account(account)
+                .transactionType(TransactionType.EXPENSE).amount(new BigDecimal("5.00")).build();
+        when(transactionRepository.findByIdInAndUserIdForUpdate(eq(List.of(10L, 20L)), eq(1L)))
+                .thenReturn(List.of(later, earlier));
+
+        int removed = transactionService.deleteImportedTransactions(1L, List.of(20L, 10L, 10L));
+
+        assertThat(removed).isEqualTo(2);
+        var accountOrder = inOrder(accountService);
+        accountOrder.verify(accountService).findOwnedForUpdate(1L, 10L);
+        accountOrder.verify(accountService).findOwnedForUpdate(1L, 20L);
+        accountOrder.verify(accountService).adjustBalance(10L, new BigDecimal("5.00"));
+        accountOrder.verify(accountService).adjustBalance(20L, new BigDecimal("-7.00"));
+        var transactionOrder = inOrder(transactionRepository);
+        transactionOrder.verify(transactionRepository).delete(earlier);
+        transactionOrder.verify(transactionRepository).delete(later);
     }
 
     @Test

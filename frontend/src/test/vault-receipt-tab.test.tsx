@@ -1,4 +1,5 @@
-import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
+import { cleanup, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ReceiptTab } from "@/components/vault/receipt-tab";
 import { accountService } from "@/services/account-service";
@@ -18,66 +19,57 @@ vi.mock("@/services/agent-run-service", async () => {
 const account = {
   id: 10,
   name: "Checking",
-  accountType: "BANK",
+  accountType: "BANK" as const,
   currency: "USD",
   initialBalance: 0,
   currentBalance: "0.00",
   createdAt: "2026-01-01T00:00:00Z",
 };
 
-const legacyReceipt: VaultDocument = {
-  id: "legacy-receipt",
+const receipt: VaultDocument = {
+  id: "receipt-1",
   type: "RECEIPT",
   status: "ACTIVE",
   source: "manual",
   capturedAt: "2026-07-24T04:30:43Z",
   hasBinary: true,
-  originalFilename: "nam-nhat-pham-cv.pdf",
+  originalFilename: "receipt.pdf",
+  accountId: account.id,
 };
 
 function page(content: VaultDocument[]): PageResponse<VaultDocument> {
   return { content, totalElements: content.length, totalPages: 1, size: 100, number: 0 };
 }
 
-describe("ReceiptTab legacy receipt recovery", () => {
+describe("ReceiptTab", () => {
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
   });
 
-  it("surfaces an account-less legacy receipt before an account is selected", async () => {
+  it("shows receipts across all accounts with the owning account", async () => {
     vi.mocked(accountService.list).mockResolvedValue([account]);
     vi.mocked(agentRunService.list).mockResolvedValue([]);
-    vi.mocked(vaultService.listUnassignedReceipts).mockResolvedValue(page([legacyReceipt]));
+    vi.mocked(vaultService.listByType).mockResolvedValue(page([receipt]));
 
     render(<ReceiptTab />);
 
-    expect(await screen.findByText("nam-nhat-pham-cv.pdf")).toBeInTheDocument();
-    expect(screen.getByText("Unassigned receipts")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Start ingestion" })).not.toBeInTheDocument();
+    expect(await screen.findByText("receipt.pdf")).toBeInTheDocument();
+    expect(screen.getAllByText("Checking").length).toBeGreaterThan(0);
+    expect(vaultService.listByType).toHaveBeenCalledWith("RECEIPT", undefined, 0, 100);
   });
 
-  it("assigns a legacy receipt to an owned account and removes it from recovery", async () => {
+  it("requests the selected account when the overall filter changes", async () => {
     vi.mocked(accountService.list).mockResolvedValue([account]);
     vi.mocked(agentRunService.list).mockResolvedValue([]);
-    vi.mocked(vaultService.listUnassignedReceipts)
-      .mockResolvedValueOnce(page([legacyReceipt]))
-      .mockResolvedValue(page([]));
-    vi.mocked(vaultService.assignAccount).mockResolvedValue({ ...legacyReceipt, accountId: account.id });
+    vi.mocked(vaultService.listByType).mockResolvedValue(page([receipt]));
+    const user = userEvent.setup();
 
     render(<ReceiptTab />);
+    const filter = await screen.findByLabelText("Show files for");
+    await waitFor(() => expect(screen.getAllByRole("option", { name: "Checking" })).not.toHaveLength(0));
+    await user.selectOptions(filter, String(account.id));
 
-    const accountSelect = await screen.findByRole("combobox", {
-      name: "Account for nam-nhat-pham-cv.pdf",
-    });
-    fireEvent.change(accountSelect, { target: { value: String(account.id) } });
-    fireEvent.click(screen.getByRole("button", { name: "Assign" }));
-
-    await waitFor(() => {
-      expect(vaultService.assignAccount).toHaveBeenCalledWith("legacy-receipt", account.id);
-    });
-    await waitFor(() => {
-      expect(screen.queryByText("nam-nhat-pham-cv.pdf")).not.toBeInTheDocument();
-    });
+    expect(vaultService.listByType).toHaveBeenCalledWith("RECEIPT", account.id, 0, 100);
   });
 });

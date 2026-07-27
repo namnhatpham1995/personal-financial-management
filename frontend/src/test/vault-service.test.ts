@@ -40,6 +40,27 @@ describe("vaultService: requests target the unversioned /api/vault base path", (
     expect(spy.mock.calls[0][1]).toMatchObject({ baseURL: VAULT_BASE_URL });
   });
 
+  it("listByType supports an overall page and an optional account filter", async () => {
+    const spy = vi
+      .spyOn(apiClient, "get")
+      .mockImplementation(() => okResponse({ content: [], totalElements: 0, totalPages: 0, size: 20, number: 0 }));
+    await vaultService.listByType("RECEIPT");
+    expect(spy.mock.calls[0][0]).toBe("/vault");
+    expect(spy.mock.calls[0][1]).toMatchObject({ baseURL: VAULT_BASE_URL, params: { type: "RECEIPT", page: 0, size: 20 } });
+    await vaultService.listByType("RECEIPT", 42, 1, 50);
+    expect(spy.mock.calls[1][1]).toMatchObject({ params: { type: "RECEIPT", accountId: 42, page: 1, size: 50 } });
+  });
+
+  it("previewReassignment and reassign use the keyed Vault endpoints", async () => {
+    const getSpy = vi.spyOn(apiClient, "get").mockImplementation(() => okResponse({}));
+    const postSpy = vi.spyOn(apiClient, "post").mockImplementation(() => okResponse({}));
+    await vaultService.previewReassignment("doc-1", 42);
+    await vaultService.reassign("doc-1", 42, "a".repeat(16));
+    expect(getSpy.mock.calls[0][0]).toBe("/vault/doc-1/reassignment-preview");
+    expect(postSpy.mock.calls[0][0]).toBe("/vault/doc-1/reassign");
+    expect(postSpy.mock.calls[0][2]).toMatchObject({ baseURL: VAULT_BASE_URL, headers: { "Idempotency-Key": "a".repeat(16) } });
+  });
+
   it("listUnassignedReceipts", async () => {
     const spy = vi
       .spyOn(apiClient, "get")

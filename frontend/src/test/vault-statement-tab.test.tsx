@@ -35,8 +35,8 @@ function page(content: VaultDocument[]): PageResponse<VaultDocument> {
 
 /** Accounts load async, so the option must exist before selecting it. */
 async function selectAccount(user: ReturnType<typeof userEvent.setup>, name: string) {
-  await screen.findByRole("option", { name });
-  await user.selectOptions(screen.getByRole("combobox"), name);
+  await waitFor(() => expect(screen.getAllByRole("option", { name })).not.toHaveLength(0));
+  await user.selectOptions(screen.getByLabelText("Show files for"), name);
 }
 
 const uploadedDoc: VaultDocument = {
@@ -63,21 +63,21 @@ describe("StatementTab", () => {
     cleanup();
   });
 
-  it("shows nothing account-scoped until an account is selected, then lists that account's statements", async () => {
-    vi.mocked(vaultService.listByAccount).mockResolvedValue(page([uploadedDoc]));
+  it("shows an overall list and narrows it when an account is selected", async () => {
+    vi.mocked(vaultService.listByType).mockResolvedValue(page([uploadedDoc]));
     renderTab();
 
-    expect(screen.queryByText("jan.csv")).not.toBeInTheDocument();
+    expect(await screen.findByText("jan.csv")).toBeInTheDocument();
 
     const user = userEvent.setup();
     await selectAccount(user, "Checking");
 
     await screen.findByText("jan.csv");
-    expect(vaultService.listByAccount).toHaveBeenCalledWith(1, "STATEMENT", 0, 100);
+    expect(vaultService.listByType).toHaveBeenCalledWith("STATEMENT", 1, 0, 100);
   });
 
   it("resumes a previously-staged statement from the Import list's Unimported section", async () => {
-    vi.mocked(vaultService.listByAccount).mockResolvedValue(page([stagedDoc]));
+    vi.mocked(vaultService.listByType).mockResolvedValue(page([stagedDoc]));
     vi.mocked(vaultService.parseImport).mockResolvedValue([
       { date: "2026-02-01", amount: "10.00", type: "EXPENSE", description: "Groceries", dedupKey: "k1" },
     ]);
@@ -97,7 +97,7 @@ describe("StatementTab", () => {
   });
 
   it("Imported bucket is collapsed by default and expands on click", async () => {
-    vi.mocked(vaultService.listByAccount).mockResolvedValue(page([activeDoc]));
+    vi.mocked(vaultService.listByType).mockResolvedValue(page([activeDoc]));
     const user = userEvent.setup();
     renderTab();
     await selectAccount(user, "Checking");
