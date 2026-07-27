@@ -842,6 +842,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/vault/workspace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["workspace"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vault/workspace/counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["workspaceStageCounts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/vault/{id}": {
         parameters: {
             query?: never;
@@ -1572,6 +1604,11 @@ export interface components {
             merchant?: string;
             /** Format: date-time */
             to?: string;
+        };
+        VaultStageCountsResponse: {
+            counts?: {
+                [key: string]: number;
+            };
         };
     };
     responses: never;
@@ -3096,6 +3133,54 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["VaultDocumentResponse"];
+                };
+            };
+        };
+    };
+    workspace: {
+        parameters: {
+            query: {
+                type?: ("RECEIPT" | "STATEMENT")[];
+                stage?: ("READY_TO_IMPORT" | "NEEDS_REVIEW" | "PROCESSING" | "IMPORTED" | "NOT_PROCESSED" | "FAILED" | "DISMISSED")[];
+                accountId?: number;
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PageVaultDocumentResponse"];
+                };
+            };
+        };
+    };
+    workspaceStageCounts: {
+        parameters: {
+            query?: {
+                type?: ("RECEIPT" | "STATEMENT")[];
+                accountId?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["VaultStageCountsResponse"];
                 };
             };
         };

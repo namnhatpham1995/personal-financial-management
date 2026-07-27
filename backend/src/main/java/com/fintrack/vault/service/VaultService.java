@@ -248,7 +248,7 @@ public class VaultService {
      * data — a run belonging to a different user can never surface here even if two users
      * somehow shared a vault document id (they can't, but the query is scoped defensively).
      */
-    private Map<String, AgentRunStatus> latestIngestionStatuses(Long userId, List<VaultDocument> docs) {
+    Map<String, AgentRunStatus> latestIngestionStatuses(Long userId, List<VaultDocument> docs) {
         List<String> docIds = docs.stream().map(VaultDocument::getId).toList();
         if (docIds.isEmpty()) {
             return Map.of();
@@ -268,7 +268,7 @@ public class VaultService {
                 .orElse(null);
     }
 
-    private VaultDocumentResponse toResponse(VaultDocument doc, AgentRunStatus ingestionStatus) {
+    VaultDocumentResponse toResponse(VaultDocument doc, AgentRunStatus ingestionStatus) {
         return new VaultDocumentResponse(
                 doc.getId(),
                 doc.getAccountId(),

@@ -1661,6 +1661,18 @@
           }
         },
         "type" : "object"
+      },
+      "VaultStageCountsResponse" : {
+        "properties" : {
+          "counts" : {
+            "additionalProperties" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "object"
+          }
+        },
+        "type" : "object"
       }
     },
     "securitySchemes" : {
@@ -3919,6 +3931,103 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/VaultDocumentResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "vault-controller" ]
+      }
+    },
+    "/api/vault/workspace" : {
+      "get" : {
+        "operationId" : "workspace",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "type",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "enum" : [ "RECEIPT", "STATEMENT" ],
+              "type" : "string"
+            },
+            "type" : "array",
+            "uniqueItems" : true
+          }
+        }, {
+          "in" : "query",
+          "name" : "stage",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "enum" : [ "READY_TO_IMPORT", "NEEDS_REVIEW", "PROCESSING", "IMPORTED", "NOT_PROCESSED", "FAILED", "DISMISSED" ],
+              "type" : "string"
+            },
+            "type" : "array",
+            "uniqueItems" : true
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountId",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "pageable",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/Pageable"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageVaultDocumentResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "vault-controller" ]
+      }
+    },
+    "/api/vault/workspace/counts" : {
+      "get" : {
+        "operationId" : "workspaceStageCounts",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "type",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "enum" : [ "RECEIPT", "STATEMENT" ],
+              "type" : "string"
+            },
+            "type" : "array",
+            "uniqueItems" : true
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountId",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VaultStageCountsResponse"
                 }
               }
             },

@@ -3,12 +3,15 @@ package com.fintrack.vault.web;
 import com.fintrack.common.security.UserPrincipal;
 import com.fintrack.idempotency.exception.MissingIdempotencyKeyException;
 import com.fintrack.vault.domain.VaultDocumentType;
+import com.fintrack.vault.domain.VaultStage;
 import com.fintrack.vault.service.VaultService;
+import com.fintrack.vault.service.VaultWorkspaceService;
 import com.fintrack.vault.web.dto.VaultDocumentResponse;
 import com.fintrack.vault.web.dto.VaultReassignmentPreviewResponse;
 import com.fintrack.vault.web.dto.VaultReassignmentRequest;
 import com.fintrack.vault.web.dto.VaultReassignmentResponse;
 import com.fintrack.vault.web.dto.VaultSearchRequest;
+import com.fintrack.vault.web.dto.VaultStageCountsResponse;
 import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Parameter;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/vault")
@@ -32,6 +36,7 @@ import java.util.List;
 public class VaultController {
 
     private final VaultService vaultService;
+    private final VaultWorkspaceService vaultWorkspaceService;
     private final com.fintrack.vault.service.VaultReassignmentService vaultReassignmentService;
 
     /** Upload a receipt image or statement file. Requires an {@code Idempotency-Key} header. */
@@ -71,6 +76,32 @@ public class VaultController {
             return vaultService.list(principal.getUserId(), pageable);
         }
         return vaultService.listByType(principal.getUserId(), type, accountId, pageable);
+    }
+
+    /**
+     * Lists vault documents across optional document types and derived lifecycle stages —
+     * backs the unified Vault workspace. Omitting {@code type} or {@code stage} does not narrow
+     * the result on that dimension.
+     */
+    @GetMapping("/workspace")
+    public Page<VaultDocumentResponse> workspace(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @RequestParam(required = false) Set<VaultDocumentType> type,
+            @RequestParam(required = false) Set<VaultStage> stage,
+            @RequestParam(required = false) Long accountId,
+            Pageable pageable
+    ) {
+        return vaultWorkspaceService.list(principal.getUserId(), type, stage, accountId, pageable);
+    }
+
+    /** Per-stage document counts across the user's whole matching collection, for filter badges. */
+    @GetMapping("/workspace/counts")
+    public VaultStageCountsResponse workspaceStageCounts(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @RequestParam(required = false) Set<VaultDocumentType> type,
+            @RequestParam(required = false) Long accountId
+    ) {
+        return new VaultStageCountsResponse(vaultWorkspaceService.stageCounts(principal.getUserId(), type, accountId));
     }
 
     /** Lists vault documents for one account and type — backs the per-account Statement/Receipt tabs. */
