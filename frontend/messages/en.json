@@ -205,7 +205,11 @@
         "to": "To",
         "rateLoading": "Fetching rate…",
         "rateFetchFailed": "Couldn't fetch a rate — enter the amount manually",
-        "useFetchedRate": "Use fetched rate"
+        "customAmount": "Custom amount in use",
+        "restoreSuggestedAmount": "Restore suggested amount",
+        "customRate": "Custom rate",
+        "fetchedRate": "Fetched rate",
+        "suggestedAmount": "Suggested amount"
       }
     },
     "recurring": {
@@ -614,6 +618,10 @@
       "9": {
         "title": "A redesigned Vault",
         "body": "Receipts and statements now have dedicated views, easier uploads, account selection, inline reading, and clearer import review."
+      },
+      "10": {
+        "title": "Clearer transfer rate choices",
+        "body": "Cross-currency transfers now make custom amounts and fetched-rate suggestions easier to see and compare."
       }
     }
   },

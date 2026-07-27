@@ -205,7 +205,11 @@
         "to": "Nach",
         "rateLoading": "Wechselkurs wird abgerufen…",
         "rateFetchFailed": "Wechselkurs konnte nicht abgerufen werden — Betrag bitte manuell eingeben",
-        "useFetchedRate": "Abgerufenen Kurs verwenden"
+        "customAmount": "Benutzerdefinierter Betrag",
+        "restoreSuggestedAmount": "Vorgeschlagenen Betrag wiederherstellen",
+        "customRate": "Benutzerdefinierter Kurs",
+        "fetchedRate": "Abgerufener Kurs",
+        "suggestedAmount": "Vorgeschlagener Betrag"
       }
     },
     "recurring": {
@@ -614,6 +618,10 @@
       "9": {
         "title": "Ein neu gestalteter Tresor",
         "body": "Belege und Kontoauszüge haben jetzt eigene Ansichten, einfachere Uploads, Kontoauswahl, integrierte Vorschau und eine klarere Importprüfung."
+      },
+      "10": {
+        "title": "Klarere Kursauswahl bei Überweisungen",
+        "body": "Bei Überweisungen zwischen Währungen lassen sich benutzerdefinierte Beträge und abgerufene Kursvorschläge jetzt leichter erkennen und vergleichen."
       }
     }
   },
