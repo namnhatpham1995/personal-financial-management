@@ -162,6 +162,28 @@ public class StatementImportService {
         return rows.stream().map(r -> toStagedRowResponse(r, userId)).toList();
     }
 
+    /**
+     * Returns previously parsed statement rows for read-only in-browser preview, reachable at
+     * any lifecycle status (unlike {@link #getReviewRows}, which is scoped to the STAGED review
+     * workflow). Not-found when the document has never been parsed — a STATEMENT document has no
+     * {@code payload.rows} until {@link #parse} has run at least once.
+     */
+    @SuppressWarnings("unchecked")
+    public List<StagedRowResponse> previewRows(Long userId, String documentId) {
+        VaultDocument doc = vaultDocumentRepository.findByIdAndUserId(documentId, userId)
+                .orElseThrow(() -> ResourceNotFoundException.of("StatementPreview", documentId));
+        if (doc.getType() != VaultDocumentType.STATEMENT || doc.getPayload() == null) {
+            throw ResourceNotFoundException.of("StatementPreview", documentId);
+        }
+
+        List<Map<String, Object>> rows = (List<Map<String, Object>>) doc.getPayload().get("rows");
+        if (rows == null) {
+            throw ResourceNotFoundException.of("StatementPreview", documentId);
+        }
+
+        return rows.stream().map(r -> toStagedRowResponse(r, userId)).toList();
+    }
+
     private StagedRowResponse toStagedRowResponse(Map<String, Object> r, Long userId) {
         String type = (String) r.get("type");
         String categoryText = (String) r.get("category");

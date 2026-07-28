@@ -4,8 +4,10 @@ import com.fintrack.common.security.UserPrincipal;
 import com.fintrack.idempotency.exception.MissingIdempotencyKeyException;
 import com.fintrack.vault.domain.VaultDocumentType;
 import com.fintrack.vault.domain.VaultStage;
+import com.fintrack.vault.service.StatementImportService;
 import com.fintrack.vault.service.VaultService;
 import com.fintrack.vault.service.VaultWorkspaceService;
+import com.fintrack.vault.web.dto.StagedRowResponse;
 import com.fintrack.vault.web.dto.VaultDocumentResponse;
 import com.fintrack.vault.web.dto.VaultReassignmentPreviewResponse;
 import com.fintrack.vault.web.dto.VaultReassignmentRequest;
@@ -38,6 +40,7 @@ public class VaultController {
     private final VaultService vaultService;
     private final VaultWorkspaceService vaultWorkspaceService;
     private final com.fintrack.vault.service.VaultReassignmentService vaultReassignmentService;
+    private final StatementImportService statementImportService;
 
     /** Upload a receipt image or statement file. Requires an {@code Idempotency-Key} header. */
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -199,6 +202,20 @@ public class VaultController {
                                 : MediaType.APPLICATION_OCTET_STREAM_VALUE))
                 .contentLength(resource.contentLength())
                 .body(resource);
+    }
+
+    /**
+     * Previously parsed statement rows for read-only in-browser preview, reachable at any
+     * lifecycle status. Unlike {@code /api/vault/import/{id}/rows} (scoped to the STAGED review
+     * workflow), this also serves confirmed (ACTIVE) statements. Not found if the statement has
+     * never been parsed.
+     */
+    @GetMapping("/{id}/preview-rows")
+    public List<StagedRowResponse> previewRows(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String id
+    ) {
+        return statementImportService.previewRows(principal.getUserId(), id);
     }
 
     @PostMapping("/search")
