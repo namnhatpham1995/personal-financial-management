@@ -36,3 +36,20 @@ export function useIngestionStatusLabel() {
     return t(value);
   };
 }
+
+export function useVaultStageLabel() {
+  const t = useTranslations("enums.vaultStage");
+  return (
+    value:
+      | "READY_TO_IMPORT"
+      | "NEEDS_REVIEW"
+      | "PROCESSING"
+      | "IMPORTED"
+      | "NOT_PROCESSED"
+      | "FAILED"
+      | "DISMISSED"
+      | "STORED"
+  ): string => {
+    return t(value);
+  };
+}

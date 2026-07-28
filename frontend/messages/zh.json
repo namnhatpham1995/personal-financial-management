@@ -322,6 +322,12 @@
       "statement": "对账单",
       "receipt": "收据"
     },
+    "filters": {
+      "needsAttention": "需要处理",
+      "all": "全部",
+      "imported": "已导入",
+      "clear": "清除筛选"
+    },
     "toast": {
       "documentDeleted": "文档已删除",
       "deleteFailed": "删除失败"
@@ -695,6 +701,16 @@
       "REJECTED": "已拒绝",
       "FAILED": "失败",
       "INVALIDATED": "需要审核"
+    },
+    "vaultStage": {
+      "READY_TO_IMPORT": "可导入",
+      "NEEDS_REVIEW": "需要审核",
+      "PROCESSING": "处理中",
+      "IMPORTED": "已导入",
+      "NOT_PROCESSED": "未处理",
+      "FAILED": "失败",
+      "DISMISSED": "已忽略",
+      "STORED": "已存储"
     }
   },
   "systemCategories": {

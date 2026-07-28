@@ -322,6 +322,12 @@
       "statement": "Statement",
       "receipt": "Receipt"
     },
+    "filters": {
+      "needsAttention": "Needs attention",
+      "all": "All",
+      "imported": "Imported",
+      "clear": "Clear filters"
+    },
     "toast": {
       "documentDeleted": "Document deleted",
       "deleteFailed": "Delete failed"
@@ -698,6 +704,16 @@
       "REJECTED": "Rejected",
       "FAILED": "Failed",
       "INVALIDATED": "Needs review"
+    },
+    "vaultStage": {
+      "READY_TO_IMPORT": "Ready to import",
+      "NEEDS_REVIEW": "Needs review",
+      "PROCESSING": "Processing",
+      "IMPORTED": "Imported",
+      "NOT_PROCESSED": "Not processed",
+      "FAILED": "Failed",
+      "DISMISSED": "Dismissed",
+      "STORED": "Stored"
     }
   },
   "systemCategories": {

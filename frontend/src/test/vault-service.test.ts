@@ -137,6 +137,33 @@ describe("vaultService: requests target the unversioned /api/vault base path", (
     expect(spy.mock.calls[0][1]).toMatchObject({ baseURL: VAULT_BASE_URL });
   });
 
+  it("workspace serializes type/stage arrays as repeated keys, not bracket notation", async () => {
+    const spy = vi
+      .spyOn(apiClient, "get")
+      .mockImplementation(() => okResponse({ content: [], totalElements: 0, totalPages: 0, size: 20, number: 0 }));
+    await vaultService.workspace({ types: ["STATEMENT", "RECEIPT"], stages: ["NEEDS_REVIEW"], accountId: 42 });
+    expect(spy.mock.calls[0][0]).toBe("/vault/workspace");
+    expect(spy.mock.calls[0][1]).toMatchObject({
+      baseURL: VAULT_BASE_URL,
+      params: { type: ["STATEMENT", "RECEIPT"], stage: ["NEEDS_REVIEW"], accountId: 42, page: 0, size: 20 },
+      paramsSerializer: { indexes: null },
+    });
+  });
+
+  it("workspaceStageCounts unwraps the counts envelope", async () => {
+    const spy = vi
+      .spyOn(apiClient, "get")
+      .mockImplementation(() => okResponse({ counts: { READY_TO_IMPORT: 3, NOT_PROCESSED: 1 } }));
+    const counts = await vaultService.workspaceStageCounts({ types: ["STATEMENT"] });
+    expect(spy.mock.calls[0][0]).toBe("/vault/workspace/counts");
+    expect(spy.mock.calls[0][1]).toMatchObject({
+      baseURL: VAULT_BASE_URL,
+      params: { type: ["STATEMENT"] },
+      paramsSerializer: { indexes: null },
+    });
+    expect(counts).toEqual({ READY_TO_IMPORT: 3, NOT_PROCESSED: 1 });
+  });
+
   it("confirmImport", async () => {
     const spy = vi.spyOn(apiClient, "post").mockImplementation(() => okResponse({ created: 1 }));
     await vaultService.confirmImport("doc-1", [{ dedupKey: "k1", categoryId: null }], "a".repeat(16));
