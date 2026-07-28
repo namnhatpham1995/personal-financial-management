@@ -328,6 +328,26 @@
       "imported": "Importiert",
       "clear": "Filter zurücksetzen"
     },
+    "workspace": {
+      "upload": "Hochladen",
+      "review": "Prüfen",
+      "allTypes": "Alle Typen",
+      "table": {
+        "name": "Name",
+        "stage": "Phase",
+        "account": "Konto",
+        "date": "Datum"
+      },
+      "rowMenuAria": "Weitere Aktionen für {fileName}",
+      "emptyState": {
+        "title": "Der Tresor ist noch leer",
+        "body": "Lade einen Kontoauszug hoch, um Transaktionen zu importieren, oder einen Beleg, um ihn einem Kauf zuzuordnen."
+      },
+      "emptyFilterResult": {
+        "title": "Keine Dokumente entsprechen diesen Filtern",
+        "body": "Versuche eine andere Phase, einen anderen Typ oder ein anderes Konto."
+      }
+    },
     "toast": {
       "documentDeleted": "Dokument gelöscht",
       "deleteFailed": "Löschen fehlgeschlagen"

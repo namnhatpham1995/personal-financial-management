@@ -328,6 +328,26 @@
       "imported": "已导入",
       "clear": "清除筛选"
     },
+    "workspace": {
+      "upload": "上传",
+      "review": "审核",
+      "allTypes": "所有类型",
+      "table": {
+        "name": "名称",
+        "stage": "阶段",
+        "account": "账户",
+        "date": "日期"
+      },
+      "rowMenuAria": "{fileName} 的更多操作",
+      "emptyState": {
+        "title": "资料库还没有文件",
+        "body": "上传银行对账单以导入交易，或上传收据以匹配一笔消费。"
+      },
+      "emptyFilterResult": {
+        "title": "没有文件匹配这些筛选条件",
+        "body": "试试其他阶段、类型或账户。"
+      }
+    },
     "toast": {
       "documentDeleted": "文档已删除",
       "deleteFailed": "删除失败"

@@ -328,6 +328,26 @@
       "imported": "Đã nhập",
       "clear": "Xóa bộ lọc"
     },
+    "workspace": {
+      "upload": "Tải lên",
+      "review": "Xem xét",
+      "allTypes": "Tất cả loại",
+      "table": {
+        "name": "Tên",
+        "stage": "Giai đoạn",
+        "account": "Tài khoản",
+        "date": "Ngày"
+      },
+      "rowMenuAria": "Thao tác khác cho {fileName}",
+      "emptyState": {
+        "title": "Kho lưu trữ chưa có gì",
+        "body": "Tải lên sao kê ngân hàng để nhập giao dịch, hoặc hóa đơn để khớp với một giao dịch mua."
+      },
+      "emptyFilterResult": {
+        "title": "Không có tài liệu nào khớp với bộ lọc này",
+        "body": "Hãy thử giai đoạn, loại hoặc tài khoản khác."
+      }
+    },
     "toast": {
       "documentDeleted": "Đã xóa tài liệu",
       "deleteFailed": "Xóa thất bại"

@@ -328,6 +328,26 @@
       "imported": "Imported",
       "clear": "Clear filters"
     },
+    "workspace": {
+      "upload": "Upload",
+      "review": "Review",
+      "allTypes": "All types",
+      "table": {
+        "name": "Name",
+        "stage": "Stage",
+        "account": "Account",
+        "date": "Date"
+      },
+      "rowMenuAria": "More actions for {fileName}",
+      "emptyState": {
+        "title": "Nothing in your vault yet",
+        "body": "Upload a bank statement to import its transactions, or a receipt to match it to a purchase."
+      },
+      "emptyFilterResult": {
+        "title": "No documents match these filters",
+        "body": "Try a different stage, type, or account."
+      }
+    },
     "toast": {
       "documentDeleted": "Document deleted",
       "deleteFailed": "Delete failed"
