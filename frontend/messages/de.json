@@ -643,6 +643,10 @@
       "improved": "Verbessert"
     },
     "entries": {
+      "13": {
+        "title": "Ein lesbarerer, barrierefreierer Tresor",
+        "body": "Die Kontospalte bleibt jetzt auf schmalen Bildschirmen immer sichtbar, fehlgeschlagene und verworfene Belege erhalten ein klares Symbol neben ihrem Status, und jedes Element im Tresor ist vollständig per Tastatur bedienbar."
+      },
       "12": {
         "title": "Ein Tresor, gefiltert nach dem, was Aufmerksamkeit braucht",
         "body": "Kontoauszüge und Belege liegen jetzt in einer einzigen Liste. Filtere nach Phase — erfordert Aufmerksamkeit, alle oder importiert — statt durch Tabs zu klicken, und sieh Konto und Status jedes Dokuments auf einen Blick."

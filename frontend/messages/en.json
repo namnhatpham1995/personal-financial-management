@@ -646,6 +646,10 @@
       "improved": "Improved"
     },
     "entries": {
+      "13": {
+        "title": "A more readable, more accessible Vault",
+        "body": "The account column now always stays visible on narrow screens, failed and dismissed receipts get a clear icon alongside their status, and every control in the Vault is fully keyboard-navigable."
+      },
       "12": {
         "title": "One Vault, filtered by what needs you",
         "body": "Statements and receipts now live in a single list. Filter by stage — needs attention, all, or imported — instead of clicking through tabs, and see every document's account and status at a glance."
