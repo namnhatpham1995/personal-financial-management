@@ -938,6 +938,22 @@ export interface paths {
         patch: operations["linkToTransaction"];
         trace?: never;
     };
+    "/api/vault/{id}/preview-rows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["previewRows"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/vault/{id}/reassign": {
         parameters: {
             query?: never;
@@ -3297,6 +3313,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["VaultDocumentResponse"];
+                };
+            };
+        };
+    };
+    previewRows: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["StagedRowResponse"][];
                 };
             };
         };
