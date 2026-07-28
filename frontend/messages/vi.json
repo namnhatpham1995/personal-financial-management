@@ -643,6 +643,10 @@
       "improved": "Cải tiến"
     },
     "entries": {
+      "12": {
+        "title": "Một Kho lưu trữ, lọc theo việc cần làm",
+        "body": "Sao kê và hóa đơn giờ nằm trong một danh sách duy nhất. Lọc theo giai đoạn — cần xử lý, tất cả, hoặc đã nhập — thay vì bấm qua từng tab, và xem tài khoản cùng trạng thái của mọi tài liệu chỉ trong một cái nhìn."
+      },
       "11": {
         "title": "Tổng quan Kho lưu trữ đầy đủ",
         "body": "Xem mọi sao kê và biên lai trên các tài khoản, lọc theo tài khoản và chuyển tệp an toàn khi tệp thuộc tài khoản khác."

@@ -646,6 +646,10 @@
       "improved": "Improved"
     },
     "entries": {
+      "12": {
+        "title": "One Vault, filtered by what needs you",
+        "body": "Statements and receipts now live in a single list. Filter by stage — needs attention, all, or imported — instead of clicking through tabs, and see every document's account and status at a glance."
+      },
       "11": {
         "title": "A complete Vault overview",
         "body": "See every statement and receipt across your accounts, filter by account, and move a file safely when it belongs somewhere else."
