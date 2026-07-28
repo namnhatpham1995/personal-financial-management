@@ -158,4 +158,44 @@ describe("VaultWorkspace", () => {
     expect(await screen.findByText("Nothing in your vault yet")).toBeInTheDocument();
     expect(screen.queryByText("No documents match these filters")).not.toBeInTheDocument();
   });
+
+  it("a completed upload preserves the active filters and refreshes both the list and stage counts", async () => {
+    vi.mocked(accountService.list).mockResolvedValue(accounts);
+    vi.mocked(agentRunService.list).mockResolvedValue([]);
+    vi.mocked(vaultService.workspace).mockResolvedValue(page([readyStatement]));
+    vi.mocked(vaultService.workspaceStageCounts).mockResolvedValue({ READY_TO_IMPORT: 1 });
+    vi.mocked(vaultService.importUpload).mockResolvedValue("new-doc-id");
+    const user = userEvent.setup();
+
+    render(<VaultWorkspace />);
+    await screen.findByText("jan.csv");
+
+    // Narrow to a non-default filter combination first, so "preserved" is a real assertion.
+    await user.click(screen.getByRole("button", { name: "Imported" }));
+    await waitFor(() => expect(vaultService.workspace).toHaveBeenCalledWith(expect.objectContaining({ stages: ["IMPORTED"] })));
+    await waitFor(() => expect(screen.getAllByRole("option", { name: "Checking" })).not.toHaveLength(0));
+    await user.selectOptions(screen.getByLabelText("Show files for"), "Checking");
+    await waitFor(() =>
+      expect(vaultService.workspace).toHaveBeenCalledWith(
+        expect.objectContaining({ stages: ["IMPORTED"], accountId: 1 })
+      )
+    );
+
+    const callsBeforeUpload = vi.mocked(vaultService.workspace).mock.calls.length;
+    const countsCallsBeforeUpload = vi.mocked(vaultService.workspaceStageCounts).mock.calls.length;
+
+    await user.click(screen.getByRole("button", { name: "Upload" }));
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    await user.upload(fileInput, new File(["a"], "feb.csv", { type: "text/csv" }));
+
+    await waitFor(() => expect(vaultService.importUpload).toHaveBeenCalled());
+    // The panel closes on success, which only happens once invalidate() ran.
+    await waitFor(() => expect(screen.queryByText("Back to list")).not.toBeInTheDocument());
+
+    expect(vi.mocked(vaultService.workspace).mock.calls.length).toBeGreaterThan(callsBeforeUpload);
+    expect(vi.mocked(vaultService.workspaceStageCounts).mock.calls.length).toBeGreaterThan(countsCallsBeforeUpload);
+    // Both filters set before the upload are still the ones driving the refreshed query.
+    const lastCall = vi.mocked(vaultService.workspace).mock.calls.at(-1)?.[0];
+    expect(lastCall).toMatchObject({ stages: ["IMPORTED"], accountId: 1 });
+  });
 });

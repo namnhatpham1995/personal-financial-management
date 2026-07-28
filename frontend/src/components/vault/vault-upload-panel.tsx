@@ -16,9 +16,11 @@ interface Props {
 }
 
 /**
- * Minimal upload flow: choose type + destination account, then the matching dropzone.
- * Deliberately basic — the group-4 PR redesigns this into a proper upload flow decoupled
- * from the list's account filter (preselection, mandatory choice, filter-independent state).
+ * Upload flow: choose type + destination account, then the matching dropzone. Decoupled from
+ * the workspace's list filter — `defaultAccountId` only seeds the initial selection (via
+ * useState's lazy initializer), so a filter change made elsewhere while this panel stays open
+ * does not retroactively change the upload destination. The dropzone/viewer is withheld until
+ * an account is chosen, so a blank filter ("all accounts") forces an explicit choice here.
  */
 export function VaultUploadPanel({ accounts, defaultAccountId, onUploaded, onClose }: Props) {
   const t = useTranslations("vault");
