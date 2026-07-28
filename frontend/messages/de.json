@@ -322,6 +322,12 @@
       "statement": "Kontoauszug",
       "receipt": "Beleg"
     },
+    "filters": {
+      "needsAttention": "Erfordert Aufmerksamkeit",
+      "all": "Alle",
+      "imported": "Importiert",
+      "clear": "Filter zurücksetzen"
+    },
     "toast": {
       "documentDeleted": "Dokument gelöscht",
       "deleteFailed": "Löschen fehlgeschlagen"
@@ -695,6 +701,16 @@
       "REJECTED": "Abgelehnt",
       "FAILED": "Fehlgeschlagen",
       "INVALIDATED": "Prüfung erforderlich"
+    },
+    "vaultStage": {
+      "READY_TO_IMPORT": "Bereit zum Import",
+      "NEEDS_REVIEW": "Prüfung erforderlich",
+      "PROCESSING": "Wird verarbeitet",
+      "IMPORTED": "Importiert",
+      "NOT_PROCESSED": "Nicht verarbeitet",
+      "FAILED": "Fehlgeschlagen",
+      "DISMISSED": "Verworfen",
+      "STORED": "Gespeichert"
     }
   },
   "systemCategories": {

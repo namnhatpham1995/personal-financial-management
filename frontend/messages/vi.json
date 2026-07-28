@@ -322,6 +322,12 @@
       "statement": "Sao kê",
       "receipt": "Hóa đơn"
     },
+    "filters": {
+      "needsAttention": "Cần xử lý",
+      "all": "Tất cả",
+      "imported": "Đã nhập",
+      "clear": "Xóa bộ lọc"
+    },
     "toast": {
       "documentDeleted": "Đã xóa tài liệu",
       "deleteFailed": "Xóa thất bại"
@@ -695,6 +701,16 @@
       "REJECTED": "Đã từ chối",
       "FAILED": "Thất bại",
       "INVALIDATED": "Cần xem lại"
+    },
+    "vaultStage": {
+      "READY_TO_IMPORT": "Sẵn sàng nhập",
+      "NEEDS_REVIEW": "Cần xem xét",
+      "PROCESSING": "Đang xử lý",
+      "IMPORTED": "Đã nhập",
+      "NOT_PROCESSED": "Chưa xử lý",
+      "FAILED": "Thất bại",
+      "DISMISSED": "Đã bỏ qua",
+      "STORED": "Đã lưu trữ"
     }
   },
   "systemCategories": {
