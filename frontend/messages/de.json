@@ -328,6 +328,26 @@
       "imported": "Importiert",
       "clear": "Filter zurücksetzen"
     },
+    "workspace": {
+      "upload": "Hochladen",
+      "review": "Prüfen",
+      "allTypes": "Alle Typen",
+      "table": {
+        "name": "Name",
+        "stage": "Phase",
+        "account": "Konto",
+        "date": "Datum"
+      },
+      "rowMenuAria": "Weitere Aktionen für {fileName}",
+      "emptyState": {
+        "title": "Der Tresor ist noch leer",
+        "body": "Lade einen Kontoauszug hoch, um Transaktionen zu importieren, oder einen Beleg, um ihn einem Kauf zuzuordnen."
+      },
+      "emptyFilterResult": {
+        "title": "Keine Dokumente entsprechen diesen Filtern",
+        "body": "Versuche eine andere Phase, einen anderen Typ oder ein anderes Konto."
+      }
+    },
     "toast": {
       "documentDeleted": "Dokument gelöscht",
       "deleteFailed": "Löschen fehlgeschlagen"
@@ -623,6 +643,10 @@
       "improved": "Verbessert"
     },
     "entries": {
+      "12": {
+        "title": "Ein Tresor, gefiltert nach dem, was Aufmerksamkeit braucht",
+        "body": "Kontoauszüge und Belege liegen jetzt in einer einzigen Liste. Filtere nach Phase — erfordert Aufmerksamkeit, alle oder importiert — statt durch Tabs zu klicken, und sieh Konto und Status jedes Dokuments auf einen Blick."
+      },
       "11": {
         "title": "Eine vollständige Tresorübersicht",
         "body": "Sieh alle Kontoauszüge und Belege über deine Konten hinweg, filtere nach Konto und verschiebe Dateien sicher in das richtige Konto."

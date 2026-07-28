@@ -328,6 +328,26 @@
       "imported": "Imported",
       "clear": "Clear filters"
     },
+    "workspace": {
+      "upload": "Upload",
+      "review": "Review",
+      "allTypes": "All types",
+      "table": {
+        "name": "Name",
+        "stage": "Stage",
+        "account": "Account",
+        "date": "Date"
+      },
+      "rowMenuAria": "More actions for {fileName}",
+      "emptyState": {
+        "title": "Nothing in your vault yet",
+        "body": "Upload a bank statement to import its transactions, or a receipt to match it to a purchase."
+      },
+      "emptyFilterResult": {
+        "title": "No documents match these filters",
+        "body": "Try a different stage, type, or account."
+      }
+    },
     "toast": {
       "documentDeleted": "Document deleted",
       "deleteFailed": "Delete failed"
@@ -626,6 +646,10 @@
       "improved": "Improved"
     },
     "entries": {
+      "12": {
+        "title": "One Vault, filtered by what needs you",
+        "body": "Statements and receipts now live in a single list. Filter by stage — needs attention, all, or imported — instead of clicking through tabs, and see every document's account and status at a glance."
+      },
       "11": {
         "title": "A complete Vault overview",
         "body": "See every statement and receipt across your accounts, filter by account, and move a file safely when it belongs somewhere else."

@@ -328,6 +328,26 @@
       "imported": "已导入",
       "clear": "清除筛选"
     },
+    "workspace": {
+      "upload": "上传",
+      "review": "审核",
+      "allTypes": "所有类型",
+      "table": {
+        "name": "名称",
+        "stage": "阶段",
+        "account": "账户",
+        "date": "日期"
+      },
+      "rowMenuAria": "{fileName} 的更多操作",
+      "emptyState": {
+        "title": "资料库还没有文件",
+        "body": "上传银行对账单以导入交易，或上传收据以匹配一笔消费。"
+      },
+      "emptyFilterResult": {
+        "title": "没有文件匹配这些筛选条件",
+        "body": "试试其他阶段、类型或账户。"
+      }
+    },
     "toast": {
       "documentDeleted": "文档已删除",
       "deleteFailed": "删除失败"
@@ -623,6 +643,10 @@
       "improved": "改进"
     },
     "entries": {
+      "12": {
+        "title": "一个资料库，按待办事项筛选",
+        "body": "对账单和收据现在位于同一个列表中。按阶段筛选——需要处理、全部或已导入——而不必点击不同标签页，一眼就能看到每个文件的账户和状态。"
+      },
       "11": {
         "title": "完整的资料库总览",
         "body": "查看所有账户中的对账单和收据，按账户筛选，并在文件归属变化时安全地移动文件。"

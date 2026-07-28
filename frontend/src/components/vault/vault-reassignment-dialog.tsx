@@ -15,13 +15,27 @@ interface Props {
   document: VaultDocument;
   accounts: Account[];
   onSuccess?: () => void;
+  /** Omit the built-in trigger button — for callers (e.g. a row's overflow menu) that open this dialog themselves. */
+  hideTrigger?: boolean;
+  /** Controlled open state. Uncontrolled (internal state + built-in trigger) when omitted. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function VaultReassignmentDialog({ document, accounts, onSuccess }: Props) {
+export function VaultReassignmentDialog({
+  document,
+  accounts,
+  onSuccess,
+  hideTrigger = false,
+  open: controlledOpen,
+  onOpenChange: setControlledOpen,
+}: Props) {
   const t = useTranslations("vault.reassignment");
   const tCommon = useTranslations("common");
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const open = controlledOpen ?? uncontrolledOpen;
+  const setOpen = setControlledOpen ?? setUncontrolledOpen;
   const [targetAccountId, setTargetAccountId] = useState<number | null>(null);
   const idempotency = useIdempotencyKey(null);
 
@@ -74,15 +88,17 @@ export function VaultReassignmentDialog({ document, accounts, onSuccess }: Props
         if (nextOpen) setTargetAccountId(null);
       }}
     >
-      <Dialog.Trigger asChild>
-        <button
-          type="button"
-          className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-hover-surface focus:outline-none focus:ring-2 focus:ring-primary/40"
-        >
-          <MoveRight className="h-3.5 w-3.5" aria-hidden="true" />
-          {t("open")}
-        </button>
-      </Dialog.Trigger>
+      {!hideTrigger && (
+        <Dialog.Trigger asChild>
+          <button
+            type="button"
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-hover-surface focus:outline-none focus:ring-2 focus:ring-primary/40"
+          >
+            <MoveRight className="h-3.5 w-3.5" aria-hidden="true" />
+            {t("open")}
+          </button>
+        </Dialog.Trigger>
+      )}
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50" />
         <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[min(92vw,32rem)] -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-card p-5 shadow-lg">
