@@ -4,6 +4,16 @@ import type { AgentRunStatus } from "@/services/agent-run-service";
 export type VaultDocumentType = "RECEIPT" | "STATEMENT";
 export type VaultDocumentStatus = "UPLOADED" | "STAGED" | "CONFIRMING" | "ACTIVE";
 
+/** Derived lifecycle stage — mirrors the backend's VaultStage. See lib/vault-stage.ts for derivation. */
+export type VaultStage =
+  | "READY_TO_IMPORT"
+  | "NEEDS_REVIEW"
+  | "PROCESSING"
+  | "IMPORTED"
+  | "NOT_PROCESSED"
+  | "FAILED"
+  | "DISMISSED";
+
 export interface VaultDocument {
   id: string;
   accountId?: number;
@@ -66,6 +76,28 @@ export interface PageResponse<T> {
   number: number;
 }
 
+/** Per-stage counts across the whole matching collection, not just one page. Absent stages have zero matches. */
+export type VaultStageCounts = Partial<Record<VaultStage, number>>;
+
+export interface WorkspaceListParams {
+  types?: VaultDocumentType[];
+  stages?: VaultStage[];
+  accountId?: number;
+  page?: number;
+  size?: number;
+}
+
+export interface WorkspaceCountsParams {
+  types?: VaultDocumentType[];
+  accountId?: number;
+}
+
+/**
+ * Repeated-key array serialization ({@code type=A&type=B}, no brackets) — axios's default
+ * bracket notation ({@code type[]=A}) does not bind to Spring's `Set<T>` query params.
+ */
+const REPEATED_KEY_PARAMS = { indexes: null } as const;
+
 export const vaultService = {
   /** Upload a receipt or statement binary for an account. Returns the new vault document (status UPLOADED). */
   async upload(type: VaultDocumentType, accountId: number, file: File, idempotencyKey: string): Promise<VaultDocument> {
@@ -117,6 +149,28 @@ export const vaultService = {
       params: { accountId, type, page, size },
     });
     return data;
+  },
+
+  /** Lists documents across optional types and derived stages — backs the unified Vault workspace. */
+  async workspace(params: WorkspaceListParams = {}): Promise<PageResponse<VaultDocument>> {
+    const { types, stages, accountId, page = 0, size = 20 } = params;
+    const { data } = await apiClient.get<PageResponse<VaultDocument>>("/vault/workspace", {
+      baseURL: VAULT_BASE_URL,
+      params: { type: types, stage: stages, accountId, page, size },
+      paramsSerializer: REPEATED_KEY_PARAMS,
+    });
+    return data;
+  },
+
+  /** Per-stage document counts across the whole matching collection, for filter badges. */
+  async workspaceStageCounts(params: WorkspaceCountsParams = {}): Promise<VaultStageCounts> {
+    const { types, accountId } = params;
+    const { data } = await apiClient.get<{ counts: VaultStageCounts }>("/vault/workspace/counts", {
+      baseURL: VAULT_BASE_URL,
+      params: { type: types, accountId },
+      paramsSerializer: REPEATED_KEY_PARAMS,
+    });
+    return data.counts;
   },
 
   async previewReassignment(documentId: string, targetAccountId: number): Promise<VaultReassignmentPreview> {
