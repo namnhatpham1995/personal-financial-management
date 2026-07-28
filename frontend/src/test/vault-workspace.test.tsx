@@ -53,6 +53,32 @@ const unprocessedReceipt: VaultDocument = {
   originalFilename: "lunch.jpg",
 };
 
+const failedReceipt: VaultDocument = {
+  id: "doc-receipt-failed",
+  accountId: 1,
+  type: "RECEIPT",
+  status: "UPLOADED",
+  source: "manual",
+  capturedAt: "2026-01-12T00:00:00Z",
+  hasBinary: true,
+  originalFilename: "blurry.jpg",
+  ingestionStatus: "FAILED",
+};
+
+const dismissedReceipt: VaultDocument = {
+  id: "doc-receipt-dismissed",
+  accountId: 1,
+  type: "RECEIPT",
+  status: "UPLOADED",
+  source: "manual",
+  capturedAt: "2026-01-13T00:00:00Z",
+  hasBinary: true,
+  originalFilename: "duplicate.jpg",
+  ingestionStatus: "REJECTED",
+};
+
+const AGENT_UNAVAILABLE_ERROR = { response: { status: 503 } };
+
 describe("VaultWorkspace", () => {
   afterEach(() => {
     cleanup();
@@ -197,5 +223,76 @@ describe("VaultWorkspace", () => {
     // Both filters set before the upload are still the ones driving the refreshed query.
     const lastCall = vi.mocked(vaultService.workspace).mock.calls.at(-1)?.[0];
     expect(lastCall).toMatchObject({ stages: ["IMPORTED"], accountId: 1 });
+  });
+
+  it("shows an accessible loading indicator while the list is fetching", async () => {
+    vi.mocked(accountService.list).mockResolvedValue(accounts);
+    vi.mocked(agentRunService.list).mockResolvedValue([]);
+    // Never resolves, so the component stays in the loading state for this assertion.
+    vi.mocked(vaultService.workspace).mockReturnValue(new Promise(() => {}));
+    vi.mocked(vaultService.workspaceStageCounts).mockResolvedValue({});
+
+    render(<VaultWorkspace />);
+    expect(await screen.findByRole("status")).toBeInTheDocument();
+  });
+
+  it("degrades receipts to Stored with no action when the ingestion agent service is unavailable", async () => {
+    vi.mocked(accountService.list).mockResolvedValue(accounts);
+    vi.mocked(agentRunService.list).mockRejectedValue(AGENT_UNAVAILABLE_ERROR);
+    vi.mocked(vaultService.workspace).mockResolvedValue(page([unprocessedReceipt]));
+    vi.mocked(vaultService.workspaceStageCounts).mockResolvedValue({ NOT_PROCESSED: 1 });
+
+    render(<VaultWorkspace />);
+    expect(await screen.findByText("lunch.jpg")).toBeInTheDocument();
+    expect(screen.getByText("Stored")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Start ingestion" })).not.toBeInTheDocument();
+  });
+
+  it("statement stages are unaffected when the ingestion agent service is unavailable", async () => {
+    vi.mocked(accountService.list).mockResolvedValue(accounts);
+    vi.mocked(agentRunService.list).mockRejectedValue(AGENT_UNAVAILABLE_ERROR);
+    vi.mocked(vaultService.workspace).mockResolvedValue(page([readyStatement]));
+    vi.mocked(vaultService.workspaceStageCounts).mockResolvedValue({ READY_TO_IMPORT: 1 });
+
+    render(<VaultWorkspace />);
+    expect(await screen.findByText("jan.csv")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Review" })).toBeInTheDocument();
+  });
+
+  it("a failed receipt shows a warning icon alongside its stage label, not color alone", async () => {
+    vi.mocked(accountService.list).mockResolvedValue(accounts);
+    vi.mocked(agentRunService.list).mockResolvedValue([]);
+    vi.mocked(vaultService.workspace).mockResolvedValue(page([failedReceipt]));
+    vi.mocked(vaultService.workspaceStageCounts).mockResolvedValue({ FAILED: 1 });
+
+    render(<VaultWorkspace />);
+    const stageBadge = (await screen.findByText("Failed")).closest("span");
+    expect(stageBadge?.querySelector("svg")).toBeInTheDocument();
+  });
+
+  it("a dismissed receipt shows an icon alongside its stage label, not color alone", async () => {
+    vi.mocked(accountService.list).mockResolvedValue(accounts);
+    vi.mocked(agentRunService.list).mockResolvedValue([]);
+    vi.mocked(vaultService.workspace).mockResolvedValue(page([dismissedReceipt]));
+    vi.mocked(vaultService.workspaceStageCounts).mockResolvedValue({ DISMISSED: 1 });
+
+    render(<VaultWorkspace />);
+    const stageBadge = (await screen.findByText("Dismissed")).closest("span");
+    expect(stageBadge?.querySelector("svg")).toBeInTheDocument();
+  });
+
+  it("the owning account column is never hidden responsively; the date column is the one that collapses", async () => {
+    vi.mocked(accountService.list).mockResolvedValue(accounts);
+    vi.mocked(agentRunService.list).mockResolvedValue([]);
+    vi.mocked(vaultService.workspace).mockResolvedValue(page([readyStatement]));
+    vi.mocked(vaultService.workspaceStageCounts).mockResolvedValue({ READY_TO_IMPORT: 1 });
+
+    render(<VaultWorkspace />);
+    await screen.findByText("jan.csv");
+
+    const accountHeader = screen.getByRole("columnheader", { name: "Account" });
+    const dateHeader = screen.getByRole("columnheader", { name: "Date" });
+    expect(accountHeader.className).not.toMatch(/\bhidden\b/);
+    expect(dateHeader.className).toMatch(/\bhidden\b/);
   });
 });

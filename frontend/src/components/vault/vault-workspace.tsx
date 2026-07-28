@@ -29,6 +29,7 @@ function stagesForPreset(preset: StagePreset): VaultStage[] | undefined {
 
 export function VaultWorkspace() {
   const t = useTranslations("vault");
+  const tCommon = useTranslations("common");
   const qc = useQueryClient();
 
   const [stagePreset, setStagePreset] = useState<StagePreset>("attention");
@@ -80,7 +81,7 @@ export function VaultWorkspace() {
       <div className="max-w-3xl space-y-3">
         <button
           onClick={() => setReviewingStatementId(null)}
-          className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+          className="rounded text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           {t("backToList")}
         </button>
@@ -118,8 +119,9 @@ export function VaultWorkspace() {
           counts={countsQuery.data ?? {}}
         />
         <button
+          aria-pressed={uploading}
           onClick={() => setUploading((value) => !value)}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-primary/10 px-3.5 py-2 text-sm font-medium text-primary hover:bg-primary/20"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-primary/10 px-3.5 py-2 text-sm font-medium text-primary hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           <Upload className="h-4 w-4" />
           {t("workspace.upload")}
@@ -139,9 +141,9 @@ export function VaultWorkspace() {
       )}
 
       {listQuery.isLoading && (
-        <div className="space-y-2">
+        <div className="space-y-2" role="status" aria-label={tCommon("loading")}>
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-11 animate-pulse rounded-lg bg-muted/30" />
+            <div key={i} className="h-11 animate-pulse rounded-lg bg-muted/30 motion-reduce:animate-none" />
           ))}
         </div>
       )}
@@ -161,7 +163,7 @@ export function VaultWorkspace() {
                   setAccountId(null);
                   setPage(0);
                 }}
-                className="text-xs font-medium text-primary hover:underline"
+                className="rounded text-xs font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 {t("filters.clear")}
               </button>
@@ -197,7 +199,7 @@ export function VaultWorkspace() {
               aria-label={t("pagination.prevAria")}
               disabled={page === 0}
               onClick={() => setPage((value) => Math.max(0, value - 1))}
-              className="inline-flex min-h-9 min-w-9 items-center justify-center rounded border border-border text-muted-foreground hover:bg-secondary disabled:opacity-40"
+              className="inline-flex min-h-9 min-w-9 items-center justify-center rounded border border-border text-muted-foreground hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-40"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -206,7 +208,7 @@ export function VaultWorkspace() {
               aria-label={t("pagination.nextAria")}
               disabled={page >= (listQuery.data?.totalPages ?? 1) - 1}
               onClick={() => setPage((value) => value + 1)}
-              className="inline-flex min-h-9 min-w-9 items-center justify-center rounded border border-border text-muted-foreground hover:bg-secondary disabled:opacity-40"
+              className="inline-flex min-h-9 min-w-9 items-center justify-center rounded border border-border text-muted-foreground hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-40"
             >
               <ChevronRight className="h-4 w-4" />
             </button>

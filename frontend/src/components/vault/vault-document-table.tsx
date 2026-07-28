@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { toast } from "sonner";
-import { FileText, Loader2, Receipt, Sparkles } from "lucide-react";
+import { FileText, Loader2, Receipt, Sparkles, TriangleAlert, XCircle } from "lucide-react";
 import type { Account } from "@/services/account-service";
 import { agentRunService } from "@/services/agent-run-service";
 import { vaultService, type VaultDocument } from "@/services/vault-service";
@@ -32,6 +32,15 @@ function monthGroupKey(capturedAt: string): string {
   const date = new Date(capturedAt);
   return `${date.getFullYear()}-${String(date.getMonth()).padStart(2, "0")}`;
 }
+
+/**
+ * FAILED and DISMISSED get a leading icon in addition to color and text, so the distinction
+ * between "this needs attention" and "this is just history" never depends on hue alone.
+ */
+const STAGE_ICON: Partial<Record<VaultDisplayStage, typeof TriangleAlert>> = {
+  FAILED: TriangleAlert,
+  DISMISSED: XCircle,
+};
 
 function groupByMonth(documents: VaultDocument[]): Array<[string, VaultDocument[]]> {
   const groups = new Map<string, VaultDocument[]>();
@@ -85,7 +94,7 @@ export function VaultDocumentTable({
         return (
           <button
             onClick={() => onReviewStatement(doc.id)}
-            className="shrink-0 text-xs font-medium text-primary hover:underline"
+            className="shrink-0 rounded text-xs font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             {t("workspace.review")}
           </button>
@@ -98,7 +107,10 @@ export function VaultDocumentTable({
     if (agentFeatureUnavailable) return null;
     if (doc.ingestionStatus) {
       return (
-        <Link href="/dashboard/receipts" className="shrink-0 text-xs font-medium text-primary hover:underline">
+        <Link
+          href="/dashboard/receipts"
+          className="shrink-0 rounded text-xs font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        >
           {t("ingestion.viewRun")} - {getIngestionStatusLabel(doc.ingestionStatus)}
         </Link>
       );
@@ -107,7 +119,7 @@ export function VaultDocumentTable({
       <button
         onClick={() => startIngestionMut.mutate(doc.id)}
         disabled={startIngestionMut.isPending}
-        className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-primary hover:underline disabled:opacity-50"
+        className="inline-flex shrink-0 items-center gap-1 rounded text-xs font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-50"
       >
         {startIngestionMut.isPending && startIngestionMut.variables === doc.id ? (
           <Loader2 className="h-3 w-3 animate-spin" />
@@ -128,8 +140,8 @@ export function VaultDocumentTable({
           <tr className="border-b border-border bg-muted/30 text-left text-xs font-medium text-muted-foreground">
             <th className="px-3 py-2">{t("workspace.table.name")}</th>
             <th className="px-3 py-2">{t("workspace.table.stage")}</th>
-            <th className="hidden px-3 py-2 sm:table-cell">{t("workspace.table.account")}</th>
-            <th className="px-3 py-2">{t("workspace.table.date")}</th>
+            <th className="px-3 py-2">{t("workspace.table.account")}</th>
+            <th className="hidden px-3 py-2 sm:table-cell">{t("workspace.table.date")}</th>
             <th className="px-3 py-2" />
             <th className="px-3 py-2" />
           </tr>
@@ -150,26 +162,34 @@ export function VaultDocumentTable({
                     <td className="px-3 py-2">
                       <button
                         onClick={() => onOpenDocument(doc)}
-                        className="flex min-w-0 items-center gap-2 text-left text-foreground hover:underline"
+                        className="flex min-w-0 items-center gap-2 rounded text-left text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                       >
                         <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
                         <span className="truncate">{doc.originalFilename ?? doc.id}</span>
                       </button>
                     </td>
                     <td className="px-3 py-2">
-                      <span
-                        className={cn(
-                          "inline-flex rounded-full px-2 py-0.5 text-xs font-medium",
-                          VAULT_STAGE_BADGE_CLASS[stage]
-                        )}
-                      >
-                        {getStageLabel(stage)}
-                      </span>
+                      {(() => {
+                        const StageIcon = STAGE_ICON[stage];
+                        return (
+                          <span
+                            className={cn(
+                              "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
+                              VAULT_STAGE_BADGE_CLASS[stage]
+                            )}
+                          >
+                            {StageIcon && <StageIcon className="h-3 w-3" aria-hidden="true" />}
+                            {getStageLabel(stage)}
+                          </span>
+                        );
+                      })()}
                     </td>
-                    <td className="hidden px-3 py-2 text-muted-foreground sm:table-cell">
+                    <td className="px-3 py-2 text-muted-foreground">
                       {accountName(accounts, doc.accountId, t("unassigned"))}
                     </td>
-                    <td className="px-3 py-2 text-muted-foreground">{formatDate(doc.capturedAt.split("T")[0], locale)}</td>
+                    <td className="hidden px-3 py-2 text-muted-foreground sm:table-cell">
+                      {formatDate(doc.capturedAt.split("T")[0], locale)}
+                    </td>
                     <td className="px-3 py-2">{renderPrimaryAction(doc, stage)}</td>
                     <td className="px-3 py-2 text-right">
                       <VaultDocumentRowActions
