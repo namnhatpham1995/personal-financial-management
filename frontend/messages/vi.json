@@ -643,6 +643,10 @@
       "improved": "Cải tiến"
     },
     "entries": {
+      "13": {
+        "title": "Kho lưu trữ dễ đọc và dễ tiếp cận hơn",
+        "body": "Cột tài khoản giờ luôn hiển thị trên màn hình hẹp, hóa đơn thất bại hoặc bị bỏ qua có biểu tượng rõ ràng bên cạnh trạng thái, và mọi điều khiển trong Kho lưu trữ đều thao tác được hoàn toàn bằng bàn phím."
+      },
       "12": {
         "title": "Một Kho lưu trữ, lọc theo việc cần làm",
         "body": "Sao kê và hóa đơn giờ nằm trong một danh sách duy nhất. Lọc theo giai đoạn — cần xử lý, tất cả, hoặc đã nhập — thay vì bấm qua từng tab, và xem tài khoản cùng trạng thái của mọi tài liệu chỉ trong một cái nhìn."

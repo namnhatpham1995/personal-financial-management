@@ -34,11 +34,12 @@ export function VaultUploadPanel({ accounts, defaultAccountId, onUploaded, onClo
           <button
             key={option}
             type="button"
+            aria-pressed={type === option}
             onClick={() => setType(option)}
             className={
               type === option
-                ? "rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary"
-                : "rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-hover-surface"
+                ? "rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                : "rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-hover-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             }
           >
             {t(`tabs.${option === "STATEMENT" ? "statement" : "receipt"}`)}
@@ -75,7 +76,10 @@ export function VaultUploadPanel({ accounts, defaultAccountId, onUploaded, onClo
         <p className="text-sm text-muted-foreground">{t("selectAccountToUpload")}</p>
       )}
 
-      <button onClick={onClose} className="text-xs text-muted-foreground transition-colors hover:text-foreground">
+      <button
+        onClick={onClose}
+        className="rounded text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+      >
         {t("backToList")}
       </button>
     </div>

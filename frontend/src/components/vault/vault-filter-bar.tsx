@@ -40,9 +40,11 @@ export function VaultFilterBar({
   const presetButton = (preset: StagePreset, label: string, count?: number) => (
     <button
       type="button"
+      aria-pressed={stagePreset === preset}
       onClick={() => onStagePresetChange(preset)}
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
         stagePreset === preset
           ? "bg-primary/10 text-primary"
           : "border border-border text-muted-foreground hover:bg-hover-surface"
