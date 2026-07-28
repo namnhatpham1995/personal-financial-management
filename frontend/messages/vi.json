@@ -409,7 +409,15 @@
       "loadFailed": "Không thể tải tài liệu này.",
       "retry": "Thử lại",
       "imageAlt": "Xem trước tài liệu",
-      "downloadFallback": "Tải xuống thay thế"
+      "downloadFallback": "Tải xuống thay thế",
+      "table": {
+        "dateHeader": "Ngày",
+        "descriptionHeader": "Mô tả",
+        "categoryHeader": "Danh mục",
+        "typeHeader": "Loại",
+        "amountHeader": "Số tiền",
+        "emptyMessage": "Sao kê này không có dòng nào."
+      }
     },
     "downloadFallback": "tài liệu",
     "statementSubTabs": {

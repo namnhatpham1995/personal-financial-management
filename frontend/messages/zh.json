@@ -409,7 +409,15 @@
       "loadFailed": "无法加载此文档。",
       "retry": "重试",
       "imageAlt": "文档预览",
-      "downloadFallback": "改为下载"
+      "downloadFallback": "改为下载",
+      "table": {
+        "dateHeader": "日期",
+        "descriptionHeader": "描述",
+        "categoryHeader": "分类",
+        "typeHeader": "类型",
+        "amountHeader": "金额",
+        "emptyMessage": "此对账单没有行。"
+      }
     },
     "downloadFallback": "文档",
     "statementSubTabs": {

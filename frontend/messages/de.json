@@ -409,7 +409,15 @@
       "loadFailed": "Dieses Dokument konnte nicht geladen werden.",
       "retry": "Erneut versuchen",
       "imageAlt": "Dokumentvorschau",
-      "downloadFallback": "Stattdessen herunterladen"
+      "downloadFallback": "Stattdessen herunterladen",
+      "table": {
+        "dateHeader": "Datum",
+        "descriptionHeader": "Beschreibung",
+        "categoryHeader": "Kategorie",
+        "typeHeader": "Typ",
+        "amountHeader": "Betrag",
+        "emptyMessage": "Dieser Kontoauszug enthält keine Zeilen."
+      }
     },
     "downloadFallback": "Dokument",
     "statementSubTabs": {

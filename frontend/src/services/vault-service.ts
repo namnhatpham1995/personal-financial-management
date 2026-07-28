@@ -289,6 +289,18 @@ export const vaultService = {
     return data;
   },
 
+  /**
+   * Previously parsed statement rows for read-only in-browser preview, reachable at any
+   * lifecycle status (unlike getImportRows, which is scoped to the STAGED review workflow).
+   * Rejects with a 404 if the statement has never been parsed.
+   */
+  async getPreviewRows(documentId: string): Promise<StagedRow[]> {
+    const { data } = await apiClient.get<StagedRow[]>(`/vault/${documentId}/preview-rows`, {
+      baseURL: VAULT_BASE_URL,
+    });
+    return data;
+  },
+
   async confirmImport(
     documentId: string,
     rows: ConfirmImportRow[],
