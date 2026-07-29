@@ -58,7 +58,7 @@ export function DocumentReader({ documentId, originalFilename }: Props) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-8">
+      <div className="flex h-full items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
@@ -66,7 +66,7 @@ export function DocumentReader({ documentId, originalFilename }: Props) {
 
   if (isError || !data) {
     return (
-      <div className="flex flex-col items-center gap-2 py-8 text-center">
+      <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
         <TriangleAlert className="h-6 w-6 text-destructive" />
         <p className="text-sm text-foreground">{t("loadFailed")}</p>
         <Button size="sm" variant="secondary" onClick={() => refetch()}>
@@ -84,26 +84,26 @@ export function DocumentReader({ documentId, originalFilename }: Props) {
       <img
         src={objectUrl}
         alt={originalFilename ?? t("imageAlt")}
-        className="max-h-[70vh] w-full rounded-lg border border-border object-contain"
+        className="h-full w-full rounded-lg border border-border object-contain"
       />
     ) : null;
   }
 
   if (contentType === "application/pdf") {
     return objectUrl ? (
-      <div className="space-y-2">
+      <div className="flex h-full flex-col gap-2">
         {/* #view=FitH nudges the browser's native PDF viewer toward a fit-width default
             zoom instead of an autofit-shrunk thumbnail scale (informal PDF open-parameters
             convention; not universally honored, but harmless where it isn't). */}
         <embed
           src={`${objectUrl}#view=FitH`}
           type="application/pdf"
-          className="h-[80vh] w-full rounded-lg border border-border"
+          className="min-h-0 flex-1 w-full rounded-lg border border-border"
         />
         <a
           href={objectUrl}
           download={originalFilename ?? "document.pdf"}
-          className="text-xs text-primary hover:underline"
+          className="shrink-0 text-xs text-primary hover:underline"
         >
           {t("downloadFallback")}
         </a>
@@ -113,7 +113,7 @@ export function DocumentReader({ documentId, originalFilename }: Props) {
 
   if (previewRows.isLoading) {
     return (
-      <div className="flex items-center justify-center py-8">
+      <div className="flex h-full items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
@@ -129,7 +129,7 @@ export function DocumentReader({ documentId, originalFilename }: Props) {
       t("table.amountHeader"),
     ];
     return (
-      <div className="max-h-[70vh] overflow-auto rounded-lg border border-border bg-card">
+      <div className="h-full overflow-auto rounded-lg border border-border bg-card">
         <table className="w-full text-sm">
           <thead className="border-b border-border">
             <tr>
@@ -168,7 +168,7 @@ export function DocumentReader({ documentId, originalFilename }: Props) {
   }
 
   return (
-    <pre className="max-h-[70vh] overflow-auto whitespace-pre-wrap rounded-lg border border-border bg-muted/20 p-3 text-xs text-foreground">
+    <pre className="h-full overflow-auto whitespace-pre-wrap rounded-lg border border-border bg-muted/20 p-3 text-xs text-foreground">
       {textContent ?? ""}
     </pre>
   );
