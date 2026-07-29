@@ -409,7 +409,15 @@
       "loadFailed": "Không thể tải tài liệu này.",
       "retry": "Thử lại",
       "imageAlt": "Xem trước tài liệu",
-      "downloadFallback": "Tải xuống thay thế"
+      "downloadFallback": "Tải xuống thay thế",
+      "table": {
+        "dateHeader": "Ngày",
+        "descriptionHeader": "Mô tả",
+        "categoryHeader": "Danh mục",
+        "typeHeader": "Loại",
+        "amountHeader": "Số tiền",
+        "emptyMessage": "Sao kê này không có dòng nào."
+      }
     },
     "downloadFallback": "tài liệu",
     "statementSubTabs": {
@@ -643,6 +651,10 @@
       "improved": "Cải tiến"
     },
     "entries": {
+      "14": {
+        "title": "Xem trước Kho lưu trữ dễ đọc hơn",
+        "body": "Sao kê PDF và hóa đơn giờ mở với mức thu phóng mặc định dễ đọc thay vì trang bị thu nhỏ khó nhìn, và sao kê CSV/OFX hiển thị dưới dạng bảng rõ ràng thay vì văn bản thô."
+      },
       "13": {
         "title": "Kho lưu trữ dễ đọc và dễ tiếp cận hơn",
         "body": "Cột tài khoản giờ luôn hiển thị trên màn hình hẹp, hóa đơn thất bại hoặc bị bỏ qua có biểu tượng rõ ràng bên cạnh trạng thái, và mọi điều khiển trong Kho lưu trữ đều thao tác được hoàn toàn bằng bàn phím."

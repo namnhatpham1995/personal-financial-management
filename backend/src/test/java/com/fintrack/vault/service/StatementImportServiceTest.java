@@ -331,4 +331,67 @@ class StatementImportServiceTest {
 
         verifyNoInteractions(vaultDocumentRepository);
     }
+
+    // ── previewRows: stage-independent read for in-browser preview ─────────────
+
+    private VaultDocument docWithRows(VaultDocumentStatus status) {
+        Map<String, Object> row = Map.of(
+                "date", "2024-01-01",
+                "amount", "10.00",
+                "type", "EXPENSE",
+                "description", "Coffee",
+                "dedupKey", "dk1");
+        return VaultDocument.builder()
+                .id("doc-1")
+                .userId(1L)
+                .accountId(10L)
+                .type(VaultDocumentType.STATEMENT)
+                .status(status)
+                .originalFilename("statement.csv")
+                .payload(Map.of("accountId", 10L, "rows", List.of(row)))
+                .build();
+    }
+
+    @Test
+    void previewRows_stagedDocument_returnsRows() {
+        StatementImportService importService = newService();
+        when(vaultDocumentRepository.findByIdAndUserId("doc-1", 1L))
+                .thenReturn(Optional.of(docWithRows(VaultDocumentStatus.STAGED)));
+
+        List<StagedRowResponse> rows = importService.previewRows(1L, "doc-1");
+
+        assertThat(rows).hasSize(1);
+        assertThat(rows.get(0).description()).isEqualTo("Coffee");
+    }
+
+    @Test
+    void previewRows_confirmedDocument_stillReturnsRows() {
+        StatementImportService importService = newService();
+        when(vaultDocumentRepository.findByIdAndUserId("doc-1", 1L))
+                .thenReturn(Optional.of(docWithRows(VaultDocumentStatus.ACTIVE)));
+
+        List<StagedRowResponse> rows = importService.previewRows(1L, "doc-1");
+
+        assertThat(rows).hasSize(1);
+    }
+
+    @Test
+    void previewRows_neverParsed_throwsNotFound() {
+        StatementImportService importService = newService();
+        when(vaultDocumentRepository.findByIdAndUserId("doc-1", 1L))
+                .thenReturn(Optional.of(uploadedDoc("statement.csv")));
+
+        assertThatThrownBy(() -> importService.previewRows(1L, "doc-1"))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void previewRows_anotherUsersDocument_throwsNotFoundWithoutLeakingData() {
+        StatementImportService importService = newService();
+        when(vaultDocumentRepository.findByIdAndUserId("doc-1", 2L))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> importService.previewRows(2L, "doc-1"))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
 }

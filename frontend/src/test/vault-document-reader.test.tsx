@@ -55,14 +55,36 @@ describe("DocumentReader", () => {
     expect(container.querySelector("embed[type='application/pdf']")).not.toBeNull();
   });
 
-  it("renders CSV/text content as <pre>", async () => {
+  it("renders a never-parsed CSV/text statement as raw <pre> text", async () => {
     const blob = new Blob(["date,amount\n2026-01-01,10.00\n"], { type: "text/csv" });
     vi.mocked(vaultService.getInlineContent).mockResolvedValue({ blob: blob as unknown as globalThis.Blob, contentType: "text/csv" });
+    vi.mocked(vaultService.getPreviewRows).mockRejectedValue(new Error("not found"));
     const { container } = renderReader();
 
     await vi.waitFor(() => {
       expect(container.querySelector("pre")?.textContent).toContain("date,amount");
     });
+  });
+
+  it("renders a parsed CSV statement as a table of rows", async () => {
+    const blob = new Blob(["date,amount\n2026-01-01,10.00\n"], { type: "text/csv" });
+    vi.mocked(vaultService.getInlineContent).mockResolvedValue({ blob: blob as unknown as globalThis.Blob, contentType: "text/csv" });
+    vi.mocked(vaultService.getPreviewRows).mockResolvedValue([
+      {
+        date: "2026-01-01",
+        amount: "10.00",
+        type: "EXPENSE",
+        description: "Coffee Shop",
+        dedupKey: "dk1",
+        category: "Dining",
+        categoryId: null,
+      },
+    ]);
+    renderReader();
+
+    expect(await screen.findByText("Coffee Shop")).toBeInTheDocument();
+    expect(screen.getByText("Dining")).toBeInTheDocument();
+    expect(screen.getByText("10.00")).toBeInTheDocument();
   });
 
   it("shows a retry affordance on load failure", async () => {
