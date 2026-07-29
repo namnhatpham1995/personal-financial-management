@@ -24,8 +24,8 @@ export function DocumentReaderModal({ documentId, originalFilename, onClose }: P
     >
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[95vw] max-w-5xl -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-card p-4 shadow-lg">
-          <div className="mb-3 flex items-center justify-between gap-3">
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex h-[90vh] w-[95vw] -translate-x-1/2 -translate-y-1/2 flex-col rounded-lg border border-border bg-card p-4 shadow-lg">
+          <div className="mb-3 flex shrink-0 items-center justify-between gap-3">
             <Dialog.Title className="truncate text-sm font-medium text-foreground">
               {originalFilename ?? t("title")}
             </Dialog.Title>
@@ -38,7 +38,9 @@ export function DocumentReaderModal({ documentId, originalFilename, onClose }: P
               </button>
             </Dialog.Close>
           </div>
-          {documentId && <DocumentReader documentId={documentId} originalFilename={originalFilename} />}
+          <div className="min-h-0 flex-1 overflow-hidden">
+            {documentId && <DocumentReader documentId={documentId} originalFilename={originalFilename} />}
+          </div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
