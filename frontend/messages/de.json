@@ -651,6 +651,10 @@
       "improved": "Verbessert"
     },
     "entries": {
+      "14": {
+        "title": "Lesbare Tresor-Vorschauen",
+        "body": "PDF-Kontoauszüge und Belege öffnen jetzt mit einem gut lesbaren Standardzoom statt einer winzigen, geschrumpften Seite, und CSV/OFX-Kontoauszüge werden als übersichtliche Tabelle statt als reiner Text angezeigt."
+      },
       "13": {
         "title": "Ein lesbarerer, barrierefreierer Tresor",
         "body": "Die Kontospalte bleibt jetzt auf schmalen Bildschirmen immer sichtbar, fehlgeschlagene und verworfene Belege erhalten ein klares Symbol neben ihrem Status, und jedes Element im Tresor ist vollständig per Tastatur bedienbar."

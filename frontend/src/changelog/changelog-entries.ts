@@ -16,6 +16,13 @@ export interface ChangelogEntry {
  */
 const unsortedEntries: ChangelogEntry[] = [
   {
+    version: 14,
+    date: "2026-07-29",
+    titleKey: "changelog.entries.14.title",
+    bodyKey: "changelog.entries.14.body",
+    tag: "improved",
+  },
+  {
     version: 13,
     date: "2026-07-28",
     titleKey: "changelog.entries.13.title",

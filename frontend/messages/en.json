@@ -654,6 +654,10 @@
       "improved": "Improved"
     },
     "entries": {
+      "14": {
+        "title": "Legible Vault previews",
+        "body": "PDF statements and receipts now open at a readable default zoom instead of a tiny shrunk-down page, and CSV/OFX statements preview as a proper table of rows instead of raw text."
+      },
       "13": {
         "title": "A more readable, more accessible Vault",
         "body": "The account column now always stays visible on narrow screens, failed and dismissed receipts get a clear icon alongside their status, and every control in the Vault is fully keyboard-navigable."
