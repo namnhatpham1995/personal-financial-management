@@ -651,6 +651,10 @@
       "improved": "Cải tiến"
     },
     "entries": {
+      "15": {
+        "title": "Xem trước Kho lưu trữ gần như toàn màn hình",
+        "body": "Hộp thoại xem trước tài liệu giờ chiếm gần như toàn bộ cửa sổ thay vì một hộp nhỏ ở giữa, giúp PDF, hóa đơn và bảng sao kê có nhiều không gian hơn."
+      },
       "14": {
         "title": "Xem trước Kho lưu trữ dễ đọc hơn",
         "body": "Sao kê PDF và hóa đơn giờ mở với mức thu phóng mặc định dễ đọc thay vì trang bị thu nhỏ khó nhìn, và sao kê CSV/OFX hiển thị dưới dạng bảng rõ ràng thay vì văn bản thô."

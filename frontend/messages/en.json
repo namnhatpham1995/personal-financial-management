@@ -654,6 +654,10 @@
       "improved": "Improved"
     },
     "entries": {
+      "15": {
+        "title": "Near-fullscreen Vault previews",
+        "body": "The document preview dialog now uses almost the entire window instead of a small centered box, so PDFs, receipts, and statement tables have much more room to breathe."
+      },
       "14": {
         "title": "Legible Vault previews",
         "body": "PDF statements and receipts now open at a readable default zoom instead of a tiny shrunk-down page, and CSV/OFX statements preview as a proper table of rows instead of raw text."

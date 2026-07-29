@@ -651,6 +651,10 @@
       "improved": "Verbessert"
     },
     "entries": {
+      "15": {
+        "title": "Fast bildschirmfüllende Tresor-Vorschauen",
+        "body": "Der Dokumentvorschau-Dialog nutzt jetzt fast das gesamte Fenster statt eines kleinen zentrierten Kastens, sodass PDFs, Belege und Kontoauszugstabellen viel mehr Platz haben."
+      },
       "14": {
         "title": "Lesbare Tresor-Vorschauen",
         "body": "PDF-Kontoauszüge und Belege öffnen jetzt mit einem gut lesbaren Standardzoom statt einer winzigen, geschrumpften Seite, und CSV/OFX-Kontoauszüge werden als übersichtliche Tabelle statt als reiner Text angezeigt."
