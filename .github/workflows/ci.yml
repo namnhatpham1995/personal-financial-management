@@ -325,7 +325,10 @@ jobs:
   docker:
     name: Docker — Compose Build Check
     runs-on: ubuntu-latest
-    needs: [backend, frontend, changelog-coverage, mcp-server, agent-service]
+    # mcp-integration is included so a red backend<->MCP integration test blocks the image
+    # build, not just the deploy step below (deploy's own `success()` only covers its own
+    # `needs` closure, so it would otherwise stay blind to this job failing in parallel).
+    needs: [backend, frontend, changelog-coverage, mcp-server, agent-service, mcp-integration]
     if: github.ref == 'refs/heads/main'
 
     steps:
@@ -339,7 +342,10 @@ jobs:
   deploy:
     name: Deploy — Railway (gated on green main)
     runs-on: ubuntu-latest
-    needs: [backend, frontend, mcp-server, agent-service, docker]
+    # mcp-integration is included explicitly: `if: success()` below only evaluates over this
+    # job's own `needs` closure, so without a direct dependency here a red backend<->MCP
+    # integration test would not block deploy even though `docker` now depends on it too.
+    needs: [backend, frontend, mcp-server, agent-service, docker, mcp-integration]
     if: github.ref == 'refs/heads/main' && success()
 
     steps:
