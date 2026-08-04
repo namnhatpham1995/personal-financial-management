@@ -21,6 +21,11 @@ import org.springframework.data.mongodb.core.index.IndexOperations;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -49,9 +54,11 @@ class VaultUploadIdempotencyCoordinatorTest {
     private static final Map<String, String> PARAMS = Map.of("type", "RECEIPT");
     private static final byte[] BYTES = "file-bytes".getBytes();
 
+    @Mock IndexOperations indexOperations;
+
     @BeforeEach
     void setUp() {
-        when(mongoTemplate.indexOps(VaultOperation.class)).thenReturn(mock(IndexOperations.class));
+        when(mongoTemplate.indexOps(VaultOperation.class)).thenReturn(indexOperations);
         coordinator = new VaultUploadIdempotencyCoordinator(
                 new IdempotencyKeyValidator(), new IdempotencyHasher(), operationRepository, gridFsFileStore,
                 mongoTemplate, new AuditReplaySignal(), new VaultOperationMetrics(new SimpleMeterRegistry()));
@@ -191,5 +198,89 @@ class VaultUploadIdempotencyCoordinatorTest {
                 gridFsFileId -> new VaultUploadResult<>("x", "y"),
                 docId -> "should-not-replay"))
                 .isInstanceOf(IdempotencyConflictException.class);
+    }
+
+    @Test
+    void indexCreationFails_retriedOnNextCall_ratherThanDisablingProtectionForever() throws Exception {
+        when(indexOperations.ensureIndex(any()))
+                .thenThrow(new RuntimeException("mongo temporarily unavailable"))
+                .thenReturn("idx");
+        when(operationRepository.insert(any(VaultOperation.class)))
+                .thenAnswer(inv -> {
+                    VaultOperation op = inv.getArgument(0);
+                    op.setId("op-retry");
+                    return op;
+                });
+        when(operationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        // First call: index creation fails, so the whole operation fails without claiming.
+        assertThatThrownBy(() -> coordinator.execute(
+                USER_ID, OPERATION, KEY, PARAMS, BYTES,
+                operationId -> "should-not-store",
+                gridFsFileId -> new VaultUploadResult<>("x", "y"),
+                docId -> "should-not-replay"))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("mongo temporarily unavailable");
+        verify(operationRepository, never()).insert(any(VaultOperation.class));
+
+        // Second call: the guard flag was released on failure, so index creation is retried and
+        // this time succeeds, letting the claim proceed normally.
+        VaultUploadOutcome<String> outcome = coordinator.execute(
+                USER_ID, OPERATION, KEY, PARAMS, BYTES,
+                operationId -> "gridfs-retry",
+                gridFsFileId -> new VaultUploadResult<>("doc-retry", "response-for-" + gridFsFileId),
+                docId -> "should-not-be-called");
+
+        assertThat(outcome.replayed()).isFalse();
+        assertThat(outcome.response()).isEqualTo("response-for-gridfs-retry");
+        // Unique index + TTL index, attempted once on the failed call and twice on the retry.
+        verify(indexOperations, times(3)).ensureIndex(any());
+    }
+
+    @Test
+    void concurrentFirstCalls_createIndexesExactlyOnce() throws Exception {
+        int threadCount = 8;
+        CountDownLatch ready = new CountDownLatch(threadCount);
+        CountDownLatch start = new CountDownLatch(1);
+        AtomicInteger opCounter = new AtomicInteger();
+
+        when(indexOperations.ensureIndex(any())).thenReturn("idx");
+        when(operationRepository.insert(any(VaultOperation.class)))
+                .thenAnswer(inv -> {
+                    VaultOperation op = inv.getArgument(0);
+                    op.setId("op-" + opCounter.incrementAndGet());
+                    return op;
+                });
+        when(operationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        ExecutorService pool = Executors.newFixedThreadPool(threadCount);
+        try {
+            for (int i = 0; i < threadCount; i++) {
+                int idx = i;
+                pool.submit(() -> {
+                    ready.countDown();
+                    try {
+                        start.await();
+                        coordinator.execute(
+                                USER_ID, OPERATION, KEY + "-" + idx, PARAMS, BYTES,
+                                operationId -> "gridfs-" + idx,
+                                gridFsFileId -> new VaultUploadResult<>("doc-" + idx, "response-" + idx),
+                                docId -> "unused");
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
+            ready.await();
+            start.countDown();
+            pool.shutdown();
+            assertThat(pool.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
+        } finally {
+            pool.shutdownNow();
+        }
+
+        // Only the caller that wins the compareAndSet race creates indexes; every other
+        // concurrent caller must observe the flag already set and skip straight to its claim.
+        verify(indexOperations, times(2)).ensureIndex(any());
     }
 }

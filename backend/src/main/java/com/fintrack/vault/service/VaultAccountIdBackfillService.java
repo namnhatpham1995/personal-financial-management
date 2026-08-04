@@ -26,7 +26,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * <p>Guarded twice: an in-process {@link AtomicBoolean} skips repeat lazy triggers within one
  * process, and a persisted marker document in {@code vault_migrations} skips the work entirely
- * across restarts once it has actually completed.
+ * across restarts once it has actually completed. The in-process flag is released if the backfill
+ * attempt throws, so a transient Mongo failure retries on the next call instead of silently
+ * leaving the backfill permanently un-attempted for the rest of the process's life.
  */
 @Slf4j
 @Component
@@ -44,10 +46,19 @@ public class VaultAccountIdBackfillService {
         if (!ranThisProcess.compareAndSet(false, true)) {
             return;
         }
-        if (mongoTemplate.exists(Query.query(Criteria.where("_id").is(MIGRATION_MARKER_ID)), MIGRATIONS_COLLECTION)) {
-            return;
+        try {
+            if (mongoTemplate.exists(Query.query(Criteria.where("_id").is(MIGRATION_MARKER_ID)), MIGRATIONS_COLLECTION)) {
+                return;
+            }
+            runBackfill();
+        } catch (RuntimeException e) {
+            // Attempt failed (e.g. transient Mongo unavailability) — release the flag so the next
+            // call retries instead of leaving the backfill permanently un-attempted for the rest
+            // of the process's life. The backfill itself is idempotent: a retry after a partial
+            // run only finds the remaining un-backfilled candidates.
+            ranThisProcess.set(false);
+            throw e;
         }
-        runBackfill();
     }
 
     private void runBackfill() {
