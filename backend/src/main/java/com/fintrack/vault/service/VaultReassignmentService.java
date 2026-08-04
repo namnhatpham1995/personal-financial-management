@@ -13,10 +13,10 @@ import com.fintrack.transaction.domain.Transaction;
 import com.fintrack.transaction.repository.TransactionRepository;
 import com.fintrack.vault.domain.VaultDocument;
 import com.fintrack.vault.domain.VaultDocumentStatus;
-import com.fintrack.vault.domain.VaultReassignmentOperation;
-import com.fintrack.vault.domain.VaultReassignmentState;
+import com.fintrack.vault.domain.VaultOperation;
+import com.fintrack.vault.domain.VaultOperationState;
 import com.fintrack.vault.repository.VaultDocumentRepository;
-import com.fintrack.vault.repository.VaultReassignmentOperationRepository;
+import com.fintrack.vault.repository.VaultOperationRepository;
 import com.fintrack.vault.web.dto.VaultReassignmentPreviewResponse;
 import com.fintrack.vault.web.dto.VaultReassignmentRequest;
 import com.fintrack.vault.web.dto.VaultReassignmentResponse;
@@ -36,6 +36,8 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -47,8 +49,16 @@ public class VaultReassignmentService {
     private static final String OPERATION_NAME = "vault.reassign";
     private static final Duration RESULT_RETENTION = Duration.ofDays(7);
 
+    private static final String DOCUMENT_ID = "documentId";
+    private static final String SOURCE_ACCOUNT_ID = "sourceAccountId";
+    private static final String TARGET_ACCOUNT_ID = "targetAccountId";
+    private static final String REMOVED_TRANSACTION_IDS = "removedTransactionIds";
+    private static final String REMOVED_TRANSACTION_COUNT = "removedTransactionCount";
+    private static final String MANUAL_LINK_DETACHED = "manualLinkDetached";
+    private static final String FAILURE_REASON = "failureReason";
+
     private final VaultDocumentRepository vaultDocumentRepository;
-    private final VaultReassignmentOperationRepository operationRepository;
+    private final VaultOperationRepository operationRepository;
     private final VaultImportOriginService importOriginService;
     private final VaultReassignmentCleanupService cleanupService;
     private final VaultService vaultService;
@@ -77,11 +87,11 @@ public class VaultReassignmentService {
         ensureIndexesOnce();
         String keyHash = hasher.hashKey(rawIdempotencyKey);
         String requestHash = hasher.hashJsonRequest(OPERATION_NAME,
-                Map.of("documentId", documentId, "targetAccountId", request.targetAccountId()));
-        VaultReassignmentOperation operation = claimOperation(userId, documentId,
+                Map.of(DOCUMENT_ID, documentId, TARGET_ACCOUNT_ID, request.targetAccountId()));
+        VaultOperation operation = claimOperation(userId, documentId,
                 request.targetAccountId(), keyHash, requestHash);
 
-        if (operation.getState() == VaultReassignmentState.COMPLETED) {
+        if (operation.getState() == VaultOperationState.COMPLETED) {
             metrics.replayed(OPERATION_NAME);
             auditReplaySignal.markReplayed();
             return replay(operation, userId);
@@ -109,58 +119,60 @@ public class VaultReassignmentService {
         }
 
         Set<Long> importedIds = importOriginService.collectTransactionIds(userId, claimed);
-        operation.setSourceAccountId(claimed.getAccountId());
-        operation.setRemovedTransactionIds(new ArrayList<>(importedIds));
-        operation.setRemovedTransactionCount(importedIds.size());
-        operation.setManualLinkDetached(manualLinkMustDetach(userId, claimed, target.getId()));
+        Map<String, Object> payload = payload(operation);
+        payload.put(SOURCE_ACCOUNT_ID, claimed.getAccountId());
+        payload.put(REMOVED_TRANSACTION_IDS, new ArrayList<>(importedIds));
+        payload.put(REMOVED_TRANSACTION_COUNT, importedIds.size());
+        payload.put(MANUAL_LINK_DETACHED, manualLinkMustDetach(userId, claimed, target.getId()));
         operationRepository.save(operation);
 
         try {
             VaultReassignmentCleanupService.CleanupResult cleanup = cleanupService.clean(
                     userId, documentId, claimed.getAccountId(), importedIds,
                     "Vault document reassigned to another account");
-            operation.setRemovedTransactionCount(cleanup.removedTransactions());
+            payload.put(REMOVED_TRANSACTION_COUNT, cleanup.removedTransactions());
             operationRepository.save(operation);
             VaultDocument finalized = finalizeDocument(userId, claimed, operation.getId(), target.getId());
-            operation.setState(VaultReassignmentState.COMPLETED);
+            operation.setState(VaultOperationState.COMPLETED);
             operation.setCompletedAt(Instant.now());
             operationRepository.save(operation);
             auditReplaySignal.setOperationReference(operation.getId());
             metrics.reassignmentCompleted();
             return new VaultReassignmentResponse(
                     vaultService.getById(userId, finalized.getId()),
-                    operation.getRemovedTransactionCount() == null ? 0 : operation.getRemovedTransactionCount(),
-                    Boolean.TRUE.equals(operation.getManualLinkDetached()), false);
+                    integerValue(payload.get(REMOVED_TRANSACTION_COUNT)),
+                    Boolean.TRUE.equals(payload.get(MANUAL_LINK_DETACHED)), false);
         } catch (RuntimeException e) {
             metrics.reassignmentCleanupFailed();
-            operation.setState(VaultReassignmentState.FAILED);
-            operation.setFailureReason(e.getMessage());
-            operationRepository.save(operation);
+            failOperation(operation, e.getMessage());
             clearClaim(userId, documentId, operation.getId());
             throw e;
         }
     }
 
     /** Resumes a stale operation after a process interruption; called by the bounded scheduler. */
-    public void recoverStale(VaultReassignmentOperation operation) {
-        if (operation.getState() != VaultReassignmentState.PROCESSING) {
+    public void recoverStale(VaultOperation operation) {
+        if (operation.getState() != VaultOperationState.PROCESSING) {
             return;
         }
+        String documentId = requiredString(operation, DOCUMENT_ID);
+        Long targetAccountId = requiredLong(operation, TARGET_ACCOUNT_ID);
+        Long sourceAccountId = nullableLong(payload(operation).get(SOURCE_ACCOUNT_ID));
         VaultDocument document;
         try {
-            document = findOwned(operation.getUserId(), operation.getDocumentId());
-            if (operation.getTargetAccountId().equals(document.getAccountId())
+            document = findOwned(operation.getUserId(), documentId);
+            if (targetAccountId.equals(document.getAccountId())
                     && document.getReassignmentOperationId() == null) {
-                operation.setState(VaultReassignmentState.COMPLETED);
+                operation.setState(VaultOperationState.COMPLETED);
                 operation.setCompletedAt(Instant.now());
                 operationRepository.save(operation);
                 metrics.reassignmentRecovered();
                 return;
             }
-            Account target = accountService.findOwned(operation.getUserId(), operation.getTargetAccountId());
+            Account target = accountService.findOwned(operation.getUserId(), targetAccountId);
             if (document.getStatus() == VaultDocumentStatus.CONFIRMING) {
                 failOperation(operation, "Statement confirmation is still processing");
-                clearClaim(operation.getUserId(), operation.getDocumentId(), operation.getId());
+                clearClaim(operation.getUserId(), documentId, operation.getId());
                 return;
             }
             VaultDocument claimed = document.getReassignmentOperationId() == null
@@ -168,65 +180,64 @@ public class VaultReassignmentService {
             if (claimed == null) {
                 return;
             }
-            Set<Long> ids = operation.getRemovedTransactionIds() == null
+            List<Long> storedIds = transactionIds(payload(operation).get(REMOVED_TRANSACTION_IDS));
+            Set<Long> ids = storedIds.isEmpty()
                     ? importOriginService.collectTransactionIds(operation.getUserId(), claimed)
-                    : Set.copyOf(operation.getRemovedTransactionIds());
+                    : Set.copyOf(storedIds);
             VaultReassignmentCleanupService.CleanupResult cleanup = cleanupService.clean(
-                    operation.getUserId(), operation.getDocumentId(), operation.getSourceAccountId(), ids,
+                    operation.getUserId(), documentId, sourceAccountId, ids,
                     "Vault document reassigned to another account");
-            operation.setRemovedTransactionCount(cleanup.removedTransactions());
+            payload(operation).put(REMOVED_TRANSACTION_COUNT, cleanup.removedTransactions());
             finalizeDocument(operation.getUserId(), claimed, operation.getId(), target.getId());
-            operation.setState(VaultReassignmentState.COMPLETED);
+            operation.setState(VaultOperationState.COMPLETED);
             operation.setCompletedAt(Instant.now());
             operationRepository.save(operation);
             metrics.reassignmentRecovered();
         } catch (RuntimeException e) {
-            operation.setState(VaultReassignmentState.FAILED);
-            operation.setFailureReason(e.getMessage());
-            operationRepository.save(operation);
-            clearClaim(operation.getUserId(), operation.getDocumentId(), operation.getId());
+            failOperation(operation, e.getMessage());
+            clearClaim(operation.getUserId(), documentId, operation.getId());
         }
     }
 
-    private VaultReassignmentResponse replay(VaultReassignmentOperation operation, Long userId) {
+    private VaultReassignmentResponse replay(VaultOperation operation, Long userId) {
+        Map<String, Object> payload = payload(operation);
         return new VaultReassignmentResponse(
-                vaultService.getById(userId, operation.getDocumentId()),
-                operation.getRemovedTransactionCount() == null ? 0 : operation.getRemovedTransactionCount(),
-                Boolean.TRUE.equals(operation.getManualLinkDetached()), true);
+                vaultService.getById(userId, requiredString(operation, DOCUMENT_ID)),
+                integerValue(payload.get(REMOVED_TRANSACTION_COUNT)),
+                Boolean.TRUE.equals(payload.get(MANUAL_LINK_DETACHED)), true);
     }
 
-    private VaultReassignmentOperation claimOperation(Long userId, String documentId, Long targetAccountId,
-                                                      String keyHash, String requestHash) {
+    private VaultOperation claimOperation(Long userId, String documentId, Long targetAccountId,
+                                          String keyHash, String requestHash) {
         Instant now = Instant.now();
-        VaultReassignmentOperation candidate = VaultReassignmentOperation.builder()
+        VaultOperation candidate = VaultOperation.builder()
                 .userId(userId)
                 .operation(OPERATION_NAME)
                 .keyHash(keyHash)
                 .requestHash(requestHash)
-                .documentId(documentId)
-                .targetAccountId(targetAccountId)
-                .state(VaultReassignmentState.PROCESSING)
+                .payload(initialPayload(documentId, targetAccountId))
+                .state(VaultOperationState.PROCESSING)
                 .createdAt(now)
                 .expiresAt(now.plus(RESULT_RETENTION))
                 .build();
         try {
             return operationRepository.insert(candidate);
         } catch (DuplicateKeyException e) {
-            VaultReassignmentOperation existing = operationRepository
+            VaultOperation existing = operationRepository
                     .findByUserIdAndOperationAndKeyHash(userId, OPERATION_NAME, keyHash)
                     .orElseThrow(() -> new IllegalStateException("Reassignment operation disappeared after claim conflict"));
             if (!requestHash.equals(existing.getRequestHash())) {
                 throw new IdempotencyConflictException(
                         "Idempotency-Key was already used for a different Vault reassignment");
             }
-            if (existing.getState() == VaultReassignmentState.COMPLETED) {
+            if (existing.getState() == VaultOperationState.COMPLETED) {
                 return existing;
             }
-            if (existing.getState() == VaultReassignmentState.FAILED) {
-                existing.setState(VaultReassignmentState.PROCESSING);
+            if (existing.getState() == VaultOperationState.FAILED) {
+                existing.setState(VaultOperationState.PROCESSING);
                 existing.setCreatedAt(now);
                 existing.setCompletedAt(null);
-                existing.setFailureReason(null);
+                existing.setPayload(initialPayload(documentId, targetAccountId));
                 return operationRepository.save(existing);
             }
             throw new IdempotencyOperationInProgressException(
@@ -316,22 +327,77 @@ public class VaultReassignmentService {
                 .set("reassignmentStartedAt", null), VaultDocument.class);
     }
 
-    private void failOperation(VaultReassignmentOperation operation, String reason) {
-        operation.setState(VaultReassignmentState.FAILED);
-        operation.setFailureReason(reason);
+    private void failOperation(VaultOperation operation, String reason) {
+        operation.setState(VaultOperationState.FAILED);
+        payload(operation).put(FAILURE_REASON, reason);
         operationRepository.save(operation);
+    }
+
+    private Map<String, Object> initialPayload(String documentId, Long targetAccountId) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put(DOCUMENT_ID, documentId);
+        payload.put(TARGET_ACCOUNT_ID, targetAccountId);
+        return payload;
+    }
+
+    private Map<String, Object> payload(VaultOperation operation) {
+        if (operation.getPayload() == null) {
+            operation.setPayload(new LinkedHashMap<>());
+        }
+        return operation.getPayload();
+    }
+
+    private String requiredString(VaultOperation operation, String key) {
+        Object value = payload(operation).get(key);
+        if (value == null) {
+            throw new IllegalStateException("Reassignment operation is missing payload field " + key);
+        }
+        return String.valueOf(value);
+    }
+
+    private Long requiredLong(VaultOperation operation, String key) {
+        Long value = nullableLong(payload(operation).get(key));
+        if (value == null) {
+            throw new IllegalStateException("Reassignment operation is missing payload field " + key);
+        }
+        return value;
+    }
+
+    private static Long nullableLong(Object value) {
+        if (value == null) {
+            return null;
+        }
+        return value instanceof Number number ? number.longValue() : Long.valueOf(String.valueOf(value));
+    }
+
+    private static int integerValue(Object value) {
+        if (value == null) {
+            return 0;
+        }
+        return value instanceof Number number ? number.intValue() : Integer.parseInt(String.valueOf(value));
+    }
+
+    private static List<Long> transactionIds(Object raw) {
+        if (!(raw instanceof Iterable<?> values)) {
+            return List.of();
+        }
+        List<Long> ids = new ArrayList<>();
+        for (Object value : values) {
+            ids.add(nullableLong(value));
+        }
+        return ids;
     }
 
     private void ensureIndexesOnce() {
         if (!indexesEnsured.compareAndSet(false, true)) {
             return;
         }
-        var indexOps = mongoTemplate.indexOps(VaultReassignmentOperation.class);
+        var indexOps = mongoTemplate.indexOps(VaultOperation.class);
         indexOps.ensureIndex(new CompoundIndexDefinition(
                         new Document("userId", 1).append("operation", 1).append("keyHash", 1))
-                .named("uq_vault_reassignment_user_operation_key")
+                .named("uq_vault_operations_user_operation_key")
                 .unique());
         indexOps.ensureIndex(new Index().on("expiresAt", Sort.Direction.ASC)
-                .named("idx_vault_reassignment_expires_at").expire(Duration.ZERO));
+                .named("idx_vault_operations_expires_at").expire(Duration.ZERO));
     }
 }

@@ -8,6 +8,7 @@ import com.fintrack.vault.domain.VaultOperationState;
 import com.fintrack.vault.repository.VaultOperationRepository;
 import com.fintrack.vault.service.GridFsFileStore;
 import com.fintrack.vault.service.VaultOperationRecoveryScheduler;
+import com.fintrack.vault.service.VaultReassignmentOperationMigration;
 import org.bson.Document;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +32,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Date;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -89,6 +91,7 @@ class VaultUploadIdempotencyIntegrationTest {
     @Autowired VaultOperationRepository vaultOperationRepository;
     @Autowired GridFsFileStore gridFsFileStore;
     @Autowired VaultOperationRecoveryScheduler recoveryScheduler;
+    @Autowired VaultReassignmentOperationMigration reassignmentOperationMigration;
     @Autowired UserRepository userRepository;
     @Autowired MongoTemplate mongoTemplate;
 
@@ -432,5 +435,61 @@ class VaultUploadIdempotencyIntegrationTest {
         assertThat(countGridFsFilesForUser(userId)).isEqualTo(0);
         VaultOperation reloaded = vaultOperationRepository.findById(saved.getId()).orElseThrow();
         assertThat(reloaded.getState()).isEqualTo(VaultOperationState.FAILED);
+    }
+
+    @Test
+    void reassignmentMigration_movesOnlyNonCompletedRowsAndFoldsPayloadFields() {
+        long userId = 9_000_000L + UUID.randomUUID().hashCode();
+        String suffix = UUID.randomUUID().toString();
+        Instant createdAt = Instant.now().minus(20, ChronoUnit.MINUTES);
+        String processingKeyHash = "legacy-processing-" + suffix;
+        String completedKeyHash = "legacy-completed-" + suffix;
+
+        mongoTemplate.insert(new Document("_id", "legacy-processing-" + suffix)
+                .append("userId", userId)
+                .append("operation", "vault.reassign")
+                .append("keyHash", processingKeyHash)
+                .append("requestHash", "request-processing-" + suffix)
+                .append("documentId", "document-" + suffix)
+                .append("sourceAccountId", 10L)
+                .append("targetAccountId", 20L)
+                .append("state", "PROCESSING")
+                .append("removedTransactionIds", List.of(101L, 102L))
+                .append("removedTransactionCount", 2)
+                .append("manualLinkDetached", true)
+                .append("createdAt", Date.from(createdAt))
+                .append("expiresAt", Date.from(createdAt.plus(7, java.time.temporal.ChronoUnit.DAYS))),
+                VaultReassignmentOperationMigration.LEGACY_COLLECTION);
+        mongoTemplate.insert(new Document("_id", "legacy-completed-" + suffix)
+                .append("userId", userId)
+                .append("operation", "vault.reassign")
+                .append("keyHash", completedKeyHash)
+                .append("requestHash", "request-completed-" + suffix)
+                .append("documentId", "completed-document-" + suffix)
+                .append("targetAccountId", 30L)
+                .append("state", "COMPLETED")
+                .append("createdAt", Date.from(createdAt))
+                .append("expiresAt", Date.from(createdAt.plus(7, java.time.temporal.ChronoUnit.DAYS))),
+                VaultReassignmentOperationMigration.LEGACY_COLLECTION);
+
+        reassignmentOperationMigration.migrateOnce();
+
+        Document migrated = mongoTemplate.findOne(Query.query(new Criteria()
+                        .andOperator(
+                                Criteria.where("userId").is(userId),
+                                Criteria.where("operation").is("vault.reassign"),
+                                Criteria.where("keyHash").is(processingKeyHash))),
+                Document.class, "vault_operations");
+        assertThat(migrated).isNotNull();
+        assertThat(migrated.get("state")).isEqualTo("PROCESSING");
+        assertThat(migrated.get("payload", Document.class))
+                .containsEntry("documentId", "document-" + suffix)
+                .containsEntry("sourceAccountId", 10L)
+                .containsEntry("targetAccountId", 20L)
+                .containsEntry("removedTransactionCount", 2)
+                .containsEntry("manualLinkDetached", true);
+
+        assertThat(mongoTemplate.count(Query.query(Criteria.where("keyHash").is(completedKeyHash)),
+                "vault_operations")).isZero();
     }
 }
