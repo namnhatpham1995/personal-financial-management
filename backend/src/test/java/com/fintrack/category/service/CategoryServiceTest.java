@@ -17,7 +17,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -150,8 +149,12 @@ class CategoryServiceTest {
     void create_transferType_throwsBadRequest() {
         var request = new CreateCategoryRequest("Transfers", TransactionType.TRANSFER);
 
+        // IllegalArgumentException, not ResponseStatusException: the latter bypasses
+        // GlobalExceptionHandler and returns Spring's default ProblemDetail body instead of the
+        // app's own ApiError shape used by every other 400 in the API.
         assertThatThrownBy(() -> categoryService.create(USER_ID, request))
-                .isInstanceOf(ResponseStatusException.class);
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Category type must be INCOME or EXPENSE");
 
         verify(categoryRepository, never()).save(any());
     }
@@ -162,7 +165,8 @@ class CategoryServiceTest {
         var request = new UpdateCategoryRequest("Food", TransactionType.TRANSFER);
 
         assertThatThrownBy(() -> categoryService.update(USER_ID, CATEGORY_ID, request))
-                .isInstanceOf(ResponseStatusException.class);
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Category type must be INCOME or EXPENSE");
 
         verify(categoryRepository, never()).save(any());
     }
