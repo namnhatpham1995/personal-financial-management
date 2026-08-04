@@ -8,15 +8,20 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
+import java.util.Map;
 
 /**
- * Mongo-native durable operation record for vault/statement upload idempotency (design.md
- * Decision #4). One row per claimed {@code (userId, operation, keyHash)} tuple — mirrors the
- * PostgreSQL {@code idempotency_operations} table's role for JSON creates, but lives in Mongo
- * because there is no shared transaction manager across Postgres and Mongo/GridFS.
+ * Mongo-native durable operation record for vault/statement upload and reassignment idempotency.
+ * One row per claimed {@code (userId, operation, keyHash)} tuple — mirrors the PostgreSQL
+ * idempotency table's role for JSON creates, but lives in Mongo because there is no shared
+ * transaction manager across Postgres and Mongo/GridFS.
  *
- * <p>See {@code VaultUploadIdempotencyCoordinator} for the claim/complete/compensate lifecycle
- * and {@code VaultOperationRecoveryScheduler} for stale-{@code PROCESSING} cleanup.
+ * <p>Operation-specific fields that are not needed by the generic recovery path live in
+ * {@link #payload}. Upload keeps its GridFS and vault-document ids top-level for recovery;
+ * reassignment stores its document/account and cleanup details in the payload.
+ *
+ * <p>See {@code VaultUploadIdempotencyCoordinator} and {@code VaultReassignmentService} for the
+ * claim/complete lifecycle, and {@code VaultOperationRecoveryScheduler} for stale cleanup.
  */
 @Document(collection = "vault_operations")
 @CompoundIndexes({
@@ -36,7 +41,7 @@ public class VaultOperation {
 
     private Long userId;
 
-    /** Stable logical operation name, e.g. {@code "vault.upload"} or {@code "statement.upload"}. */
+    /** Stable logical operation name, e.g. {@code "vault.upload"} or {@code "vault.reassign"}. */
     private String operation;
 
     /** SHA-256 hex digest of the raw {@code Idempotency-Key} header. Never the raw key. */
@@ -53,15 +58,16 @@ public class VaultOperation {
     /** Resulting {@link VaultDocument} id, once the document save has completed. */
     private String vaultDocumentId;
 
+    /** Operation-specific data, such as reassignment document/account and cleanup details. */
+    private Map<String, Object> payload;
+
     private Instant createdAt;
 
     private Instant completedAt;
 
     /**
      * TTL index cutoff — seven days from creation, matching the non-secret replay retention
-     * window used elsewhere in this change series. Mongo's TTL monitor deletes the document once
-     * this instant is in the past; {@code expireAfter = "0s"} means "expire exactly at the stored
-     * timestamp" rather than N seconds after it.
+     * window. Mongo's TTL monitor deletes the document once this instant is in the past.
      */
     @Indexed(name = "idx_vault_operations_expires_at", expireAfter = "0s")
     private Instant expiresAt;

@@ -3,9 +3,9 @@ package com.fintrack.vault.service;
 import com.fintrack.vault.domain.VaultOperation;
 import com.fintrack.vault.domain.VaultOperationState;
 import com.fintrack.vault.repository.VaultOperationRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -14,43 +14,47 @@ import org.springframework.stereotype.Component;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 /**
- * Recovers vault/statement upload operations stuck in {@code PROCESSING} because the process
- * handling them died between claiming the operation and completing the document save (design.md
- * Decision #4, "Process stops during upload" scenario in the document-vault spec).
+ * Recovers durable vault operations stuck in {@code PROCESSING} because the process handling
+ * them died before completing the upload or reassignment workflow.
  *
- * <p>Distinct from {@link com.fintrack.vault.domain.VaultOperation}'s TTL index: the TTL index is
- * passive long-term cleanup of anything (COMPLETED, FAILED, or otherwise) past its seven-day
- * retention window. This job actively hunts for operations that have been PROCESSING for far
- * longer than any real upload should take, and compensates them immediately so a retry with the
- * same key can cleanly reclaim rather than waiting behind a permanently-stuck row.
- *
- * <p>{@link SchedulerLock} follows {@code ExchangeRateRefreshScheduler}'s pattern so only one
- * replica runs a sweep at a time.
+ * <p>The sweep is shared by every operation kind and delegates compensation to a strategy keyed
+ * by {@link VaultOperation#getOperation()}. The bounded query and per-row exception boundary keep
+ * a large backlog or one broken operation from monopolizing or aborting a sweep.
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class VaultOperationRecoveryScheduler {
 
-    /**
-     * An upload that has been PROCESSING for longer than this is considered abandoned by its
-     * claimant. 10 minutes comfortably exceeds any real upload/parse duration (including large
-     * statement files) while still recovering stuck operations promptly after a process death.
-     */
+    /** Ten minutes comfortably exceeds any real upload or reassignment phase. */
     static final Duration STALE_THRESHOLD = Duration.ofMinutes(10);
 
-    /** Caps how many stale operations a single sweep run compensates, per the "bounded" task requirement. */
+    /** Caps total stale operations processed by one sweep across all operation kinds. */
     static final int MAX_PER_RUN = 200;
 
     private final VaultOperationRepository operationRepository;
-    private final GridFsFileStore gridFsFileStore;
-    private final VaultOperationMetrics metrics;
+    private final Map<String, VaultOperationRecoveryStrategy> recoveryStrategies;
+    private final VaultReassignmentOperationMigration legacyMigration;
 
-    @Scheduled(cron = "0 */5 * * * *")   // every 5 minutes
+    public VaultOperationRecoveryScheduler(
+            VaultOperationRepository operationRepository,
+            @Qualifier("vaultOperationRecoveryStrategies")
+            Map<String, VaultOperationRecoveryStrategy> recoveryStrategies,
+            VaultReassignmentOperationMigration legacyMigration) {
+        this.operationRepository = operationRepository;
+        this.recoveryStrategies = recoveryStrategies;
+        this.legacyMigration = legacyMigration;
+    }
+
+    @Scheduled(cron = "0 */5 * * * *")
     @SchedulerLock(name = "vaultOperationRecovery", lockAtMostFor = "PT10M", lockAtLeastFor = "PT1M")
     public void recoverStaleOperations() {
+        // The legacy reassignment rows must be visible before this first sweep queries the new
+        // collection, even when the process starts between scheduled ticks.
+        legacyMigration.migrateOnce();
+
         Instant cutoff = Instant.now().minus(STALE_THRESHOLD);
         Pageable bound = PageRequest.of(0, MAX_PER_RUN);
         List<VaultOperation> stale = operationRepository.findByStateAndCreatedAtBefore(
@@ -63,24 +67,23 @@ public class VaultOperationRecoveryScheduler {
         log.info("Vault operation recovery: found {} stale PROCESSING operation(s) older than {}",
                 stale.size(), cutoff);
 
-        for (VaultOperation op : stale) {
-            recoverOne(op);
+        for (VaultOperation operation : stale) {
+            recoverOne(operation);
         }
     }
 
-    private void recoverOne(VaultOperation op) {
+    private void recoverOne(VaultOperation operation) {
         try {
-            if (op.getGridFsFileId() != null) {
-                gridFsFileStore.delete(op.getGridFsFileId());
-                log.info("Vault operation recovery: deleted orphaned GridFS binary {} for stale operation {}",
-                        op.getGridFsFileId(), op.getId());
-                metrics.recoveryCompensated(op.getOperation());
+            VaultOperationRecoveryStrategy strategy = recoveryStrategies.get(operation.getOperation());
+            if (strategy == null) {
+                log.warn("Vault operation recovery: no strategy registered for operation={} id={}",
+                        operation.getOperation(), operation.getId());
+                return;
             }
-            op.setState(VaultOperationState.FAILED);
-            operationRepository.save(op);
-            metrics.recoveryRecovered(op.getOperation());
+            strategy.recover(operation);
         } catch (RuntimeException e) {
-            log.error("Vault operation recovery: failed to recover stale operation {}", op.getId(), e);
+            log.error("Vault operation recovery: failed to recover stale operation {}",
+                    operation.getId(), e);
         }
     }
 }

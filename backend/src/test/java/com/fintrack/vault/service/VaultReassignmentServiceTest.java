@@ -11,10 +11,10 @@ import com.fintrack.transaction.domain.Transaction;
 import com.fintrack.vault.domain.VaultDocument;
 import com.fintrack.vault.domain.VaultDocumentStatus;
 import com.fintrack.vault.domain.VaultDocumentType;
-import com.fintrack.vault.domain.VaultReassignmentOperation;
-import com.fintrack.vault.domain.VaultReassignmentState;
+import com.fintrack.vault.domain.VaultOperation;
+import com.fintrack.vault.domain.VaultOperationState;
 import com.fintrack.vault.repository.VaultDocumentRepository;
-import com.fintrack.vault.repository.VaultReassignmentOperationRepository;
+import com.fintrack.vault.repository.VaultOperationRepository;
 import com.fintrack.vault.web.dto.VaultDocumentResponse;
 import com.fintrack.vault.web.dto.VaultReassignmentRequest;
 import org.junit.jupiter.api.Test;
@@ -45,7 +45,7 @@ import com.fintrack.common.exception.ConflictException;
 class VaultReassignmentServiceTest {
 
     @Mock VaultDocumentRepository vaultDocumentRepository;
-    @Mock VaultReassignmentOperationRepository operationRepository;
+    @Mock VaultOperationRepository operationRepository;
     @Mock VaultImportOriginService importOriginService;
     @Mock VaultReassignmentCleanupService cleanupService;
     @Mock VaultService vaultService;
@@ -104,9 +104,9 @@ class VaultReassignmentServiceTest {
         Account target = account(20L, "Savings", "USD");
         when(hasher.hashKey("key-123456789012")).thenReturn("key-hash");
         when(hasher.hashJsonRequest(eq("vault.reassign"), any())).thenReturn("request-hash");
-        when(mongoTemplate.indexOps(VaultReassignmentOperation.class)).thenReturn(indexOperations);
-        when(operationRepository.insert(any(VaultReassignmentOperation.class))).thenAnswer(invocation -> {
-            VaultReassignmentOperation operation = invocation.getArgument(0);
+        when(mongoTemplate.indexOps(VaultOperation.class)).thenReturn(indexOperations);
+        when(operationRepository.insert(any(VaultOperation.class))).thenAnswer(invocation -> {
+            VaultOperation operation = invocation.getArgument(0);
             operation.setId("operation-1");
             return operation;
         });
@@ -135,10 +135,16 @@ class VaultReassignmentServiceTest {
         assertThat(document.getPayload()).isNull();
         assertThat(document.getReassignmentOperationId()).isNull();
         verify(cleanupService).clean(eq(1L), eq("doc-1"), eq(10L), eq(Set.of(11L, 12L)), any());
-        ArgumentCaptor<VaultReassignmentOperation> saved = ArgumentCaptor.forClass(VaultReassignmentOperation.class);
+        ArgumentCaptor<VaultOperation> saved = ArgumentCaptor.forClass(VaultOperation.class);
         verify(operationRepository, atLeastOnce()).save(saved.capture());
-        assertThat(saved.getAllValues().get(saved.getAllValues().size() - 1).getState())
-                .isEqualTo(VaultReassignmentState.COMPLETED);
+        VaultOperation completed = saved.getAllValues().get(saved.getAllValues().size() - 1);
+        assertThat(completed.getState()).isEqualTo(VaultOperationState.COMPLETED);
+        assertThat(completed.getPayload())
+                .containsEntry("documentId", "doc-1")
+                .containsEntry("sourceAccountId", 10L)
+                .containsEntry("targetAccountId", 20L)
+                .containsEntry("removedTransactionCount", 2)
+                .containsEntry("manualLinkDetached", false);
     }
 
     private static VaultDocument document(VaultDocumentType type, Long accountId) {
