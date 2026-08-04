@@ -147,6 +147,33 @@ class VaultReassignmentServiceTest {
                 .containsEntry("manualLinkDetached", false);
     }
 
+    @Test
+    void indexCreationFails_retriedOnNextCall_ratherThanDisablingProtectionForever() {
+        when(mongoTemplate.indexOps(VaultOperation.class)).thenReturn(indexOperations);
+        when(indexOperations.ensureIndex(any()))
+                .thenThrow(new RuntimeException("mongo temporarily unavailable"))
+                .thenReturn("idx");
+
+        // First call: index creation fails, so the whole operation fails without claiming.
+        assertThatThrownBy(() -> reassignmentService.reassign(1L, "doc-1",
+                new VaultReassignmentRequest(20L), "key-123456789012"))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("mongo temporarily unavailable");
+        verify(operationRepository, never()).insert(any(VaultOperation.class));
+
+        // Second call: the guard flag was released on failure, so index creation is retried.
+        // Reaching the key-hash lookup (the next real step of reassign()) proves ensureIndexesOnce
+        // did not throw again and did not silently skip creation.
+        when(hasher.hashKey(any())).thenThrow(new IllegalStateException("reached claim path"));
+        assertThatThrownBy(() -> reassignmentService.reassign(1L, "doc-1",
+                new VaultReassignmentRequest(20L), "key-123456789012"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("reached claim path");
+
+        // Unique index + TTL index, attempted once on the failed call and twice on the retry.
+        verify(indexOperations, times(3)).ensureIndex(any());
+    }
+
     private static VaultDocument document(VaultDocumentType type, Long accountId) {
         return VaultDocument.builder()
                 .id("doc-1")

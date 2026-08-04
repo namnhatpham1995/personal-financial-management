@@ -66,6 +66,11 @@ public class VaultUploadIdempotencyCoordinator {
      * configure Mongo at all (they leave it pointed at an unreachable default) — that previously
      * broke unrelated test suites with a context-startup timeout. Deferring index creation to the
      * first real upload call means it only ever runs where Mongo is actually being used.
+     *
+     * <p>Set to {@code true} only once index creation has actually succeeded — never before the
+     * attempt, so a transient Mongo failure leaves this {@code false} and the next call retries,
+     * instead of silently disabling the unique-claim index (and same-key protection with it) for
+     * the remaining life of the process.
      */
     private final AtomicBoolean indexesEnsured = new AtomicBoolean(false);
 
@@ -239,15 +244,24 @@ public class VaultUploadIdempotencyCoordinator {
         if (!indexesEnsured.compareAndSet(false, true)) {
             return;
         }
-        var indexOps = mongoTemplate.indexOps(VaultOperation.class);
-        indexOps.ensureIndex(new CompoundIndexDefinition(
-                        new Document("userId", 1).append("operation", 1).append("keyHash", 1))
-                .named("uq_vault_operations_user_operation_key")
-                .unique());
-        indexOps.ensureIndex(new Index()
-                .on("expiresAt", Sort.Direction.ASC)
-                .named("idx_vault_operations_expires_at")
-                .expire(Duration.ZERO));
+        try {
+            var indexOps = mongoTemplate.indexOps(VaultOperation.class);
+            indexOps.ensureIndex(new CompoundIndexDefinition(
+                            new Document("userId", 1).append("operation", 1).append("keyHash", 1))
+                    .named("uq_vault_operations_user_operation_key")
+                    .unique());
+            indexOps.ensureIndex(new Index()
+                    .on("expiresAt", Sort.Direction.ASC)
+                    .named("idx_vault_operations_expires_at")
+                    .expire(Duration.ZERO));
+        } catch (RuntimeException e) {
+            // Creation failed (e.g. transient Mongo unavailability) — release the flag so the
+            // next call retries instead of silently running unprotected for the rest of the
+            // process's life. ensureIndex is a no-op when an equivalent index already exists, so
+            // a partial success followed by a retry is safe.
+            indexesEnsured.set(false);
+            throw e;
+        }
     }
 
     private void sleepPollInterval() {
