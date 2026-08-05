@@ -91,6 +91,17 @@ public class AccountService {
     @Transactional
     public void delete(Long userId, Long accountId) {
         Account account = findOwned(userId, accountId);
+        // Lock every account this user owns, in ascending id order, before reading the
+        // connected-transaction set below. The lock set has to be all-of-the-user's-accounts
+        // rather than just this account (or the accounts discovered by findConnectedToAccount):
+        // a transfer's counterparty account isn't known until that read runs, so it can't be
+        // locked ahead of time by id alone — locking the full owned set up front, in the same
+        // ascending order TransactionService.lockAffectedAccounts uses, guarantees this can never
+        // deadlock against a concurrent create/update/delete serializing on the same accounts.
+        accountRepository.findAllByUserId(userId).stream()
+                .map(Account::getId)
+                .sorted()
+                .forEach(id -> findOwnedForUpdate(userId, id));
         List<Transaction> connected = transactionRepository.findConnectedToAccount(accountId);
         // Reverse balance on counterparty accounts of transfers so their balances stay correct
         for (Transaction tx : connected) {
