@@ -159,6 +159,10 @@ public class TransactionService {
             throw new IllegalArgumentException("destinationAmount is only valid for TRANSFER transactions");
         }
 
+        // Lock affected accounts before reading/applying balance so this create serializes
+        // against a concurrent update/delete/account-deletion touching the same account(s) —
+        // see lockAffectedAccounts' javadoc for the ascending-order deadlock-avoidance rule.
+        lockAffectedAccounts(userId, tx);
         addNegativeBalanceWarning(warnings, account, req.transactionType(), req.amount());
 
         Transaction saved = transactionRepository.save(tx);
