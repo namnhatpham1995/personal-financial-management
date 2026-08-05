@@ -34,6 +34,7 @@ import org.springframework.data.mongodb.core.query.Update;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -331,6 +332,46 @@ class VaultReassignmentServiceTest {
 
         // Unique index + TTL index, attempted once on the failed call and twice on the retry.
         verify(indexOperations, times(3)).ensureIndex(any());
+    }
+
+    @Test
+    void recoverStale_readsPayloadWrittenBeforeTypedPayloadRefactor_resumesUsingStoredFields() {
+        // Simulates a PROCESSING row a pre-refactor deployment wrote: a plain, untyped payload map
+        // with the claim details already recorded but the cleanup count not yet written (crashed
+        // between claim and cleanup completion). VaultReassignmentPayload.fromMap must parse this
+        // exact shape identically to what the old Map<String, Object> access did.
+        Map<String, Object> legacyPayload = new LinkedHashMap<>();
+        legacyPayload.put("documentId", "doc-1");
+        legacyPayload.put("targetAccountId", 20L);
+        legacyPayload.put("sourceAccountId", 10L);
+        legacyPayload.put("removedTransactionIds", List.of(11L, 12L));
+        legacyPayload.put("manualLinkDetached", false);
+        VaultOperation stale = VaultOperation.builder()
+                .id("operation-1").userId(1L).operation("vault.reassign")
+                .keyHash("key-hash").requestHash("request-hash")
+                .state(VaultOperationState.PROCESSING)
+                .payload(legacyPayload)
+                .build();
+
+        VaultDocument document = document(VaultDocumentType.STATEMENT, 10L);
+        document.setStatus(VaultDocumentStatus.STAGED);
+        document.setReassignmentOperationId("operation-1");
+        Account target = account(20L, "Savings", "USD");
+
+        when(vaultDocumentRepository.findByIdAndUserId("doc-1", 1L))
+                .thenReturn(Optional.of(document), Optional.of(document));
+        when(accountService.findOwned(1L, 20L)).thenReturn(target);
+        when(cleanupService.clean(eq(1L), eq("doc-1"), eq(10L), eq(Set.of(11L, 12L)), any()))
+                .thenReturn(new VaultReassignmentCleanupService.CleanupResult(2, 1));
+        when(vaultDocumentRepository.save(any(VaultDocument.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        reassignmentService.recoverStale(stale);
+
+        assertThat(stale.getState()).isEqualTo(VaultOperationState.COMPLETED);
+        // The stored removedTransactionIds is reused rather than re-collected from scratch.
+        verifyNoInteractions(importOriginService);
+        verify(cleanupService).clean(eq(1L), eq("doc-1"), eq(10L), eq(Set.of(11L, 12L)), any());
+        assertThat(stale.getPayload()).containsEntry("removedTransactionCount", 2);
     }
 
     private static VaultDocument document(VaultDocumentType type, Long accountId) {
