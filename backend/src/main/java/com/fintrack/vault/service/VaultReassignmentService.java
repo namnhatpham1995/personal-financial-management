@@ -5,8 +5,6 @@ import com.fintrack.account.service.AccountService;
 import com.fintrack.audit.support.AuditReplaySignal;
 import com.fintrack.common.exception.ConflictException;
 import com.fintrack.common.exception.ResourceNotFoundException;
-import com.fintrack.idempotency.exception.IdempotencyConflictException;
-import com.fintrack.idempotency.exception.IdempotencyOperationInProgressException;
 import com.fintrack.idempotency.service.IdempotencyHasher;
 import com.fintrack.idempotency.service.IdempotencyKeyValidator;
 import com.fintrack.transaction.domain.Transaction;
@@ -21,13 +19,8 @@ import com.fintrack.vault.web.dto.VaultReassignmentPreviewResponse;
 import com.fintrack.vault.web.dto.VaultReassignmentRequest;
 import com.fintrack.vault.web.dto.VaultReassignmentResponse;
 import lombok.RequiredArgsConstructor;
-import org.bson.Document;
-import org.springframework.dao.DuplicateKeyException;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.index.CompoundIndexDefinition;
-import org.springframework.data.mongodb.core.index.Index;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -48,6 +41,11 @@ public class VaultReassignmentService {
 
     private static final String OPERATION_NAME = "vault.reassign";
     private static final Duration RESULT_RETENTION = Duration.ofDays(7);
+
+    /** Mirrors upload's bounded poll: ~150ms steps, 3s total, adopted in place of an immediate
+     * in-progress throw so a request that arrives just after another one started no longer needs
+     * a client-side retry to observe the same result. */
+    private static final Duration POLL_BOUND = Duration.ofSeconds(3);
 
     private static final String DOCUMENT_ID = "documentId";
     private static final String SOURCE_ACCOUNT_ID = "sourceAccountId";
@@ -95,14 +93,20 @@ public class VaultReassignmentService {
         String keyHash = hasher.hashKey(rawIdempotencyKey);
         String requestHash = hasher.hashJsonRequest(OPERATION_NAME,
                 Map.of(DOCUMENT_ID, documentId, TARGET_ACCOUNT_ID, request.targetAccountId()));
-        VaultOperation operation = claimOperation(userId, documentId,
-                request.targetAccountId(), keyHash, requestHash);
+        VaultOperationClaimCoordinator coordinator = new VaultOperationClaimCoordinator(operationRepository, mongoTemplate);
+        VaultOperationClaimCoordinator.ClaimOutcome outcome = coordinator.claim(userId, OPERATION_NAME, keyHash, requestHash,
+                POLL_BOUND,
+                () -> initialCandidate(userId, documentId, request.targetAccountId(), keyHash, requestHash),
+                (existing, now) -> reclaimUpdate(documentId, request.targetAccountId(), requestHash, now),
+                "Idempotency-Key was already used for a different Vault reassignment",
+                "Another request with this Idempotency-Key is still reassigning the document", 1);
 
-        if (operation.getState() == VaultOperationState.COMPLETED) {
+        if (!outcome.owned()) {
             metrics.replayed(OPERATION_NAME);
             auditReplaySignal.markReplayed();
-            return replay(operation, userId);
+            return replay(outcome.operation(), userId);
         }
+        VaultOperation operation = outcome.operation();
 
         VaultDocument document;
         Account target;
@@ -214,10 +218,10 @@ public class VaultReassignmentService {
                 Boolean.TRUE.equals(payload.get(MANUAL_LINK_DETACHED)), true);
     }
 
-    private VaultOperation claimOperation(Long userId, String documentId, Long targetAccountId,
-                                          String keyHash, String requestHash) {
+    private VaultOperation initialCandidate(Long userId, String documentId, Long targetAccountId,
+                                            String keyHash, String requestHash) {
         Instant now = Instant.now();
-        VaultOperation candidate = VaultOperation.builder()
+        return VaultOperation.builder()
                 .userId(userId)
                 .operation(OPERATION_NAME)
                 .keyHash(keyHash)
@@ -227,58 +231,21 @@ public class VaultReassignmentService {
                 .createdAt(now)
                 .expiresAt(now.plus(RESULT_RETENTION))
                 .build();
-        try {
-            return operationRepository.insert(candidate);
-        } catch (DuplicateKeyException e) {
-            VaultOperation existing = operationRepository
-                    .findByUserIdAndOperationAndKeyHash(userId, OPERATION_NAME, keyHash)
-                    .orElseThrow(() -> new IllegalStateException("Reassignment operation disappeared after claim conflict"));
-            if (existing.getState() == VaultOperationState.FAILED) {
-                VaultOperation reclaimed = reclaimFailed(existing, documentId, targetAccountId, requestHash, now);
-                if (reclaimed != null) {
-                    // A key bound to a FAILED attempt is not yet bound to that attempt's payload —
-                    // retrying with a different target account starts a fresh attempt rather than
-                    // 409ing, matching the upload and Postgres mutation paths.
-                    return reclaimed;
-                }
-                // Lost the reclaim race: re-read and fall through to the COMPLETED-replay /
-                // PROCESSING-in-progress handling below instead of proceeding as owner.
-                existing = operationRepository
-                        .findByUserIdAndOperationAndKeyHash(userId, OPERATION_NAME, keyHash)
-                        .orElseThrow(() -> new IllegalStateException("Reassignment operation disappeared after claim conflict"));
-            }
-            if (existing.getState() == VaultOperationState.COMPLETED) {
-                if (!requestHash.equals(existing.getRequestHash())) {
-                    throw new IdempotencyConflictException(
-                            "Idempotency-Key was already used for a different Vault reassignment");
-                }
-                return existing;
-            }
-            throw new IdempotencyOperationInProgressException(
-                    "Another request with this Idempotency-Key is still reassigning the document", 1);
-        }
     }
 
     /**
-     * Atomically reclaims a FAILED operation back to PROCESSING via CAS, mirroring
-     * {@link VaultUploadIdempotencyCoordinator#reclaimFailed}. A prior non-atomic
-     * read-modify-write ({@code existing.setState(...); operationRepository.save(existing)})
-     * let two concurrent retries of the same failed key both believe they owned the reclaim.
-     * Returns {@code null} if another concurrent retry won the reclaim first.
+     * Builds the reclaim update for a FAILED operation. A key bound to a FAILED attempt is not
+     * yet bound to that attempt's payload — retrying with a different target account starts a
+     * fresh attempt rather than 409ing, matching the upload and Postgres mutation paths.
      */
-    private VaultOperation reclaimFailed(VaultOperation existing, String documentId, Long targetAccountId,
-                                         String requestHash, Instant now) {
-        Query query = Query.query(Criteria.where("_id").is(existing.getId())
-                .and("state").is(VaultOperationState.FAILED));
-        Update update = new Update()
+    private Update reclaimUpdate(String documentId, Long targetAccountId, String requestHash, Instant now) {
+        return new Update()
                 .set("state", VaultOperationState.PROCESSING)
                 .set("requestHash", requestHash)
                 .set("payload", initialPayload(documentId, targetAccountId))
                 .set("createdAt", now)
                 .set("expiresAt", now.plus(RESULT_RETENTION))
                 .set("completedAt", null);
-        return mongoTemplate.findAndModify(query, update,
-                FindAndModifyOptions.options().returnNew(true), VaultOperation.class);
     }
 
     private VaultDocument claimDocument(VaultDocument document, String operationId) {
@@ -424,25 +391,9 @@ public class VaultReassignmentService {
         return ids;
     }
 
+    /** Delegates to {@link VaultOperationClaimCoordinator#ensureIndexesOnce} — see that method's
+     * javadoc for why this class keeps the guard flag itself. */
     private void ensureIndexesOnce() {
-        if (!indexesEnsured.compareAndSet(false, true)) {
-            return;
-        }
-        try {
-            var indexOps = mongoTemplate.indexOps(VaultOperation.class);
-            indexOps.ensureIndex(new CompoundIndexDefinition(
-                            new Document("userId", 1).append("operation", 1).append("keyHash", 1))
-                    .named("uq_vault_operations_user_operation_key")
-                    .unique());
-            indexOps.ensureIndex(new Index().on("expiresAt", Sort.Direction.ASC)
-                    .named("idx_vault_operations_expires_at").expire(Duration.ZERO));
-        } catch (RuntimeException e) {
-            // Creation failed (e.g. transient Mongo unavailability) — release the flag so the
-            // next call retries instead of silently running unprotected for the rest of the
-            // process's life. ensureIndex is a no-op when an equivalent index already exists, so
-            // a partial success followed by a retry is safe.
-            indexesEnsured.set(false);
-            throw e;
-        }
+        VaultOperationClaimCoordinator.ensureIndexesOnce(indexesEnsured, mongoTemplate);
     }
 }

@@ -77,7 +77,10 @@ describe("StatementImportWizard: resume-by-documentId review", () => {
 
     await screen.findByText("Coffee");
 
-    await user.click(screen.getByRole("button", { name: /Import 1 row/i }));
+    // The row-selection effect (default-select all parsed rows) fires after the row itself
+    // renders, so the "Import N rows" button's accessible name updates on a later commit —
+    // find (retrying) rather than get (single check) avoids a race with that effect.
+    await user.click(await screen.findByRole("button", { name: /Import 1 row/i }));
 
     await waitFor(() => {
       expect(vaultService.confirmImport).toHaveBeenCalledWith(
