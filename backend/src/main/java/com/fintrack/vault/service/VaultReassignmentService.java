@@ -233,16 +233,12 @@ public class VaultReassignmentService {
             VaultOperation existing = operationRepository
                     .findByUserIdAndOperationAndKeyHash(userId, OPERATION_NAME, keyHash)
                     .orElseThrow(() -> new IllegalStateException("Reassignment operation disappeared after claim conflict"));
-            if (!requestHash.equals(existing.getRequestHash())) {
-                throw new IdempotencyConflictException(
-                        "Idempotency-Key was already used for a different Vault reassignment");
-            }
-            if (existing.getState() == VaultOperationState.COMPLETED) {
-                return existing;
-            }
             if (existing.getState() == VaultOperationState.FAILED) {
                 VaultOperation reclaimed = reclaimFailed(existing, documentId, targetAccountId, requestHash, now);
                 if (reclaimed != null) {
+                    // A key bound to a FAILED attempt is not yet bound to that attempt's payload —
+                    // retrying with a different target account starts a fresh attempt rather than
+                    // 409ing, matching the upload and Postgres mutation paths.
                     return reclaimed;
                 }
                 // Lost the reclaim race: re-read and fall through to the COMPLETED-replay /
@@ -250,9 +246,13 @@ public class VaultReassignmentService {
                 existing = operationRepository
                         .findByUserIdAndOperationAndKeyHash(userId, OPERATION_NAME, keyHash)
                         .orElseThrow(() -> new IllegalStateException("Reassignment operation disappeared after claim conflict"));
-                if (existing.getState() == VaultOperationState.COMPLETED) {
-                    return existing;
+            }
+            if (existing.getState() == VaultOperationState.COMPLETED) {
+                if (!requestHash.equals(existing.getRequestHash())) {
+                    throw new IdempotencyConflictException(
+                            "Idempotency-Key was already used for a different Vault reassignment");
                 }
+                return existing;
             }
             throw new IdempotencyOperationInProgressException(
                     "Another request with this Idempotency-Key is still reassigning the document", 1);

@@ -17,6 +17,7 @@ import com.fintrack.vault.repository.VaultDocumentRepository;
 import com.fintrack.vault.repository.VaultOperationRepository;
 import com.fintrack.vault.web.dto.VaultDocumentResponse;
 import com.fintrack.vault.web.dto.VaultReassignmentRequest;
+import com.fintrack.idempotency.exception.IdempotencyConflictException;
 import com.fintrack.idempotency.exception.IdempotencyOperationInProgressException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -232,6 +233,77 @@ class VaultReassignmentServiceTest {
         // The loser never touches the operation row: it does not mark it FAILED and does not
         // erase the winner's recorded source account, removed-transaction ids, or count.
         verify(operationRepository, never()).save(any(VaultOperation.class));
+    }
+
+    @Test
+    void failedOperation_retriedWithDifferentTarget_startsFreshAttemptInsteadOf409() {
+        VaultDocument document = document(VaultDocumentType.RECEIPT, 10L);
+        Account target = account(30L, "Vacation", "USD");
+        VaultOperation existingFailed = VaultOperation.builder()
+                .id("operation-1").userId(1L).operation("vault.reassign")
+                .keyHash("key-hash").requestHash("old-request-hash")
+                .state(VaultOperationState.FAILED)
+                .build();
+        VaultOperation reclaimed = VaultOperation.builder()
+                .id("operation-1").userId(1L).operation("vault.reassign")
+                .keyHash("key-hash").requestHash("new-request-hash")
+                .state(VaultOperationState.PROCESSING)
+                .payload(new LinkedHashMap<>(Map.of("documentId", "doc-1", "targetAccountId", 30L)))
+                .build();
+
+        when(hasher.hashKey("key-123456789012")).thenReturn("key-hash");
+        when(hasher.hashJsonRequest(eq("vault.reassign"), any())).thenReturn("new-request-hash");
+        when(mongoTemplate.indexOps(VaultOperation.class)).thenReturn(indexOperations);
+        when(operationRepository.insert(any(VaultOperation.class))).thenThrow(new DuplicateKeyException("dup"));
+        when(operationRepository.findByUserIdAndOperationAndKeyHash(1L, "vault.reassign", "key-hash"))
+                .thenReturn(Optional.of(existingFailed));
+        when(mongoTemplate.findAndModify(any(Query.class), any(Update.class), any(FindAndModifyOptions.class), eq(VaultOperation.class)))
+                .thenReturn(reclaimed);
+        when(vaultDocumentRepository.findByIdAndUserId("doc-1", 1L))
+                .thenReturn(Optional.of(document), Optional.of(document));
+        when(accountService.findOwned(1L, 30L)).thenReturn(target);
+        when(importOriginService.collectTransactionIds(1L, document)).thenReturn(Set.of());
+        VaultDocument claimed = document;
+        claimed.setReassignmentOperationId("operation-1");
+        when(mongoTemplate.findAndModify(any(Query.class), any(Update.class), any(FindAndModifyOptions.class), eq(VaultDocument.class)))
+                .thenReturn(claimed);
+        when(cleanupService.clean(eq(1L), eq("doc-1"), eq(10L), eq(Set.of()), any()))
+                .thenReturn(new VaultReassignmentCleanupService.CleanupResult(0, 0));
+        when(vaultDocumentRepository.save(any(VaultDocument.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(vaultService.getById(1L, "doc-1")).thenReturn(new VaultDocumentResponse(
+                "doc-1", 30L, VaultDocumentType.RECEIPT, VaultDocumentStatus.ACTIVE,
+                "receipt", Instant.now(), null, true, "receipt.png", null, null));
+
+        // Old failed attempt targeted a different account (different requestHash); a key bound
+        // to a FAILED attempt is not yet bound to that attempt's payload, so this must succeed
+        // as a fresh attempt rather than 409 on the payload mismatch.
+        var result = reassignmentService.reassign(1L, "doc-1",
+                new VaultReassignmentRequest(30L), "key-123456789012");
+
+        assertThat(result.replayed()).isFalse();
+        assertThat(result.document().accountId()).isEqualTo(30L);
+    }
+
+    @Test
+    void completedOperation_retriedWithDifferentPayload_returns409() {
+        VaultOperation existingCompleted = VaultOperation.builder()
+                .id("operation-1").userId(1L).operation("vault.reassign")
+                .keyHash("key-hash").requestHash("old-request-hash")
+                .state(VaultOperationState.COMPLETED)
+                .build();
+
+        when(hasher.hashKey("key-123456789012")).thenReturn("key-hash");
+        when(hasher.hashJsonRequest(eq("vault.reassign"), any())).thenReturn("new-request-hash");
+        when(mongoTemplate.indexOps(VaultOperation.class)).thenReturn(indexOperations);
+        when(operationRepository.insert(any(VaultOperation.class))).thenThrow(new DuplicateKeyException("dup"));
+        when(operationRepository.findByUserIdAndOperationAndKeyHash(1L, "vault.reassign", "key-hash"))
+                .thenReturn(Optional.of(existingCompleted));
+
+        // A key already bound to a COMPLETED reassignment IS bound to that attempt's payload —
+        // unlike the FAILED case, a different target account must still 409.
+        assertThatThrownBy(() -> reassignmentService.reassign(1L, "doc-1",
+                new VaultReassignmentRequest(30L), "key-123456789012"))
+                .isInstanceOf(IdempotencyConflictException.class);
     }
 
     @Test
