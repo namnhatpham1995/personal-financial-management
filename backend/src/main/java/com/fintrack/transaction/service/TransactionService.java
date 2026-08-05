@@ -362,28 +362,22 @@ public class TransactionService {
      * {@code amount} for same-currency transfers where destinationAmount is null).
      */
     private void applyBalanceDelta(Transaction tx, BigDecimal amount, BigDecimal destinationAmount) {
-        switch (tx.getTransactionType()) {
-            case INCOME   -> accountService.adjustBalance(tx.getAccount().getId(), amount);
-            case EXPENSE  -> accountService.adjustBalance(tx.getAccount().getId(), amount.negate());
-            case TRANSFER -> {
-                accountService.adjustBalance(tx.getAccount().getId(), amount.negate());
-                accountService.adjustBalance(tx.getTransferAccount().getId(),
-                        destinationAmount != null ? destinationAmount : amount);
-            }
+        for (BalanceImpactPolicy.AccountEffect effect : BalanceImpactPolicy.apply(tx.getTransactionType(),
+                tx.getAccount().getId(), transferAccountId(tx), amount, destinationAmount)) {
+            accountService.adjustBalance(effect.accountId(), effect.delta());
         }
     }
 
     /** Reverse the balance delta (delete or pre-update). */
     private void reverseBalanceDelta(Transaction tx, BigDecimal amount, BigDecimal destinationAmount) {
-        switch (tx.getTransactionType()) {
-            case INCOME   -> accountService.adjustBalance(tx.getAccount().getId(), amount.negate());
-            case EXPENSE  -> accountService.adjustBalance(tx.getAccount().getId(), amount);
-            case TRANSFER -> {
-                accountService.adjustBalance(tx.getAccount().getId(), amount);
-                accountService.adjustBalance(tx.getTransferAccount().getId(),
-                        (destinationAmount != null ? destinationAmount : amount).negate());
-            }
+        for (BalanceImpactPolicy.AccountEffect effect : BalanceImpactPolicy.reverse(tx.getTransactionType(),
+                tx.getAccount().getId(), transferAccountId(tx), amount, destinationAmount)) {
+            accountService.adjustBalance(effect.accountId(), effect.delta());
         }
+    }
+
+    private static Long transferAccountId(Transaction tx) {
+        return tx.getTransferAccount() != null ? tx.getTransferAccount().getId() : null;
     }
 
     private boolean amountsDiffer(BigDecimal a, BigDecimal b) {

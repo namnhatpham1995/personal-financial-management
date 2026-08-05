@@ -6,6 +6,7 @@ import com.fintrack.recurring.domain.RecurringTransaction;
 import com.fintrack.recurring.repository.RecurringTransactionRepository;
 import com.fintrack.transaction.domain.Transaction;
 import com.fintrack.transaction.repository.TransactionRepository;
+import com.fintrack.transaction.service.BalanceImpactPolicy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -71,14 +72,13 @@ public class RecurringOccurrenceProcessor {
     }
 
     private void applyBalanceDelta(RecurringTransaction rt, Transaction tx) {
-        switch (rt.getTransactionType()) {
-            case INCOME   -> accountService.adjustBalance(rt.getAccount().getId(), rt.getAmount());
-            case EXPENSE  -> accountService.adjustBalance(rt.getAccount().getId(), rt.getAmount().negate());
-            case TRANSFER -> {
-                accountService.adjustBalance(rt.getAccount().getId(), rt.getAmount().negate());
-                if (tx.getTransferAccount() != null) {
-                    accountService.adjustBalance(tx.getTransferAccount().getId(), rt.getAmount());
-                }
+        Long transferAccountId = tx.getTransferAccount() != null ? tx.getTransferAccount().getId() : null;
+        // destinationAmount is null — recurring transactions have no destination-side amount
+        // concept, so the policy falls back to the shared amount for both sides of a transfer.
+        for (BalanceImpactPolicy.AccountEffect effect : BalanceImpactPolicy.apply(rt.getTransactionType(),
+                rt.getAccount().getId(), transferAccountId, rt.getAmount(), null)) {
+            if (effect.accountId() != null) {
+                accountService.adjustBalance(effect.accountId(), effect.delta());
             }
         }
     }

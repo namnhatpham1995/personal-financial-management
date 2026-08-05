@@ -15,6 +15,7 @@ import com.fintrack.common.exception.ResourceNotFoundException;
 import com.fintrack.exchangerate.service.ExchangeRateService;
 import com.fintrack.transaction.domain.Transaction;
 import com.fintrack.transaction.repository.TransactionRepository;
+import com.fintrack.transaction.service.BalanceImpactPolicy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -103,17 +104,18 @@ public class AccountService {
                 .sorted()
                 .forEach(id -> findOwnedForUpdate(userId, id));
         List<Transaction> connected = transactionRepository.findConnectedToAccount(accountId);
-        // Reverse balance on counterparty accounts of transfers so their balances stay correct
+        // Reverse balance on counterparty accounts of transfers so their balances stay correct.
+        // Only the surviving (non-deleted) side is applied: the deleted account's own effect
+        // vanishes along with the account row, so this is a narrower operation than a general
+        // reverse() of the whole transaction, not a duplicate of one.
         for (Transaction tx : connected) {
             if (tx.getTransactionType() == TransactionType.TRANSFER) {
-                if (tx.getAccount().getId().equals(accountId)) {
-                    // This account is the transfer source — counterparty (dest) gained
-                    // destinationAmount (or amount for same-currency transfers), reverse it
-                    BigDecimal destEffect = tx.getDestinationAmount() != null ? tx.getDestinationAmount() : tx.getAmount();
-                    adjustBalance(tx.getTransferAccount().getId(), destEffect.negate());
-                } else {
-                    // This account is the transfer dest — counterparty (source) lost amount, restore it
-                    adjustBalance(tx.getAccount().getId(), tx.getAmount());
+                for (BalanceImpactPolicy.AccountEffect effect : BalanceImpactPolicy.reverse(TransactionType.TRANSFER,
+                        tx.getAccount().getId(), tx.getTransferAccount().getId(),
+                        tx.getAmount(), tx.getDestinationAmount())) {
+                    if (!effect.accountId().equals(accountId)) {
+                        adjustBalance(effect.accountId(), effect.delta());
+                    }
                 }
             }
         }
