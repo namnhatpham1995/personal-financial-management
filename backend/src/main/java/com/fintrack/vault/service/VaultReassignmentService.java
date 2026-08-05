@@ -19,12 +19,8 @@ import com.fintrack.vault.web.dto.VaultReassignmentPreviewResponse;
 import com.fintrack.vault.web.dto.VaultReassignmentRequest;
 import com.fintrack.vault.web.dto.VaultReassignmentResponse;
 import lombok.RequiredArgsConstructor;
-import org.bson.Document;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.index.CompoundIndexDefinition;
-import org.springframework.data.mongodb.core.index.Index;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -395,25 +391,9 @@ public class VaultReassignmentService {
         return ids;
     }
 
+    /** Delegates to {@link VaultOperationClaimCoordinator#ensureIndexesOnce} — see that method's
+     * javadoc for why this class keeps the guard flag itself. */
     private void ensureIndexesOnce() {
-        if (!indexesEnsured.compareAndSet(false, true)) {
-            return;
-        }
-        try {
-            var indexOps = mongoTemplate.indexOps(VaultOperation.class);
-            indexOps.ensureIndex(new CompoundIndexDefinition(
-                            new Document("userId", 1).append("operation", 1).append("keyHash", 1))
-                    .named("uq_vault_operations_user_operation_key")
-                    .unique());
-            indexOps.ensureIndex(new Index().on("expiresAt", Sort.Direction.ASC)
-                    .named("idx_vault_operations_expires_at").expire(Duration.ZERO));
-        } catch (RuntimeException e) {
-            // Creation failed (e.g. transient Mongo unavailability) — release the flag so the
-            // next call retries instead of silently running unprotected for the rest of the
-            // process's life. ensureIndex is a no-op when an equivalent index already exists, so
-            // a partial success followed by a retry is safe.
-            indexesEnsured.set(false);
-            throw e;
-        }
+        VaultOperationClaimCoordinator.ensureIndexesOnce(indexesEnsured, mongoTemplate);
     }
 }

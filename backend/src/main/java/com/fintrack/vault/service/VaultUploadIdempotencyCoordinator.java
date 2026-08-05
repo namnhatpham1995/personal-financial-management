@@ -10,11 +10,7 @@ import com.fintrack.vault.domain.VaultOperationState;
 import com.fintrack.vault.repository.VaultOperationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.bson.Document;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.index.CompoundIndexDefinition;
-import org.springframework.data.mongodb.core.index.Index;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Component;
 
@@ -192,32 +188,12 @@ public class VaultUploadIdempotencyCoordinator {
     /**
      * Creates the {@link VaultOperation} unique claim index and TTL index the first time this
      * coordinator is actually used, rather than relying on {@code spring.data.mongodb.auto-index-creation}
-     * (see the field javadoc on {@link #indexesEnsured} for why). {@code ensureIndex} is a no-op
-     * when an equivalent index already exists, so this is safe to race across concurrent callers
-     * and safe to run once per process.
+     * (see the field javadoc on {@link #indexesEnsured} for why). Delegates to
+     * {@link VaultOperationClaimCoordinator#ensureIndexesOnce} so the index definitions exist in
+     * one place; this class still owns the guard flag itself (see that method's javadoc for why).
      */
     private void ensureIndexesOnce() {
-        if (!indexesEnsured.compareAndSet(false, true)) {
-            return;
-        }
-        try {
-            var indexOps = mongoTemplate.indexOps(VaultOperation.class);
-            indexOps.ensureIndex(new CompoundIndexDefinition(
-                            new Document("userId", 1).append("operation", 1).append("keyHash", 1))
-                    .named("uq_vault_operations_user_operation_key")
-                    .unique());
-            indexOps.ensureIndex(new Index()
-                    .on("expiresAt", Sort.Direction.ASC)
-                    .named("idx_vault_operations_expires_at")
-                    .expire(Duration.ZERO));
-        } catch (RuntimeException e) {
-            // Creation failed (e.g. transient Mongo unavailability) — release the flag so the
-            // next call retries instead of silently running unprotected for the rest of the
-            // process's life. ensureIndex is a no-op when an equivalent index already exists, so
-            // a partial success followed by a retry is safe.
-            indexesEnsured.set(false);
-            throw e;
-        }
+        VaultOperationClaimCoordinator.ensureIndexesOnce(indexesEnsured, mongoTemplate);
     }
 
 }
