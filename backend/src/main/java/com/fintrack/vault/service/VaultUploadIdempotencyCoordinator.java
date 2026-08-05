@@ -11,14 +11,10 @@ import com.fintrack.vault.repository.VaultOperationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.index.CompoundIndexDefinition;
 import org.springframework.data.mongodb.core.index.Index;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Component;
 
@@ -92,47 +88,66 @@ public class VaultUploadIdempotencyCoordinator {
         String keyHash = hasher.hashKey(rawIdempotencyKey);
         String requestHash = hasher.hashMultipartRequest(operation, nonFileParams, fileBytes);
 
-        Instant deadline = Instant.now().plus(POLL_BOUND);
-
-        while (true) {
-            ClaimAttempt attempt = tryClaim(userId, operation, keyHash, requestHash);
-            if (attempt.claimed()) {
-                metrics.claimed(operation);
-                log.debug("Vault operation claim won: operation={}", operation);
-                T response = runClaimedUpload(attempt.operationRow(), binaryStore, documentSave);
-                // Original, freshly-claimed upload — attach a non-secret correlation reference
-                // (the vault_operations id) for the resulting audit event.
-                auditReplaySignal.setOperationReference(attempt.operationRow().getId());
-                return new VaultUploadOutcome<>(response, false);
-            }
-
-            VaultOperation existing = attempt.existingRow();
-            if (existing.getState() == VaultOperationState.COMPLETED) {
-                if (!existing.getRequestHash().equals(requestHash)) {
-                    metrics.conflicted(operation);
-                    log.warn("Vault operation payload conflict: operation={}", operation);
-                    throw new IdempotencyConflictException(
-                            "Idempotency-Key was already used to complete an upload with a different file or parameters");
-                }
-                // Same key, same file/params, already completed: pure replay, no second binary or
-                // document was written — the interceptor must not record a second audit event.
-                metrics.replayed(operation);
-                log.debug("Vault operation replay: operation={}", operation);
-                auditReplaySignal.markReplayed();
-                return new VaultUploadOutcome<>(replay.buildReplayResponse(existing.getVaultDocumentId()), true);
-            }
-
-            // PROCESSING owned by another request, or FAILED that we just lost the reclaim race
-            // for: wait/retry within the bounded window rather than tying up the thread forever.
-            if (Instant.now().isAfter(deadline)) {
-                metrics.inProgress(operation);
-                log.warn("Vault operation in-progress (poll bound exceeded): operation={}", operation);
-                throw new IdempotencyOperationInProgressException(
-                        "Another request with this Idempotency-Key is still being processed; retry shortly",
-                        Math.max(1, POLL_INTERVAL.toSeconds()));
-            }
-            sleepPollInterval();
+        VaultOperationClaimCoordinator coordinator = new VaultOperationClaimCoordinator(operationRepository, mongoTemplate);
+        VaultOperationClaimCoordinator.ClaimOutcome outcome;
+        try {
+            outcome = coordinator.claim(userId, operation, keyHash, requestHash, POLL_BOUND,
+                    () -> buildCandidate(userId, operation, keyHash, requestHash),
+                    (existing, now) -> buildReclaimUpdate(requestHash, now),
+                    "Idempotency-Key was already used to complete an upload with a different file or parameters",
+                    "Another request with this Idempotency-Key is still being processed; retry shortly",
+                    POLL_INTERVAL.toSeconds());
+        } catch (IdempotencyConflictException e) {
+            metrics.conflicted(operation);
+            log.warn("Vault operation payload conflict: operation={}", operation);
+            throw e;
+        } catch (IdempotencyOperationInProgressException e) {
+            metrics.inProgress(operation);
+            log.warn("Vault operation in-progress (poll bound exceeded): operation={}", operation);
+            throw e;
         }
+
+        if (outcome.owned()) {
+            metrics.claimed(operation);
+            log.debug("Vault operation claim won: operation={}", operation);
+            T response = runClaimedUpload(outcome.operation(), binaryStore, documentSave);
+            // Original, freshly-claimed upload — attach a non-secret correlation reference
+            // (the vault_operations id) for the resulting audit event.
+            auditReplaySignal.setOperationReference(outcome.operation().getId());
+            return new VaultUploadOutcome<>(response, false);
+        }
+
+        // Same key, same file/params, already completed: pure replay, no second binary or
+        // document was written — the interceptor must not record a second audit event.
+        VaultOperation existing = outcome.operation();
+        metrics.replayed(operation);
+        log.debug("Vault operation replay: operation={}", operation);
+        auditReplaySignal.markReplayed();
+        return new VaultUploadOutcome<>(replay.buildReplayResponse(existing.getVaultDocumentId()), true);
+    }
+
+    private VaultOperation buildCandidate(Long userId, String operation, String keyHash, String requestHash) {
+        Instant now = Instant.now();
+        return VaultOperation.builder()
+                .userId(userId)
+                .operation(operation)
+                .keyHash(keyHash)
+                .requestHash(requestHash)
+                .state(VaultOperationState.PROCESSING)
+                .createdAt(now)
+                .expiresAt(now.plus(RESULT_RETENTION))
+                .build();
+    }
+
+    private Update buildReclaimUpdate(String requestHash, Instant now) {
+        return new Update()
+                .set("state", VaultOperationState.PROCESSING)
+                .set("requestHash", requestHash)
+                .set("createdAt", now)
+                .set("expiresAt", now.plus(RESULT_RETENTION))
+                .set("gridFsFileId", null)
+                .set("vaultDocumentId", null)
+                .set("completedAt", null);
     }
 
     private <T> T runClaimedUpload(VaultOperation op, VaultUploadBinaryStore binaryStore,
@@ -175,65 +190,6 @@ public class VaultUploadIdempotencyCoordinator {
     }
 
     /**
-     * Attempts to insert a new PROCESSING row. On a unique-index collision, either atomically
-     * reclaims an existing FAILED row (CAS) or returns the current row for the caller's
-     * replay/conflict/in-progress decision.
-     */
-    private ClaimAttempt tryClaim(Long userId, String operation, String keyHash, String requestHash) {
-        Instant now = Instant.now();
-        Instant expiresAt = now.plus(RESULT_RETENTION);
-        VaultOperation candidate = VaultOperation.builder()
-                .userId(userId)
-                .operation(operation)
-                .keyHash(keyHash)
-                .requestHash(requestHash)
-                .state(VaultOperationState.PROCESSING)
-                .createdAt(now)
-                .expiresAt(expiresAt)
-                .build();
-
-        try {
-            return ClaimAttempt.claimed(operationRepository.insert(candidate));
-        } catch (DuplicateKeyException e) {
-            VaultOperation existing = fetchExisting(userId, operation, keyHash);
-            if (existing.getState() == VaultOperationState.FAILED) {
-                VaultOperation reclaimed = reclaimFailed(existing, requestHash, now, expiresAt);
-                if (reclaimed != null) {
-                    return ClaimAttempt.claimed(reclaimed);
-                }
-                existing = fetchExisting(userId, operation, keyHash);
-            }
-            return ClaimAttempt.existing(existing);
-        }
-    }
-
-    private VaultOperation fetchExisting(Long userId, String operation, String keyHash) {
-        return operationRepository.findByUserIdAndOperationAndKeyHash(userId, operation, keyHash)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Vault operation for operation=" + operation + " vanished after a failed claim"));
-    }
-
-    /**
-     * Atomic compare-and-set reclaim of a FAILED row back to PROCESSING, so a retry with the same
-     * key can try again without a delete+reinsert race. Returns {@code null} if another request
-     * won the reclaim first.
-     */
-    private VaultOperation reclaimFailed(VaultOperation existing, String requestHash, Instant now, Instant expiresAt) {
-        Query query = Query.query(Criteria.where("_id").is(existing.getId())
-                .and("state").is(VaultOperationState.FAILED));
-        Update update = new Update()
-                .set("state", VaultOperationState.PROCESSING)
-                .set("requestHash", requestHash)
-                .set("createdAt", now)
-                .set("expiresAt", expiresAt)
-                .set("gridFsFileId", null)
-                .set("vaultDocumentId", null)
-                .set("completedAt", null);
-        return mongoTemplate.findAndModify(query, update,
-                FindAndModifyOptions.options().returnNew(true), VaultOperation.class);
-    }
-
-    /**
      * Creates the {@link VaultOperation} unique claim index and TTL index the first time this
      * coordinator is actually used, rather than relying on {@code spring.data.mongodb.auto-index-creation}
      * (see the field javadoc on {@link #indexesEnsured} for why). {@code ensureIndex} is a no-op
@@ -264,22 +220,4 @@ public class VaultUploadIdempotencyCoordinator {
         }
     }
 
-    private void sleepPollInterval() {
-        try {
-            Thread.sleep(POLL_INTERVAL.toMillis());
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("Interrupted while waiting for a concurrent vault upload operation", e);
-        }
-    }
-
-    private record ClaimAttempt(boolean claimed, VaultOperation operationRow, VaultOperation existingRow) {
-        static ClaimAttempt claimed(VaultOperation op) {
-            return new ClaimAttempt(true, op, null);
-        }
-
-        static ClaimAttempt existing(VaultOperation op) {
-            return new ClaimAttempt(false, null, op);
-        }
-    }
 }
