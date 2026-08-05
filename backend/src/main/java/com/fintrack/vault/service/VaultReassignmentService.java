@@ -233,23 +233,52 @@ public class VaultReassignmentService {
             VaultOperation existing = operationRepository
                     .findByUserIdAndOperationAndKeyHash(userId, OPERATION_NAME, keyHash)
                     .orElseThrow(() -> new IllegalStateException("Reassignment operation disappeared after claim conflict"));
-            if (!requestHash.equals(existing.getRequestHash())) {
-                throw new IdempotencyConflictException(
-                        "Idempotency-Key was already used for a different Vault reassignment");
+            if (existing.getState() == VaultOperationState.FAILED) {
+                VaultOperation reclaimed = reclaimFailed(existing, documentId, targetAccountId, requestHash, now);
+                if (reclaimed != null) {
+                    // A key bound to a FAILED attempt is not yet bound to that attempt's payload —
+                    // retrying with a different target account starts a fresh attempt rather than
+                    // 409ing, matching the upload and Postgres mutation paths.
+                    return reclaimed;
+                }
+                // Lost the reclaim race: re-read and fall through to the COMPLETED-replay /
+                // PROCESSING-in-progress handling below instead of proceeding as owner.
+                existing = operationRepository
+                        .findByUserIdAndOperationAndKeyHash(userId, OPERATION_NAME, keyHash)
+                        .orElseThrow(() -> new IllegalStateException("Reassignment operation disappeared after claim conflict"));
             }
             if (existing.getState() == VaultOperationState.COMPLETED) {
+                if (!requestHash.equals(existing.getRequestHash())) {
+                    throw new IdempotencyConflictException(
+                            "Idempotency-Key was already used for a different Vault reassignment");
+                }
                 return existing;
-            }
-            if (existing.getState() == VaultOperationState.FAILED) {
-                existing.setState(VaultOperationState.PROCESSING);
-                existing.setCreatedAt(now);
-                existing.setCompletedAt(null);
-                existing.setPayload(initialPayload(documentId, targetAccountId));
-                return operationRepository.save(existing);
             }
             throw new IdempotencyOperationInProgressException(
                     "Another request with this Idempotency-Key is still reassigning the document", 1);
         }
+    }
+
+    /**
+     * Atomically reclaims a FAILED operation back to PROCESSING via CAS, mirroring
+     * {@link VaultUploadIdempotencyCoordinator#reclaimFailed}. A prior non-atomic
+     * read-modify-write ({@code existing.setState(...); operationRepository.save(existing)})
+     * let two concurrent retries of the same failed key both believe they owned the reclaim.
+     * Returns {@code null} if another concurrent retry won the reclaim first.
+     */
+    private VaultOperation reclaimFailed(VaultOperation existing, String documentId, Long targetAccountId,
+                                         String requestHash, Instant now) {
+        Query query = Query.query(Criteria.where("_id").is(existing.getId())
+                .and("state").is(VaultOperationState.FAILED));
+        Update update = new Update()
+                .set("state", VaultOperationState.PROCESSING)
+                .set("requestHash", requestHash)
+                .set("payload", initialPayload(documentId, targetAccountId))
+                .set("createdAt", now)
+                .set("expiresAt", now.plus(RESULT_RETENTION))
+                .set("completedAt", null);
+        return mongoTemplate.findAndModify(query, update,
+                FindAndModifyOptions.options().returnNew(true), VaultOperation.class);
     }
 
     private VaultDocument claimDocument(VaultDocument document, String operationId) {
