@@ -4,10 +4,8 @@ import com.fintrack.account.domain.Account;
 import com.fintrack.account.service.AccountService;
 import com.fintrack.audit.support.AuditReplaySignal;
 import com.fintrack.common.exception.ConflictException;
-import com.fintrack.common.exception.ResourceNotFoundException;
 import com.fintrack.idempotency.service.IdempotencyHasher;
 import com.fintrack.idempotency.service.IdempotencyKeyValidator;
-import com.fintrack.transaction.domain.Transaction;
 import com.fintrack.transaction.repository.TransactionRepository;
 import com.fintrack.vault.domain.VaultDocument;
 import com.fintrack.vault.domain.VaultDocumentStatus;
@@ -19,10 +17,7 @@ import com.fintrack.vault.web.dto.VaultReassignmentPreviewResponse;
 import com.fintrack.vault.web.dto.VaultReassignmentRequest;
 import com.fintrack.vault.web.dto.VaultReassignmentResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
@@ -33,6 +28,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * Stays over the project's 200-line modularization guidance by design: document claim/finalize
+ * mechanics ({@link VaultDocumentClaimFinalizer}) and preview construction
+ * ({@link VaultReassignmentPreviewFactory}) were split out, but {@link #reassign} and
+ * {@link #recoverStale} share one idempotency/cleanup/finalize sequence that must stay readable
+ * as a single flow — see {@link #recoverStale}'s javadoc on why it has to mirror {@link #reassign}.
+ */
 @Service
 @RequiredArgsConstructor
 public class VaultReassignmentService {
@@ -68,12 +70,13 @@ public class VaultReassignmentService {
     private final AtomicBoolean indexesEnsured = new AtomicBoolean(false);
 
     public VaultReassignmentPreviewResponse preview(Long userId, String documentId, Long targetAccountId) {
-        VaultDocument document = findOwned(userId, documentId);
+        VaultDocument document = VaultDocumentClaimFinalizer.findOwned(vaultDocumentRepository, userId, documentId);
         Account target = accountService.findOwned(userId, targetAccountId);
         Account source = sourceAccount(userId, document);
-        ensureDifferentAccount(document, targetAccountId);
+        VaultDocumentClaimFinalizer.ensureDifferentAccount(document, targetAccountId);
         Set<Long> importedIds = importOriginService.collectTransactionIds(userId, document);
-        return toPreview(document, source, target, importedIds.size(), manualLinkMustDetach(userId, document, targetAccountId));
+        boolean detach = VaultDocumentClaimFinalizer.manualLinkMustDetach(transactionRepository, userId, document, targetAccountId);
+        return VaultReassignmentPreviewFactory.toPreview(document, source, target, importedIds.size(), detach);
     }
 
     public VaultReassignmentResponse reassign(Long userId, String documentId,
@@ -102,10 +105,10 @@ public class VaultReassignmentService {
         VaultDocument document;
         Account target;
         try {
-            document = findOwned(userId, documentId);
+            document = VaultDocumentClaimFinalizer.findOwned(vaultDocumentRepository, userId, documentId);
             target = accountService.findOwned(userId, request.targetAccountId());
             sourceAccount(userId, document);
-            ensureDifferentAccount(document, target.getId());
+            VaultDocumentClaimFinalizer.ensureDifferentAccount(document, target.getId());
             if (document.getStatus() == VaultDocumentStatus.CONFIRMING) {
                 throw new ConflictException("Statement confirmation is still processing; retry after it completes");
             }
@@ -114,16 +117,16 @@ public class VaultReassignmentService {
             throw e;
         }
 
-        VaultDocument claimed = claimDocument(document, operation.getId());
+        VaultDocument claimed = VaultDocumentClaimFinalizer.claim(mongoTemplate, document, operation.getId());
         if (claimed == null) {
             failOperation(operation, "Vault document is already being reassigned");
             throw new ConflictException("Vault document is already being reassigned");
         }
 
         Set<Long> importedIds = importOriginService.collectTransactionIds(userId, claimed);
+        boolean detach = VaultDocumentClaimFinalizer.manualLinkMustDetach(transactionRepository, userId, claimed, target.getId());
         VaultReassignmentPayload payload = VaultReassignmentPayload.fromMap(operation.getPayload())
-                .withClaimDetails(claimed.getAccountId(), List.copyOf(importedIds), importedIds.size(),
-                        manualLinkMustDetach(userId, claimed, target.getId()));
+                .withClaimDetails(claimed.getAccountId(), List.copyOf(importedIds), importedIds.size(), detach);
         operation.setPayload(payload.toMap());
         operationRepository.save(operation);
 
@@ -134,7 +137,8 @@ public class VaultReassignmentService {
             payload = payload.withRemovedTransactionCount(cleanup.removedTransactions());
             operation.setPayload(payload.toMap());
             operationRepository.save(operation);
-            VaultDocument finalized = finalizeDocument(userId, claimed, operation.getId(), target.getId());
+            VaultDocument finalized = VaultDocumentClaimFinalizer.finalizeDocument(
+                    vaultDocumentRepository, transactionRepository, userId, claimed, operation.getId(), target.getId());
             operation.setState(VaultOperationState.COMPLETED);
             operation.setCompletedAt(Instant.now());
             operationRepository.save(operation);
@@ -147,7 +151,7 @@ public class VaultReassignmentService {
         } catch (RuntimeException e) {
             metrics.reassignmentCleanupFailed();
             failOperation(operation, e.getMessage());
-            clearClaim(userId, documentId, operation.getId());
+            VaultDocumentClaimFinalizer.clearClaim(mongoTemplate, userId, documentId, operation.getId());
             throw e;
         }
     }
@@ -163,7 +167,7 @@ public class VaultReassignmentService {
         Long sourceAccountId = payload.sourceAccountId();
         VaultDocument document;
         try {
-            document = findOwned(operation.getUserId(), documentId);
+            document = VaultDocumentClaimFinalizer.findOwned(vaultDocumentRepository, operation.getUserId(), documentId);
             if (targetAccountId.equals(document.getAccountId())
                     && document.getReassignmentOperationId() == null) {
                 operation.setState(VaultOperationState.COMPLETED);
@@ -175,11 +179,11 @@ public class VaultReassignmentService {
             Account target = accountService.findOwned(operation.getUserId(), targetAccountId);
             if (document.getStatus() == VaultDocumentStatus.CONFIRMING) {
                 failOperation(operation, "Statement confirmation is still processing");
-                clearClaim(operation.getUserId(), documentId, operation.getId());
+                VaultDocumentClaimFinalizer.clearClaim(mongoTemplate, operation.getUserId(), documentId, operation.getId());
                 return;
             }
             VaultDocument claimed = document.getReassignmentOperationId() == null
-                    ? claimDocument(document, operation.getId()) : document;
+                    ? VaultDocumentClaimFinalizer.claim(mongoTemplate, document, operation.getId()) : document;
             if (claimed == null) {
                 return;
             }
@@ -191,14 +195,15 @@ public class VaultReassignmentService {
                     operation.getUserId(), documentId, sourceAccountId, ids,
                     "Vault document reassigned to another account");
             operation.setPayload(payload.withRemovedTransactionCount(cleanup.removedTransactions()).toMap());
-            finalizeDocument(operation.getUserId(), claimed, operation.getId(), target.getId());
+            VaultDocumentClaimFinalizer.finalizeDocument(
+                    vaultDocumentRepository, transactionRepository, operation.getUserId(), claimed, operation.getId(), target.getId());
             operation.setState(VaultOperationState.COMPLETED);
             operation.setCompletedAt(Instant.now());
             operationRepository.save(operation);
             metrics.reassignmentRecovered();
         } catch (RuntimeException e) {
             failOperation(operation, e.getMessage());
-            clearClaim(operation.getUserId(), documentId, operation.getId());
+            VaultDocumentClaimFinalizer.clearClaim(mongoTemplate, operation.getUserId(), documentId, operation.getId());
         }
     }
 
@@ -240,86 +245,8 @@ public class VaultReassignmentService {
                 .set("completedAt", null);
     }
 
-    private VaultDocument claimDocument(VaultDocument document, String operationId) {
-        Query query = Query.query(new Criteria().andOperator(
-                Criteria.where("_id").is(document.getId()),
-                Criteria.where("userId").is(document.getUserId()),
-                new Criteria().orOperator(
-                        Criteria.where("reassignmentOperationId").exists(false),
-                        Criteria.where("reassignmentOperationId").is(null))));
-        Update update = new Update()
-                .set("reassignmentOperationId", operationId)
-                .set("reassignmentStartedAt", Instant.now());
-        return mongoTemplate.findAndModify(query, update,
-                FindAndModifyOptions.options().returnNew(true), VaultDocument.class);
-    }
-
-    private VaultDocument finalizeDocument(Long userId, VaultDocument document, String operationId, Long targetAccountId) {
-        VaultDocument current = findOwned(userId, document.getId());
-        if (!operationId.equals(current.getReassignmentOperationId())) {
-            throw new ConflictException("Vault reassignment claim was lost");
-        }
-        if (current.getTransactionId() != null && manualLinkMustDetach(userId, current, targetAccountId)) {
-            current.setTransactionId(null);
-        }
-        if (current.getType() == com.fintrack.vault.domain.VaultDocumentType.STATEMENT) {
-            current.setPayload(null);
-            current.setStatus(VaultDocumentStatus.UPLOADED);
-            current.setConfirmationKeyHash(null);
-            current.setConfirmationRequestHash(null);
-            current.setConfirmationStartedAt(null);
-            current.setConfirmationCompletedAt(null);
-            current.setConfirmationRowOutcomes(null);
-        }
-        current.setAccountId(targetAccountId);
-        current.setReassignmentOperationId(null);
-        current.setReassignmentStartedAt(null);
-        return vaultDocumentRepository.save(current);
-    }
-
-    private boolean manualLinkMustDetach(Long userId, VaultDocument document, Long targetAccountId) {
-        if (document.getTransactionId() == null) {
-            return false;
-        }
-        return transactionRepository.findByIdAndUserId(document.getTransactionId(), userId)
-                .map(Transaction::getAccount)
-                .map(account -> !targetAccountId.equals(account.getId()))
-                .orElse(true);
-    }
-
     private Account sourceAccount(Long userId, VaultDocument document) {
         return document.getAccountId() == null ? null : accountService.findOwned(userId, document.getAccountId());
-    }
-
-    private VaultReassignmentPreviewResponse toPreview(VaultDocument document, Account source, Account target,
-                                                        int importedCount, boolean detachManualLink) {
-        String sourceCurrency = source == null ? null : source.getCurrency();
-        String targetCurrency = target.getCurrency();
-        return new VaultReassignmentPreviewResponse(document.getId(), document.getType(),
-                document.getOriginalFilename(), source == null ? null : source.getId(),
-                source == null ? null : source.getName(), sourceCurrency, target.getId(), target.getName(),
-                targetCurrency, sourceCurrency != null && !sourceCurrency.equals(targetCurrency),
-                importedCount, detachManualLink);
-    }
-
-    private void ensureDifferentAccount(VaultDocument document, Long targetAccountId) {
-        if (targetAccountId.equals(document.getAccountId())) {
-            throw new ConflictException("Vault document is already assigned to this account");
-        }
-    }
-
-    private VaultDocument findOwned(Long userId, String documentId) {
-        return vaultDocumentRepository.findByIdAndUserId(documentId, userId)
-                .orElseThrow(() -> ResourceNotFoundException.of("VaultDocument", documentId));
-    }
-
-    private void clearClaim(Long userId, String documentId, String operationId) {
-        Query query = Query.query(Criteria.where("_id").is(documentId)
-                .and("userId").is(userId)
-                .and("reassignmentOperationId").is(operationId));
-        mongoTemplate.updateFirst(query, new Update()
-                .set("reassignmentOperationId", null)
-                .set("reassignmentStartedAt", null), VaultDocument.class);
     }
 
     private void failOperation(VaultOperation operation, String reason) {
