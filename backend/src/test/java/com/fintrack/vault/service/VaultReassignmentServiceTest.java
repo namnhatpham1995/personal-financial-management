@@ -17,12 +17,14 @@ import com.fintrack.vault.repository.VaultDocumentRepository;
 import com.fintrack.vault.repository.VaultOperationRepository;
 import com.fintrack.vault.web.dto.VaultDocumentResponse;
 import com.fintrack.vault.web.dto.VaultReassignmentRequest;
+import com.fintrack.idempotency.exception.IdempotencyOperationInProgressException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.index.IndexOperations;
@@ -30,6 +32,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -145,6 +148,90 @@ class VaultReassignmentServiceTest {
                 .containsEntry("targetAccountId", 20L)
                 .containsEntry("removedTransactionCount", 2)
                 .containsEntry("manualLinkDetached", false);
+    }
+
+    @Test
+    void reclaimRace_winnerReclaimsFailedOperationAtomically_completesReassignment() {
+        VaultDocument document = document(VaultDocumentType.STATEMENT, 10L);
+        document.setStatus(VaultDocumentStatus.STAGED);
+        document.setPayload(Map.of("rows", "parsed"));
+        Account target = account(20L, "Savings", "USD");
+        VaultOperation existingFailed = VaultOperation.builder()
+                .id("operation-1").userId(1L).operation("vault.reassign")
+                .keyHash("key-hash").requestHash("request-hash")
+                .state(VaultOperationState.FAILED)
+                .build();
+        VaultOperation reclaimed = VaultOperation.builder()
+                .id("operation-1").userId(1L).operation("vault.reassign")
+                .keyHash("key-hash").requestHash("request-hash")
+                .state(VaultOperationState.PROCESSING)
+                .payload(new LinkedHashMap<>(Map.of("documentId", "doc-1", "targetAccountId", 20L)))
+                .build();
+
+        when(hasher.hashKey("key-123456789012")).thenReturn("key-hash");
+        when(hasher.hashJsonRequest(eq("vault.reassign"), any())).thenReturn("request-hash");
+        when(mongoTemplate.indexOps(VaultOperation.class)).thenReturn(indexOperations);
+        when(operationRepository.insert(any(VaultOperation.class))).thenThrow(new DuplicateKeyException("dup"));
+        when(operationRepository.findByUserIdAndOperationAndKeyHash(1L, "vault.reassign", "key-hash"))
+                .thenReturn(Optional.of(existingFailed));
+        when(mongoTemplate.findAndModify(any(Query.class), any(Update.class), any(FindAndModifyOptions.class), eq(VaultOperation.class)))
+                .thenReturn(reclaimed);
+        when(vaultDocumentRepository.findByIdAndUserId("doc-1", 1L))
+                .thenReturn(Optional.of(document), Optional.of(document));
+        when(accountService.findOwned(1L, 20L)).thenReturn(target);
+        when(importOriginService.collectTransactionIds(1L, document)).thenReturn(Set.of(11L, 12L));
+        VaultDocument claimed = document;
+        claimed.setReassignmentOperationId("operation-1");
+        when(mongoTemplate.findAndModify(any(Query.class), any(Update.class), any(FindAndModifyOptions.class), eq(VaultDocument.class)))
+                .thenReturn(claimed);
+        when(cleanupService.clean(eq(1L), eq("doc-1"), eq(10L), eq(Set.of(11L, 12L)), any()))
+                .thenReturn(new VaultReassignmentCleanupService.CleanupResult(2, 1));
+        when(vaultDocumentRepository.save(any(VaultDocument.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(vaultService.getById(1L, "doc-1")).thenReturn(new VaultDocumentResponse(
+                "doc-1", 20L, VaultDocumentType.STATEMENT, VaultDocumentStatus.UPLOADED,
+                "csv", Instant.now(), null, true, "statement.csv", null, null));
+
+        var result = reassignmentService.reassign(1L, "doc-1",
+                new VaultReassignmentRequest(20L), "key-123456789012");
+
+        assertThat(result.removedImportedTransactions()).isEqualTo(2);
+        assertThat(result.replayed()).isFalse();
+        assertThat(reclaimed.getState()).isEqualTo(VaultOperationState.COMPLETED);
+        // The reclaim itself was never a plain save() on the FAILED row — only the atomic CAS.
+        verify(operationRepository, never()).save(existingFailed);
+    }
+
+    @Test
+    void reclaimRace_loserGetsInProgressException_doesNotMutateOperation() {
+        VaultOperation existingFailed = VaultOperation.builder()
+                .id("operation-1").userId(1L).operation("vault.reassign")
+                .keyHash("key-hash").requestHash("request-hash")
+                .state(VaultOperationState.FAILED)
+                .build();
+        VaultOperation nowProcessing = VaultOperation.builder()
+                .id("operation-1").userId(1L).operation("vault.reassign")
+                .keyHash("key-hash").requestHash("request-hash")
+                .state(VaultOperationState.PROCESSING)
+                .build();
+
+        when(hasher.hashKey("key-123456789012")).thenReturn("key-hash");
+        when(hasher.hashJsonRequest(eq("vault.reassign"), any())).thenReturn("request-hash");
+        when(mongoTemplate.indexOps(VaultOperation.class)).thenReturn(indexOperations);
+        when(operationRepository.insert(any(VaultOperation.class))).thenThrow(new DuplicateKeyException("dup"));
+        when(operationRepository.findByUserIdAndOperationAndKeyHash(1L, "vault.reassign", "key-hash"))
+                .thenReturn(Optional.of(existingFailed), Optional.of(nowProcessing));
+        when(mongoTemplate.findAndModify(any(Query.class), any(Update.class), any(FindAndModifyOptions.class), eq(VaultOperation.class)))
+                .thenReturn(null);
+
+        // Never a spurious 409: the winner already reclaimed under this key, so the loser must
+        // see PROCESSING (in-progress), not be treated as a payload conflict.
+        assertThatThrownBy(() -> reassignmentService.reassign(1L, "doc-1",
+                new VaultReassignmentRequest(20L), "key-123456789012"))
+                .isInstanceOf(IdempotencyOperationInProgressException.class);
+
+        // The loser never touches the operation row: it does not mark it FAILED and does not
+        // erase the winner's recorded source account, removed-transaction ids, or count.
+        verify(operationRepository, never()).save(any(VaultOperation.class));
     }
 
     @Test
