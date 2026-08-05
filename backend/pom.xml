@@ -28,6 +28,14 @@
         <lombok.version>1.18.34</lombok.version>
         <!-- Service-package line coverage floor; raise after measuring locally with mvn verify -->
         <coverage.line.min>0.60</coverage.line.min>
+        <!-- Service-package branch coverage floor; measured baseline was 0.6962 (mvn verify, 2026-08-05) -->
+        <coverage.branch.min>0.65</coverage.branch.min>
+        <!-- Per-class line floor for vault/transaction/account/idempotency service classes;
+             measured worst case was 0.615 (IdempotencyResponseCodec, mvn verify, 2026-08-05) -->
+        <coverage.class.line.min>0.60</coverage.class.line.min>
+        <!-- Per-class branch floor for the same packages; measured worst case was 0.250
+             (BatchAggregateOperationStore, 2/8 branches, mvn verify, 2026-08-05) -->
+        <coverage.class.branch.min>0.20</coverage.class.branch.min>
     </properties>
 
     <dependencies>
@@ -260,7 +268,9 @@
                         <phase>test</phase>
                         <goals><goal>report</goal></goals>
                     </execution>
-                    <!-- Fails the build if service-package line coverage drops below threshold -->
+                    <!-- Fails the build if service-package line/branch coverage drops below threshold,
+                         or if any class in the vault/transaction/account/idempotency service packages
+                         (the mutation-contract hot paths) drops below its own per-class floor -->
                     <execution>
                         <id>check</id>
                         <phase>verify</phase>
@@ -277,6 +287,32 @@
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
                                             <minimum>${coverage.line.min}</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>BRANCH</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>${coverage.branch.min}</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                                <rule>
+                                    <element>CLASS</element>
+                                    <includes>
+                                        <include>com.fintrack.vault.service.*</include>
+                                        <include>com.fintrack.transaction.service.*</include>
+                                        <include>com.fintrack.account.service.*</include>
+                                        <include>com.fintrack.idempotency.service.*</include>
+                                    </includes>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>${coverage.class.line.min}</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>BRANCH</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>${coverage.class.branch.min}</minimum>
                                         </limit>
                                     </limits>
                                 </rule>
