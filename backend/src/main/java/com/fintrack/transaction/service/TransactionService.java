@@ -33,7 +33,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Propagation;
-import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 
 import java.math.BigDecimal;
@@ -45,6 +44,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Stays over the project's 200-line modularization guidance by design: request validation
+ * ({@link TransactionRequestValidator}) and warning construction ({@link TransactionWarningFactory})
+ * were split out, and balance-sign rules live in {@link BalanceImpactPolicy}, but the seven
+ * public mutation/query methods below each own a single transactional boundary (locking order,
+ * persistence, and cache invalidation together) — splitting further would fragment operations
+ * that must commit or roll back as one unit.
+ */
 @Service
 @RequiredArgsConstructor
 public class TransactionService {
@@ -115,12 +122,10 @@ public class TransactionService {
         User user = userRepository.getReferenceById(userId);
         Account account = accountService.findOwned(userId, req.accountId());
         List<MutationWarning> warnings = new ArrayList<>();
-        if (importDedupKey == null && transactionRepository
+        boolean possibleDuplicate = importDedupKey == null && transactionRepository
                 .existsByUserIdAndAccountIdAndTransactionDateAndAmountAndTransactionTypeAndNote(
-                        userId, req.accountId(), req.transactionDate(), req.amount(), req.transactionType(), req.note())) {
-            warnings.add(new MutationWarning("possible_duplicate_transaction",
-                    "A similar transaction already exists", req.accountId()));
-        }
+                        userId, req.accountId(), req.transactionDate(), req.amount(), req.transactionType(), req.note());
+        TransactionWarningFactory.addDuplicateWarning(warnings, possibleDuplicate, req.accountId());
 
         Transaction tx = Transaction.builder()
                 .user(user)
@@ -138,32 +143,24 @@ public class TransactionService {
             tx.setCategory(category);
         }
 
+        TransactionRequestValidator.requireTransferAccountId(req.transactionType(), req.transferAccountId());
         if (req.transactionType() == TransactionType.TRANSFER) {
-            if (req.transferAccountId() == null) {
-                throw new IllegalArgumentException("transferAccountId is required for TRANSFER transactions");
-            }
             Account dest = accountService.findOwned(userId, req.transferAccountId());
             tx.setTransferAccount(dest);
             boolean crossCurrency = !account.getCurrency().equals(dest.getCurrency());
-            if (crossCurrency && req.destinationAmount() == null) {
-                throw new IllegalArgumentException(
-                        "destinationAmount is required for a TRANSFER between accounts with different currencies ("
-                                + account.getCurrency() + " -> " + dest.getCurrency() + ")");
-            }
-            if (!crossCurrency && req.destinationAmount() != null) {
-                throw new IllegalArgumentException(
-                        "destinationAmount must be omitted for a TRANSFER between accounts with the same currency");
-            }
+            TransactionRequestValidator.validateDestinationAmount(req.transactionType(), crossCurrency,
+                    req.destinationAmount(), account.getCurrency(), dest.getCurrency());
             tx.setDestinationAmount(req.destinationAmount());
-        } else if (req.destinationAmount() != null) {
-            throw new IllegalArgumentException("destinationAmount is only valid for TRANSFER transactions");
+        } else {
+            TransactionRequestValidator.validateDestinationAmount(req.transactionType(), false,
+                    req.destinationAmount(), null, null);
         }
 
         // Lock affected accounts before reading/applying balance so this create serializes
         // against a concurrent update/delete/account-deletion touching the same account(s) —
         // see lockAffectedAccounts' javadoc for the ascending-order deadlock-avoidance rule.
         lockAffectedAccounts(userId, tx);
-        addNegativeBalanceWarning(warnings, account, req.transactionType(), req.amount());
+        TransactionWarningFactory.addNegativeBalanceWarning(warnings, account, req.transactionType(), req.amount());
 
         Transaction saved = transactionRepository.save(tx);
         applyBalanceDelta(saved, saved.getAmount(), saved.getDestinationAmount());
@@ -188,7 +185,7 @@ public class TransactionService {
             String clientRequestId = row.clientRequestId();
             var violations = validator.validate(row);
             if (!violations.isEmpty()) {
-                results.add(failed(index, clientRequestId, validationMessage(violations)));
+                results.add(failed(index, clientRequestId, TransactionRequestValidator.firstViolationMessage(violations)));
                 continue;
             }
 
@@ -218,10 +215,6 @@ public class TransactionService {
 
     private BatchTransactionRowResult failed(int index, String clientRequestId, String error) {
         return new BatchTransactionRowResult(index, BatchTransactionRowResult.Status.FAILED, clientRequestId, null, error);
-    }
-
-    private String validationMessage(java.util.Set<? extends ConstraintViolation<?>> violations) {
-        return violations.iterator().next().getMessage();
     }
 
     @Transactional(readOnly = true)
@@ -269,13 +262,8 @@ public class TransactionService {
                 && tx.getTransferAccount() != null
                 && !tx.getAccount().getCurrency().equals(tx.getTransferAccount().getCurrency());
 
-        if (isCrossCurrencyTransfer && (req.amount() == null) != (req.destinationAmount() == null)) {
-            throw new IllegalArgumentException(
-                    "amount and destinationAmount must be supplied together when updating a cross-currency transfer");
-        }
-        if (!isCrossCurrencyTransfer && req.destinationAmount() != null) {
-            throw new IllegalArgumentException("destinationAmount must be omitted for this transaction");
-        }
+        TransactionRequestValidator.validateUpdateDestinationAmount(
+                isCrossCurrencyTransfer, req.amount(), req.destinationAmount());
 
         BigDecimal finalAmount = req.amount() == null ? oldAmount : req.amount();
         BigDecimal finalDestinationAmount = isCrossCurrencyTransfer
@@ -285,7 +273,7 @@ public class TransactionService {
         List<MutationWarning> warnings = new ArrayList<>();
         BigDecimal balanceDelta = finalAmount.subtract(oldAmount);
         if (tx.getTransactionType() == TransactionType.EXPENSE || tx.getTransactionType() == TransactionType.TRANSFER) {
-            addNegativeBalanceWarning(warnings, tx.getAccount(), tx.getTransactionType(), balanceDelta);
+            TransactionWarningFactory.addNegativeBalanceWarning(warnings, tx.getAccount(), tx.getTransactionType(), balanceDelta);
         }
 
         boolean amountsChanged = finalAmount.compareTo(oldAmount) != 0
@@ -383,16 +371,6 @@ public class TransactionService {
     private boolean amountsDiffer(BigDecimal a, BigDecimal b) {
         if (a == null || b == null) return a != b;
         return a.compareTo(b) != 0;
-    }
-
-    private void addNegativeBalanceWarning(List<MutationWarning> warnings, Account account,
-                                           TransactionType type, BigDecimal amount) {
-        if ((type == TransactionType.EXPENSE || type == TransactionType.TRANSFER)
-                && amount.signum() > 0
-                && account.getCurrentBalance().subtract(amount).signum() < 0) {
-            warnings.add(new MutationWarning("account_balance_negative",
-                    "This mutation leaves the account balance negative", account.getId()));
-        }
     }
 
     public Transaction findOwned(Long userId, Long txId) {
