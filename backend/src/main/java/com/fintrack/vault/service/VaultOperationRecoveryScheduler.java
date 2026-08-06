@@ -48,7 +48,10 @@ public class VaultOperationRecoveryScheduler {
         this.legacyMigration = legacyMigration;
     }
 
-    @Scheduled(cron = "0 */5 * * * *")
+    // Externalized so Testcontainers tests that invoke this method directly can set
+    // vault.recovery.cron=- (Spring's disabled-trigger sentinel) and stop the real cron from
+    // firing mid-test and racing the explicit call for the migration guard / ShedLock.
+    @Scheduled(cron = "${vault.recovery.cron:0 */5 * * * *}")
     @SchedulerLock(name = "vaultOperationRecovery", lockAtMostFor = "PT10M", lockAtLeastFor = "PT1M")
     public void recoverStaleOperations() {
         // The legacy reassignment rows must be visible before this first sweep queries the new
