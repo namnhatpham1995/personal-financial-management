@@ -65,7 +65,7 @@
             <artifactId>spring-boot-starter-cache</artifactId>
         </dependency>
 
-        <!-- MongoDB (audit log) -->
+        <!-- MongoDB (vault documents, GridFS binaries, vault_operations) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-mongodb</artifactId>

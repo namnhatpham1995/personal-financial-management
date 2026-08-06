@@ -83,6 +83,10 @@ class VaultUploadIdempotencyIntegrationTest {
                 () -> "org.hibernate.dialect.PostgreSQLDialect");
         registry.add("spring.data.mongodb.uri", () -> mongo.getReplicaSetUrl("fintrack_vault_idem_test"));
         registry.add("spring.data.redis.repositories.enabled", () -> "false");
+        // Disable the real cron trigger: this class calls recoverStaleOperations()/migrateOnce()
+        // directly, and a background firing between test methods would consume the migration's
+        // one-shot guard and the ShedLock out from under the explicit calls.
+        registry.add("vault.recovery.cron", () -> "-");
     }
 
     @Autowired MockMvc mockMvc;
