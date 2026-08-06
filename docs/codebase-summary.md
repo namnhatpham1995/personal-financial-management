@@ -31,7 +31,7 @@
 | recurring | `RecurringTransactionController` + `RecurringTransactionScheduler` + `RecurringOccurrenceProcessor` | Daily scheduler, per-occurrence `@Transactional` boundary, idempotent via unique constraint; no destination-account field, so recurring TRANSFER is same-currency by construction |
 | analytics | `AnalyticsController` → `AnalyticsService` | Per-currency analytics, converted balance summaries, budget progress; JPQL queries in `AnalyticsRepository` |
 | agent | `AgentRunController` → `AgentRunService` | Receipt ingestion run lifecycle (`agent_run` table), including terminal `INVALIDATED` runs; agent-token endpoints (`/proposals`, `/commit`, `/fail`) authenticated by `AgentAuthenticationFilter`/`AgentEndpointPolicy`; see `docs/system-architecture.md#receipt-ingestion-agent` |
-| vault reassignment | `VaultReassignmentService` + `VaultOperationRecoveryScheduler` | Type-first all-account listing, preview/execute move workflow, PostgreSQL import cleanup before Mongo finalization, idempotent replay, shared stale-operation recovery |
+| vault reassignment | `VaultReassignmentService` (orchestration) + `VaultDocumentClaimFinalizer` (Mongo claim/finalize) + `VaultReassignmentPreviewFactory` (preview DTO) + `VaultOperationRecoveryScheduler` | Type-first all-account listing, preview/execute move workflow, PostgreSQL import cleanup before Mongo finalization, idempotent replay via `VaultOperationClaimCoordinator`, shared stale-operation recovery; `VaultReassignmentPayload` is the typed view over the stored `VaultOperation.payload` map |
 
 ### Common Infrastructure
 - `JwtAuthenticationFilter` — extract Bearer, validate, set SecurityContext
