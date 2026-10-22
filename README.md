@@ -55,6 +55,7 @@ Set these environment variables on the **backend service**:
 | `SPRING_DATA_MONGODB_URI` | *(optional)* MongoDB URI — only required when Receipt & Statement Vault is enabled |
 | `SPRING_DATA_REDIS_URL` | Redis URL from Railway Redis plugin: `${{Redis.REDIS_URL}}` |
 | `APP_AGENT_SERVICE_URL` | *(optional)* Base URL of the **agent-service** Railway deployment, e.g. `https://agent-service.up.railway.app`. Leave unset to keep the Receipt Ingestion Agent dark — every `/agent-runs` endpoint reports the feature unavailable and nothing else is affected. |
+| `JAVA_TOOL_OPTIONS` | *(optional)* Replaces the low-footprint JVM flags baked into `backend/Dockerfile` (Serial GC, 256 MB heap cap, C1-only JIT). Set only if the service needs a bigger heap or more throughput. |
 
 > **MongoDB note:** `SPRING_DATA_MONGODB_URI` is required for the Receipt & Statement Vault. Set it to `mongodb://<USER>:<PASS>@<HOST>:27017/fintrack_vault?authSource=admin` — Railway's `MONGO_URL` omits the database name, so you must append `/fintrack_vault` manually.
 

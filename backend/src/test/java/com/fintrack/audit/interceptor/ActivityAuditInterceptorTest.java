@@ -5,6 +5,7 @@ import com.fintrack.audit.support.AuditReplaySignal;
 import com.fintrack.common.security.UserPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,7 +33,10 @@ class ActivityAuditInterceptorTest {
 
     @InjectMocks ActivityAuditInterceptor interceptor;
 
+    // Also after each test: a context left on the thread is picked up by the next MockMvc
+    // test class in the same JVM and reused as that test's caller for every request.
     @BeforeEach
+    @AfterEach
     void clearSecurityContext() {
         SecurityContextHolder.clearContext();
     }
