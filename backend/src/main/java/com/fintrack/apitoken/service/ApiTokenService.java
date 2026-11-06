@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
@@ -35,6 +36,7 @@ public class ApiTokenService {
     private static final Set<Integer> ALLOWED_EXPIRY_DAYS = Set.of(30, 90, 365);
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final String IDEMPOTENCY_OPERATION = "apitoken.create";
+    private static final Duration LAST_USED_INTERVAL = Duration.ofMinutes(1);
 
     private final ApiTokenRepository apiTokenRepository;
     private final UserRepository userRepository;
@@ -43,7 +45,6 @@ public class ApiTokenService {
     private final ApiTokenWriter apiTokenWriter;
 
     /** Unprotected create — behaves exactly as before idempotency binding existed. */
-    @Transactional
     public CreatedApiTokenResponse create(Long userId, CreateApiTokenRequest request) {
         return create(userId, request, null);
     }
@@ -55,8 +56,10 @@ public class ApiTokenService {
      * {@code (userId, idempotencyKeyHash)} always wins, regardless of whether the retried request's
      * settings match; the retry gets a typed conflict with non-secret metadata, never a second token
      * and never the plaintext again.
+     *
+     * <p>Deliberately not {@code @Transactional}: the insert runs in {@link ApiTokenWriter}'s own
+     * transaction, and an outer one here would pin a second pooled connection for the whole call.
      */
-    @Transactional
     public CreatedApiTokenResponse create(Long userId, CreateApiTokenRequest request, String idempotencyKey) {
         if (!ALLOWED_EXPIRY_DAYS.contains(request.expiryDays())) {
             throw new IllegalArgumentException("expiryDays must be one of " + ALLOWED_EXPIRY_DAYS);
@@ -138,8 +141,12 @@ public class ApiTokenService {
             return Optional.empty();
         }
         ApiToken token = found.get();
-        token.setLastUsedAt(Instant.now());
-        apiTokenRepository.save(token);
+        Instant now = Instant.now();
+        // Record usage at most once a minute so authenticated reads don't each become a write.
+        if (token.getLastUsedAt() == null || token.getLastUsedAt().isBefore(now.minus(LAST_USED_INTERVAL))) {
+            token.setLastUsedAt(now);
+            apiTokenRepository.save(token);
+        }
         return Optional.of(token);
     }
 

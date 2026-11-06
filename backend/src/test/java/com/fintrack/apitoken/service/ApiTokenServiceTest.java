@@ -164,4 +164,18 @@ class ApiTokenServiceTest {
         assertThat(result).isPresent();
         assertThat(result.get().getLastUsedAt()).isNotNull();
     }
+
+    @Test
+    void authenticate_recentlyUsedToken_skipsWrite() {
+        User user = User.builder().id(1L).email("a@b.com").build();
+        ApiToken recent = ApiToken.builder()
+                .id(1L).user(user).tokenHash("hash")
+                .expiresAt(Instant.now().plusSeconds(3600))
+                .lastUsedAt(Instant.now().minusSeconds(5))
+                .build();
+        when(apiTokenRepository.findByTokenHashWithUser(anyString())).thenReturn(Optional.of(recent));
+
+        assertThat(apiTokenService.authenticate("fintrack_pat_whatever")).isPresent();
+        verify(apiTokenRepository, never()).save(any(ApiToken.class));
+    }
 }

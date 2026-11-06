@@ -14,8 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
  * unique-constraint violation — so if the insert ran in the same transaction as
  * {@link ApiTokenService#create}, catching {@code DataIntegrityViolationException} there and then
  * re-querying for the concurrent winner would itself fail ("current transaction is aborted").
- * Running the insert on its own suspended sub-transaction means only that connection rolls back
- * on conflict, leaving the caller's transaction free to look up the winner normally.
+ * Running the insert in its own transaction means only that statement rolls back on conflict,
+ * leaving the caller free to look up the winner normally. The caller runs without a transaction
+ * of its own, so this never suspends one and holds just one pooled connection.
  */
 @Component
 @RequiredArgsConstructor
