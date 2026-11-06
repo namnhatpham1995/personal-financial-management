@@ -78,4 +78,13 @@ class AuthSessionServiceTest {
         session.setRevokedAt(NOW);
         assertThat(service.authenticateAndTouch(7L, 9L)).isFalse();
     }
+
+    @Test
+    void authenticateAndTouch_skipsWriteWhenActivityWasJustRecorded() {
+        session.setLastActivityAt(NOW.minusSeconds(5));
+        when(repository.findByIdAndUserId(7L, 9L)).thenReturn(Optional.of(session));
+
+        assertThat(service.authenticateAndTouch(7L, 9L)).isTrue();
+        verify(repository, never()).touchIfActive(anyLong(), any(), any());
+    }
 }
