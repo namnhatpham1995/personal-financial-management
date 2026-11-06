@@ -1,7 +1,7 @@
 package com.fintrack.transaction.mapper;
 
 import com.fintrack.transaction.domain.Transaction;
-import com.fintrack.transaction.web.dto.TransactionResponse;
+import com.fintrack.transaction.controller.dto.TransactionResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 

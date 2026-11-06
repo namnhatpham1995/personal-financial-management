@@ -2,7 +2,7 @@ package com.fintrack.vault.service;
 
 import com.fintrack.account.domain.Account;
 import com.fintrack.vault.domain.VaultDocument;
-import com.fintrack.vault.web.dto.VaultReassignmentPreviewResponse;
+import com.fintrack.vault.controller.dto.VaultReassignmentPreviewResponse;
 
 /**
  * Builds {@link VaultReassignmentPreviewResponse}, split out of {@link VaultReassignmentService}

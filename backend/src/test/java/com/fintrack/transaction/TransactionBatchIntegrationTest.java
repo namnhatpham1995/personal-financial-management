@@ -316,7 +316,7 @@ class TransactionBatchIntegrationTest {
                         "transactionDate", tx.get("transactionDate"),
                         "accountId", Long.parseLong(tx.get("accountId").toString())
                 )),
-                com.fintrack.transaction.web.dto.CreateTransactionRequest.class);
+                com.fintrack.transaction.controller.dto.CreateTransactionRequest.class);
     }
 
     private String createSingleTransactionRawJson(String jwt, String type, String amount,

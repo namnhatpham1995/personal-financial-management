@@ -9,7 +9,7 @@ import com.fintrack.auth.domain.User;
 import com.fintrack.auth.repository.RefreshTokenRepository;
 import com.fintrack.auth.repository.RoleRepository;
 import com.fintrack.auth.repository.UserRepository;
-import com.fintrack.auth.web.dto.TokenResponse;
+import com.fintrack.auth.controller.dto.TokenResponse;
 import com.fintrack.common.domain.TransactionType;
 import com.fintrack.recurring.domain.Frequency;
 import com.fintrack.recurring.domain.RecurringTransaction;

@@ -6,7 +6,7 @@ import com.fintrack.auth.repository.UserRepository;
 import com.fintrack.common.domain.TransactionType;
 import com.fintrack.support.HttpTestHelper;
 import com.fintrack.transaction.service.TransactionService;
-import com.fintrack.transaction.web.dto.CreateTransactionRequest;
+import com.fintrack.transaction.controller.dto.CreateTransactionRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;

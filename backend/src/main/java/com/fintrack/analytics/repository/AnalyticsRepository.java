@@ -1,7 +1,7 @@
 package com.fintrack.analytics.repository;
 
-import com.fintrack.analytics.web.dto.IncomeExpenseTrendDto;
-import com.fintrack.analytics.web.dto.SpendingByCategoryDto;
+import com.fintrack.analytics.controller.dto.IncomeExpenseTrendDto;
+import com.fintrack.analytics.controller.dto.SpendingByCategoryDto;
 import com.fintrack.transaction.domain.Transaction;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -13,7 +13,7 @@ import java.util.List;
 public interface AnalyticsRepository extends JpaRepository<Transaction, Long> {
 
     @Query("""
-            SELECT new com.fintrack.analytics.web.dto.SpendingByCategoryDto(
+            SELECT new com.fintrack.analytics.controller.dto.SpendingByCategoryDto(
                 t.account.currency, c.id, c.name,
                 COALESCE(SUM(t.amount), 0),
                 COUNT(t.id)
@@ -55,7 +55,7 @@ public interface AnalyticsRepository extends JpaRepository<Transaction, Long> {
     );
 
     @Query("""
-            SELECT new com.fintrack.analytics.web.dto.IncomeExpenseTrendDto(
+            SELECT new com.fintrack.analytics.controller.dto.IncomeExpenseTrendDto(
                 t.account.currency,
                 YEAR(t.transactionDate),
                 MONTH(t.transactionDate),

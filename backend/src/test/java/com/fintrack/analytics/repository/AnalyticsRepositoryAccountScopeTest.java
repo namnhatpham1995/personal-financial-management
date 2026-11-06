@@ -3,7 +3,7 @@ package com.fintrack.analytics.repository;
 import com.fintrack.account.domain.Account;
 import com.fintrack.account.domain.AccountType;
 import com.fintrack.account.repository.AccountRepository;
-import com.fintrack.analytics.web.dto.SpendingByCategoryDto;
+import com.fintrack.analytics.controller.dto.SpendingByCategoryDto;
 import com.fintrack.auth.domain.User;
 import com.fintrack.auth.repository.UserRepository;
 import com.fintrack.category.domain.Category;

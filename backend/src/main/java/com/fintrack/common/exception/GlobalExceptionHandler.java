@@ -2,7 +2,7 @@ package com.fintrack.common.exception;
 
 import com.fintrack.agent.exception.AgentFeatureUnavailableException;
 import com.fintrack.apitoken.exception.ApiTokenIdempotencyConflictException;
-import com.fintrack.apitoken.web.dto.ApiTokenConflictError;
+import com.fintrack.apitoken.controller.dto.ApiTokenConflictError;
 import com.fintrack.auth.exception.RefreshAlreadyRotatedException;
 import com.fintrack.common.dto.ApiError;
 import com.fintrack.exchangerate.exception.ExchangeRateUnavailableException;

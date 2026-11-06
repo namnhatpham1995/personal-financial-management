@@ -2,7 +2,7 @@ package com.fintrack.analytics.service;
 
 import com.fintrack.account.repository.AccountRepository;
 import com.fintrack.analytics.repository.AnalyticsRepository;
-import com.fintrack.analytics.web.dto.SpendingByCategoryDto;
+import com.fintrack.analytics.controller.dto.SpendingByCategoryDto;
 import com.fintrack.budget.repository.BudgetRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

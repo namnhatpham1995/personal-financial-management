@@ -3,7 +3,7 @@ package com.fintrack.analytics.service;
 import com.fintrack.account.domain.Account;
 import com.fintrack.account.domain.AccountType;
 import com.fintrack.account.repository.AccountRepository;
-import com.fintrack.analytics.web.dto.BalancesSummaryDto;
+import com.fintrack.analytics.controller.dto.BalancesSummaryDto;
 import com.fintrack.common.config.AppProperties;
 import com.fintrack.exchangerate.exception.ExchangeRateUnavailableException;
 import com.fintrack.exchangerate.service.ExchangeRateService;

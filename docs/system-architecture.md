@@ -378,7 +378,7 @@ Authenticated app load / login / register response
 1. Add the locale code to `locales` in `frontend/src/i18n/config.ts` and a native-name entry in `localeNames`.
 2. Create `frontend/messages/<code>.json` with the same key structure as `en.json` (the CI gate will catch any drift).
 3. If the language needs distinct plural handling, use ICU plural syntax (`{count, plural, one {...} other {...}}`); languages with no singular/plural distinction (like `vi`/`zh`) can use a single `other` branch.
-4. Add the language to the backend's supported-code validation in `UpdateLanguageRequest` (`backend/src/main/java/com/fintrack/auth/web/dto/UpdateLanguageRequest.java`).
+4. Add the language to the backend's supported-code validation in `UpdateLanguageRequest` (`backend/src/main/java/com/fintrack/auth/controller/dto/UpdateLanguageRequest.java`).
 5. Run `npm test` — the completeness gate confirms the new file has full key parity before merge.
 
 ## What's New Changelog

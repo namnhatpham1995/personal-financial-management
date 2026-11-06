@@ -1,9 +1,9 @@
 package com.fintrack.analytics.service;
 
 import com.fintrack.analytics.repository.AnalyticsRepository;
-import com.fintrack.analytics.web.dto.ConvertedOverviewDto;
-import com.fintrack.analytics.web.dto.IncomeExpenseTrendDto;
-import com.fintrack.analytics.web.dto.SpendingByCategoryDto;
+import com.fintrack.analytics.controller.dto.ConvertedOverviewDto;
+import com.fintrack.analytics.controller.dto.IncomeExpenseTrendDto;
+import com.fintrack.analytics.controller.dto.SpendingByCategoryDto;
 import com.fintrack.budget.repository.BudgetRepository;
 import com.fintrack.common.config.AppProperties;
 import com.fintrack.exchangerate.exception.ExchangeRateUnavailableException;

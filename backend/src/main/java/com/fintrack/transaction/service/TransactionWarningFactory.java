@@ -2,7 +2,7 @@ package com.fintrack.transaction.service;
 
 import com.fintrack.account.domain.Account;
 import com.fintrack.common.domain.TransactionType;
-import com.fintrack.transaction.web.dto.MutationWarning;
+import com.fintrack.transaction.controller.dto.MutationWarning;
 
 import java.math.BigDecimal;
 import java.util.List;
