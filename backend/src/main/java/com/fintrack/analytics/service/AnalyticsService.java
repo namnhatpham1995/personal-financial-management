@@ -16,6 +16,7 @@ import com.fintrack.analytics.controller.dto.RateUsedResponse;
 import com.fintrack.analytics.controller.dto.SpendingByCategoryResponse;
 import com.fintrack.budget.domain.Budget;
 import com.fintrack.budget.repository.BudgetRepository;
+import com.fintrack.budget.repository.DailyCategorySpend;
 import com.fintrack.common.cache.CacheVersionService;
 import com.fintrack.common.config.AppProperties;
 import com.fintrack.common.config.CacheConfig;
@@ -33,10 +34,13 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -313,10 +317,16 @@ public class AnalyticsService {
         if (from.isAfter(to)) {
             throw new IllegalArgumentException("from must be on or before to");
         }
+        // One grouped query for the whole range instead of one SUM per budget per period.
+        Map<String, NavigableMap<LocalDate, BigDecimal>> dailySpend = new HashMap<>();
+        for (DailyCategorySpend d : budgetRepository.findDailyExpenseTotals(userId, from, to)) {
+            dailySpend.computeIfAbsent(spendKey(d.categoryId(), d.currency()), k -> new TreeMap<>())
+                    .merge(d.date(), d.amount(), BigDecimal::add);
+        }
         List<BudgetHistoryResponse> rows = new ArrayList<>();
         budgetRepository.findAllByUserId(userId).stream()
                 .filter(b -> currency == null || currency.equals(b.getCurrency()))
-                .forEach(budget -> appendBudgetHistory(rows, budget, from, to));
+                .forEach(budget -> appendBudgetHistory(rows, budget, from, to, dailySpend));
         return rows.stream()
                 .sorted(Comparator.comparing(BudgetHistoryResponse::periodStart)
                         .thenComparing(BudgetHistoryResponse::currency)
@@ -324,8 +334,15 @@ public class AnalyticsService {
                 .toList();
     }
 
+    private static String spendKey(Long categoryId, String currency) {
+        return categoryId + ":" + currency;
+    }
+
     private void appendBudgetHistory(List<BudgetHistoryResponse> rows, Budget budget,
-                                     LocalDate from, LocalDate to) {
+                                     LocalDate from, LocalDate to,
+                                     Map<String, NavigableMap<LocalDate, BigDecimal>> dailySpend) {
+        NavigableMap<LocalDate, BigDecimal> budgetSpend = dailySpend.getOrDefault(
+                spendKey(budget.getCategory().getId(), budget.getCurrency()), Collections.emptyNavigableMap());
         LocalDate effectiveFrom = from.isAfter(budget.getStartDate()) ? from : budget.getStartDate();
         if (effectiveFrom.isAfter(to)) {
             return;
@@ -335,10 +352,8 @@ public class AnalyticsService {
             LocalDate periodEnd = periodEnd(budget, cursor);
             LocalDate spendFrom = cursor.isAfter(effectiveFrom) ? cursor : effectiveFrom;
             LocalDate spendTo = periodEnd.isBefore(to) ? periodEnd : to;
-            BigDecimal spent = budgetRepository.sumSpentInPeriod(
-                    budget.getUser().getId(), budget.getCategory().getId(),
-                    spendFrom, spendTo, budget.getCurrency());
-            if (spent == null) spent = BigDecimal.ZERO;
+            BigDecimal spent = budgetSpend.subMap(spendFrom, true, spendTo, true).values().stream()
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
             BigDecimal limit = budget.getAmountLimit();
             BigDecimal remaining = limit.subtract(spent);
             BigDecimal percent = limit.signum() == 0 ? BigDecimal.ZERO
