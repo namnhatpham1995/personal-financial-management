@@ -8,7 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /**
  * Contract test: this exact JSON fixture is also deserialized by the backend's
- * SubmitProposalsRequestContractTest (backend/src/test/java/com/fintrack/agent/web/dto/
+ * SubmitProposalsRequestContractTest (backend/src/test/java/com/fintrack/agent/controller/dto/
  * SubmitProposalsRequestContractTest.java) into SubmitProposalsRequest/ProposalDto. If either
  * side's shape drifts from the other, one of the two suites breaks (design.md: "contract
  * fixtures... drift breaks CI on both sides").
