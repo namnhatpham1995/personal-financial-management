@@ -3,7 +3,7 @@ package com.fintrack.analytics.controller.dto;
 import java.math.BigDecimal;
 import java.util.List;
 
-public record CurrencyBalanceDto(
+public record CurrencyBalanceResponse(
         String currency,
         BigDecimal totalBalance,
         List<AccountBalanceDto> accounts

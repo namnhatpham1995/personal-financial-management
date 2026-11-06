@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.fintrack.analytics.controller.dto.ConvertedOverviewDto;
+import com.fintrack.analytics.controller.dto.ConvertedOverviewResponse;
 import com.fintrack.category.controller.dto.CategoryResponse;
 import com.fintrack.exchangerate.service.RateSnapshot;
 import org.slf4j.Logger;
@@ -54,7 +54,7 @@ public class CacheConfig implements CachingConfigurer {
                 .withCacheConfiguration(ANALYTICS,
                         RedisCacheConfiguration.defaultCacheConfig()
                                 .entryTtl(ANALYTICS_TTL)
-                                .serializeValuesWith(pair(new Jackson2JsonRedisSerializer<>(om, ConvertedOverviewDto.class))))
+                                .serializeValuesWith(pair(new Jackson2JsonRedisSerializer<>(om, ConvertedOverviewResponse.class))))
                 .withCacheConfiguration(EXCHANGE_RATES,
                         RedisCacheConfiguration.defaultCacheConfig()
                                 .entryTtl(EXCHANGE_RATES_TTL)

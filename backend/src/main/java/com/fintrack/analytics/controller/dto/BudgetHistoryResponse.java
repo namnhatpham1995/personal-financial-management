@@ -5,7 +5,7 @@ import com.fintrack.budget.domain.BudgetPeriod;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-public record BudgetHistoryDto(
+public record BudgetHistoryResponse(
         Long budgetId,
         Long categoryId,
         String categoryName,

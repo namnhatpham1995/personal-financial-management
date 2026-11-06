@@ -41,7 +41,7 @@ com.fintrack
 └── common/
     ├── config/     SecurityConfig, AppProperties, OpenApiConfig, RestClientConfig, SchedulerConfig
     ├── domain/     TransactionType (shared enum)
-    ├── dto/        ApiError, PageResponse
+    ├── dto/        ApiErrorResponse, PageResponse
     ├── exception/  GlobalExceptionHandler + typed exceptions
     ├── logging/    CorrelationIdFilter
     ├── ratelimit/  AuthRateLimitFilter (Bucket4j)

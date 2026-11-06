@@ -7,7 +7,7 @@ import java.time.Instant;
  * plaintext — {@code existingToken} is the same non-secret shape returned by {@code GET
  * /tokens}, plus revoke-and-recreate guidance in {@code message}.
  */
-public record ApiTokenConflictError(
+public record ApiTokenConflictErrorResponse(
         int status,
         String error,
         String message,
@@ -15,7 +15,7 @@ public record ApiTokenConflictError(
         Instant timestamp,
         ApiTokenResponse existingToken
 ) {
-    public static ApiTokenConflictError of(String message, String path, ApiTokenResponse existingToken) {
-        return new ApiTokenConflictError(409, "api_token_idempotency_conflict", message, path, Instant.now(), existingToken);
+    public static ApiTokenConflictErrorResponse of(String message, String path, ApiTokenResponse existingToken) {
+        return new ApiTokenConflictErrorResponse(409, "api_token_idempotency_conflict", message, path, Instant.now(), existingToken);
     }
 }

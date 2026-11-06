@@ -5,13 +5,13 @@ import java.time.Instant;
 import java.util.List;
 
 /** Balances summary enriched with a converted grand total, returned only when a target currency is requested. */
-public record BalancesSummaryDto(
-        List<CurrencyBalanceDto> buckets,
+public record BalancesSummaryResponse(
+        List<CurrencyBalanceResponse> buckets,
         String targetCurrency,
         BigDecimal convertedTotal,
-        List<RateUsedDto> rates,
+        List<RateUsedResponse> rates,
         Instant asOf,
         boolean stale,
         boolean ratesUnavailable,
-        List<ExcludedCurrencyDto> excludedCurrencies
+        List<ExcludedCurrencyResponse> excludedCurrencies
 ) {}

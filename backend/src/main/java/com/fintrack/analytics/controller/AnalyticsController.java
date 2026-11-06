@@ -1,13 +1,13 @@
 package com.fintrack.analytics.controller;
 
 import com.fintrack.analytics.service.AnalyticsService;
-import com.fintrack.analytics.controller.dto.BudgetHistoryDto;
-import com.fintrack.analytics.controller.dto.BudgetProgressDto;
-import com.fintrack.analytics.controller.dto.ConvertedOverviewDto;
-import com.fintrack.analytics.controller.dto.CurrencyBalanceDto;
-import com.fintrack.analytics.controller.dto.IncomeExpenseTrendDto;
-import com.fintrack.analytics.controller.dto.IncomingTransferTotalDto;
-import com.fintrack.analytics.controller.dto.SpendingByCategoryDto;
+import com.fintrack.analytics.controller.dto.BudgetHistoryResponse;
+import com.fintrack.analytics.controller.dto.BudgetProgressResponse;
+import com.fintrack.analytics.controller.dto.ConvertedOverviewResponse;
+import com.fintrack.analytics.controller.dto.CurrencyBalanceResponse;
+import com.fintrack.analytics.controller.dto.IncomeExpenseTrendResponse;
+import com.fintrack.analytics.controller.dto.IncomingTransferTotalResponse;
+import com.fintrack.analytics.controller.dto.SpendingByCategoryResponse;
 import com.fintrack.common.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -34,7 +34,7 @@ public class AnalyticsController {
 
     @GetMapping("/spending-by-category")
     @Operation(summary = "Spending breakdown by category for a date range, optionally scoped to one account")
-    public List<SpendingByCategoryDto> spendingByCategory(
+    public List<SpendingByCategoryResponse> spendingByCategory(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
@@ -44,19 +44,19 @@ public class AnalyticsController {
 
     @GetMapping("/incoming-transfer-total")
     @Operation(summary = "Total incoming transfers into an account for a date range")
-    public IncomingTransferTotalDto incomingTransferTotal(
+    public IncomingTransferTotalResponse incomingTransferTotal(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam Long accountId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-        return new IncomingTransferTotalDto(
+        return new IncomingTransferTotalResponse(
                 accountId,
                 analyticsService.getIncomingTransferTotal(principal.getUserId(), accountId, from, to));
     }
 
     @GetMapping("/income-vs-expense")
     @Operation(summary = "Monthly income vs expense trend for a date range")
-    public List<IncomeExpenseTrendDto> incomeVsExpense(
+    public List<IncomeExpenseTrendResponse> incomeVsExpense(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
@@ -65,14 +65,14 @@ public class AnalyticsController {
 
     @GetMapping("/budget-progress")
     @Operation(summary = "Current period progress for all active budgets")
-    public List<BudgetProgressDto> budgetProgress(
+    public List<BudgetProgressResponse> budgetProgress(
             @AuthenticationPrincipal UserPrincipal principal) {
         return analyticsService.getBudgetProgress(principal.getUserId());
     }
 
     @GetMapping("/budget-history")
     @Operation(summary = "Historical budget performance by calendar period and native currency")
-    public List<BudgetHistoryDto> budgetHistory(
+    public List<BudgetHistoryResponse> budgetHistory(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
@@ -94,7 +94,7 @@ public class AnalyticsController {
 
     @GetMapping("/overview")
     @Operation(summary = "All analytics converted into a single target currency")
-    public ResponseEntity<ConvertedOverviewDto> getOverview(
+    public ResponseEntity<ConvertedOverviewResponse> getOverview(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam @NotBlank @Pattern(regexp = "^[A-Z]{3}$") String targetCurrency,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,

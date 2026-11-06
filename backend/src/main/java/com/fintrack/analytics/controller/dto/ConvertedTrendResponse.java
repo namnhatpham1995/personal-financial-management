@@ -2,11 +2,10 @@ package com.fintrack.analytics.controller.dto;
 
 import java.math.BigDecimal;
 
-public record IncomeExpenseTrendDto(
-        String currency,
+public record ConvertedTrendResponse(
         int year,
         int month,
-        BigDecimal totalIncome,
-        BigDecimal totalExpense,
+        BigDecimal income,
+        BigDecimal expense,
         BigDecimal net
 ) {}

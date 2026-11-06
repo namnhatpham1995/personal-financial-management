@@ -22,7 +22,7 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void maxUploadSizeExceeded_mapsTo413WithClearMessage() {
-        ResponseEntity<com.fintrack.common.dto.ApiError> response = handler.handleMaxUploadSizeExceeded(
+        ResponseEntity<com.fintrack.common.dto.ApiErrorResponse> response = handler.handleMaxUploadSizeExceeded(
                 new MaxUploadSizeExceededException(10 * 1024 * 1024), request("/api/vault/import/upload"));
 
         assertThat(response.getStatusCode().value()).isEqualTo(413);
@@ -32,7 +32,7 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void unsupportedStatementFormat_mapsTo415() {
-        ResponseEntity<com.fintrack.common.dto.ApiError> response = handler.handleUnsupportedStatementFormat(
+        ResponseEntity<com.fintrack.common.dto.ApiErrorResponse> response = handler.handleUnsupportedStatementFormat(
                 new UnsupportedStatementFormatException("Unsupported statement format: only CSV, OFX, and QFX files are accepted"),
                 request("/api/vault/import/upload"));
 

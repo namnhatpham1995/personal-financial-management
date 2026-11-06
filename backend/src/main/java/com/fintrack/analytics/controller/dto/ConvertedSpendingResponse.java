@@ -2,10 +2,9 @@ package com.fintrack.analytics.controller.dto;
 
 import java.math.BigDecimal;
 
-public record SpendingByCategoryDto(
-        String currency,
+public record ConvertedSpendingResponse(
         Long categoryId,
         String categoryName,
-        BigDecimal total,
+        BigDecimal totalAmount,
         long transactionCount
 ) {}

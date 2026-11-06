@@ -1,7 +1,7 @@
 package com.fintrack.account.controller;
 
 import com.fintrack.account.service.AccountService;
-import com.fintrack.account.controller.dto.AccountDeletePreviewDto;
+import com.fintrack.account.controller.dto.AccountDeletePreviewResponse;
 import com.fintrack.account.controller.dto.AccountResponse;
 import com.fintrack.account.controller.dto.CreateAccountRequest;
 import com.fintrack.account.controller.dto.UpdateAccountRequest;
@@ -77,7 +77,7 @@ public class AccountController {
 
     @GetMapping("/{id}/delete-preview")
     @Operation(summary = "Preview how many transactions will be removed if account is deleted")
-    public AccountDeletePreviewDto deletePreview(
+    public AccountDeletePreviewResponse deletePreview(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long id) {
         return accountService.getDeletePreview(principal.getUserId(), id);

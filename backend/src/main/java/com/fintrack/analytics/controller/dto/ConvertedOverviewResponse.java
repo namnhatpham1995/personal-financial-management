@@ -4,13 +4,13 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
-public record ConvertedOverviewDto(
+public record ConvertedOverviewResponse(
         String targetCurrency,
-        List<ConvertedSpendingDto> spending,
-        List<ConvertedTrendDto> trend,
-        List<RateUsedDto> rates,
+        List<ConvertedSpendingResponse> spending,
+        List<ConvertedTrendResponse> trend,
+        List<RateUsedResponse> rates,
         Instant asOf,
         boolean ratesUnavailable,
         boolean stale,
-        List<ExcludedCurrencyDto> excludedCurrencies
+        List<ExcludedCurrencyResponse> excludedCurrencies
 ) {}

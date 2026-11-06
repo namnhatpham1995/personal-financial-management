@@ -151,7 +151,7 @@ class CategoryServiceTest {
 
         // IllegalArgumentException, not ResponseStatusException: the latter bypasses
         // GlobalExceptionHandler and returns Spring's default ProblemDetail body instead of the
-        // app's own ApiError shape used by every other 400 in the API.
+        // app's own ApiErrorResponse shape used by every other 400 in the API.
         assertThatThrownBy(() -> categoryService.create(USER_ID, request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Category type must be INCOME or EXPENSE");

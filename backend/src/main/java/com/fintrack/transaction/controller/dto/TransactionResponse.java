@@ -29,13 +29,13 @@ public record TransactionResponse(
         String sourceDocumentId,
         Instant createdAt,
         Instant updatedAt,
-        List<MutationWarning> warnings
+        List<MutationWarningResponse> warnings
 ) {
     public TransactionResponse {
         warnings = warnings == null ? List.of() : List.copyOf(warnings);
     }
 
-    public static TransactionResponse withWarnings(TransactionResponse source, List<MutationWarning> mutationWarnings) {
+    public static TransactionResponse withWarnings(TransactionResponse source, List<MutationWarningResponse> mutationWarnings) {
         return new TransactionResponse(source.id, source.transactionType, source.amount, source.currency,
                 source.destinationAmount, source.destinationCurrency,
                 source.transactionDate, source.accountId, source.accountName, source.transferAccountId,

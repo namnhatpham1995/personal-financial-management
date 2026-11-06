@@ -1,6 +1,6 @@
 package com.fintrack.transaction.controller.dto;
 
-public record BatchTransactionRowResult(
+public record BatchTransactionRowResponse(
         int rowIndex,
         Status status,
         String clientRequestId,

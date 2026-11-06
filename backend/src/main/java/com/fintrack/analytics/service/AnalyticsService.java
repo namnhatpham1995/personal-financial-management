@@ -3,17 +3,17 @@ package com.fintrack.analytics.service;
 import com.fintrack.account.domain.Account;
 import com.fintrack.account.repository.AccountRepository;
 import com.fintrack.analytics.repository.AnalyticsRepository;
-import com.fintrack.analytics.controller.dto.BalancesSummaryDto;
-import com.fintrack.analytics.controller.dto.BudgetHistoryDto;
-import com.fintrack.analytics.controller.dto.BudgetProgressDto;
-import com.fintrack.analytics.controller.dto.ConvertedOverviewDto;
-import com.fintrack.analytics.controller.dto.ConvertedSpendingDto;
-import com.fintrack.analytics.controller.dto.ConvertedTrendDto;
-import com.fintrack.analytics.controller.dto.CurrencyBalanceDto;
-import com.fintrack.analytics.controller.dto.ExcludedCurrencyDto;
-import com.fintrack.analytics.controller.dto.IncomeExpenseTrendDto;
-import com.fintrack.analytics.controller.dto.RateUsedDto;
-import com.fintrack.analytics.controller.dto.SpendingByCategoryDto;
+import com.fintrack.analytics.controller.dto.BalancesSummaryResponse;
+import com.fintrack.analytics.controller.dto.BudgetHistoryResponse;
+import com.fintrack.analytics.controller.dto.BudgetProgressResponse;
+import com.fintrack.analytics.controller.dto.ConvertedOverviewResponse;
+import com.fintrack.analytics.controller.dto.ConvertedSpendingResponse;
+import com.fintrack.analytics.controller.dto.ConvertedTrendResponse;
+import com.fintrack.analytics.controller.dto.CurrencyBalanceResponse;
+import com.fintrack.analytics.controller.dto.ExcludedCurrencyResponse;
+import com.fintrack.analytics.controller.dto.IncomeExpenseTrendResponse;
+import com.fintrack.analytics.controller.dto.RateUsedResponse;
+import com.fintrack.analytics.controller.dto.SpendingByCategoryResponse;
 import com.fintrack.budget.domain.Budget;
 import com.fintrack.budget.repository.BudgetRepository;
 import com.fintrack.common.cache.CacheVersionService;
@@ -66,12 +66,12 @@ public class AnalyticsService {
             key = "#userId + ':v' + @cacheVersionService.current(#userId) + ':overview:' + #targetCurrency + ':' + #from + ':' + #to"
     )
     @Transactional(readOnly = true)
-    public ConvertedOverviewDto getOverview(Long userId, String targetCurrency, LocalDate from, LocalDate to) {
+    public ConvertedOverviewResponse getOverview(Long userId, String targetCurrency, LocalDate from, LocalDate to) {
         String base = appProperties.getExchangeRate().getBase();
 
         // ── 1. Fetch per-currency raw data ────────────────────────────────────
-        List<SpendingByCategoryDto> spendingRows  = analyticsRepository.spendingByCategory(userId, from, to, null);
-        List<IncomeExpenseTrendDto> trendRows      = analyticsRepository.incomeExpenseTrend(userId, from, to);
+        List<SpendingByCategoryResponse> spendingRows  = analyticsRepository.spendingByCategory(userId, from, to, null);
+        List<IncomeExpenseTrendResponse> trendRows      = analyticsRepository.incomeExpenseTrend(userId, from, to);
 
         // ── 2. Accumulators ───────────────────────────────────────────────────
         // (currency, categoryId) → [convertedAmount, transactionCount, categoryName]
@@ -80,7 +80,7 @@ public class AnalyticsService {
         Map<String, BigDecimal[]> trendAccum    = new HashMap<>();
 
         boolean ratesUnavailable = false;
-        List<ExcludedCurrencyDto> excludedCurrencies = new ArrayList<>();
+        List<ExcludedCurrencyResponse> excludedCurrencies = new ArrayList<>();
         // Track currencies that were successfully converted (and are not the target)
         java.util.Set<String> convertedSourceCurrencies = new java.util.LinkedHashSet<>();
         // Track currencies that failed — used to skip rate-entry building later
@@ -89,7 +89,7 @@ public class AnalyticsService {
         // ── 3. Convert spending — sum native amounts per (currency, categoryId) first ──
         // Group: currency → categoryId → [nativeTotal, count, name]
         Map<String, Map<Long, Object[]>> spendingNative = new HashMap<>();
-        for (SpendingByCategoryDto row : spendingRows) {
+        for (SpendingByCategoryResponse row : spendingRows) {
             spendingNative
                 .computeIfAbsent(row.currency(), k -> new HashMap<>())
                 .merge(row.categoryId(), new Object[]{row.total(), row.transactionCount(), row.categoryName()},
@@ -126,7 +126,7 @@ public class AnalyticsService {
                         boolean alreadyExcluded = excludedCurrencies.stream()
                             .anyMatch(e -> e.currency().equals(currency));
                         if (!alreadyExcluded) {
-                            excludedCurrencies.add(new ExcludedCurrencyDto(currency, nativeTotal));
+                            excludedCurrencies.add(new ExcludedCurrencyResponse(currency, nativeTotal));
                         }
                         continue;
                     }
@@ -144,7 +144,7 @@ public class AnalyticsService {
 
         // ── 4. Convert trend — sum native income/expense per (currency, year, month) first ──
         Map<String, Map<String, BigDecimal[]>> trendNative = new HashMap<>();
-        for (IncomeExpenseTrendDto row : trendRows) {
+        for (IncomeExpenseTrendResponse row : trendRows) {
             String monthKey = row.year() + "-" + row.month();
             trendNative
                 .computeIfAbsent(row.currency(), k -> new HashMap<>())
@@ -181,7 +181,7 @@ public class AnalyticsService {
                         boolean alreadyExcluded = excludedCurrencies.stream()
                             .anyMatch(e -> e.currency().equals(currency));
                         if (!alreadyExcluded) {
-                            excludedCurrencies.add(new ExcludedCurrencyDto(currency, nativeIncome.add(nativeExpense)));
+                            excludedCurrencies.add(new ExcludedCurrencyResponse(currency, nativeIncome.add(nativeExpense)));
                         }
                         continue;
                     }
@@ -197,10 +197,10 @@ public class AnalyticsService {
         }
 
         // ── 5. Build spending list ────────────────────────────────────────────
-        List<ConvertedSpendingDto> spendingList = buildSpendingList(spendingAccum, spendingRows);
+        List<ConvertedSpendingResponse> spendingList = buildSpendingList(spendingAccum, spendingRows);
 
         // ── 6. Build trend list ───────────────────────────────────────────────
-        List<ConvertedTrendDto> trendList = trendAccum.entrySet().stream()
+        List<ConvertedTrendResponse> trendList = trendAccum.entrySet().stream()
             .map(e -> {
                 String[] parts   = e.getKey().split("-");
                 int year         = Integer.parseInt(parts[0]);
@@ -208,19 +208,19 @@ public class AnalyticsService {
                 BigDecimal inc   = e.getValue()[0].setScale(4, RoundingMode.HALF_UP);
                 BigDecimal exp   = e.getValue()[1].setScale(4, RoundingMode.HALF_UP);
                 BigDecimal net   = inc.subtract(exp);
-                return new ConvertedTrendDto(year, month, inc, exp, net);
+                return new ConvertedTrendResponse(year, month, inc, exp, net);
             })
-            .sorted(Comparator.comparingInt(ConvertedTrendDto::year)
-                .thenComparingInt(ConvertedTrendDto::month))
+            .sorted(Comparator.comparingInt(ConvertedTrendResponse::year)
+                .thenComparingInt(ConvertedTrendResponse::month))
             .toList();
 
         // ── 7. Build rates list ───────────────────────────────────────────────
-        List<RateUsedDto> rates = new ArrayList<>();
+        List<RateUsedResponse> rates = new ArrayList<>();
         for (String currency : convertedSourceCurrencies) {
             if (!currency.equals(targetCurrency)) {
                 try {
                     BigDecimal displayRate = exchangeRateService.convert(BigDecimal.ONE, currency, targetCurrency);
-                    rates.add(new RateUsedDto(currency, targetCurrency, displayRate));
+                    rates.add(new RateUsedResponse(currency, targetCurrency, displayRate));
                 } catch (ExchangeRateUnavailableException ex) {
                     log.warn("Could not compute display rate {} → {}: {}", currency, targetCurrency, ex.getMessage());
                 }
@@ -231,7 +231,7 @@ public class AnalyticsService {
         Instant asOf  = exchangeRateService.getAsOf(base).orElse(null);
         boolean stale = exchangeRateService.isStale(base);
 
-        return new ConvertedOverviewDto(
+        return new ConvertedOverviewResponse(
             targetCurrency,
             spendingList,
             trendList,
@@ -247,15 +247,15 @@ public class AnalyticsService {
      * Builds the merged spending list from the accumulated converted amounts.
      * Category names are resolved from the original spending rows by categoryId.
      */
-    private List<ConvertedSpendingDto> buildSpendingList(
+    private List<ConvertedSpendingResponse> buildSpendingList(
             Map<String, BigDecimal[]> spendingAccum,
-            List<SpendingByCategoryDto> originalRows) {
+            List<SpendingByCategoryResponse> originalRows) {
 
         // Build categoryId → name lookup from original rows
         Map<Long, String> categoryNames = originalRows.stream()
             .collect(Collectors.toMap(
-                SpendingByCategoryDto::categoryId,
-                SpendingByCategoryDto::categoryName,
+                SpendingByCategoryResponse::categoryId,
+                SpendingByCategoryResponse::categoryName,
                 (a, b) -> a // keep first
             ));
 
@@ -265,14 +265,14 @@ public class AnalyticsService {
                 BigDecimal amount       = e.getValue()[0].setScale(4, RoundingMode.HALF_UP);
                 long       count        = e.getValue()[1].longValue();
                 String     categoryName = categoryNames.getOrDefault(categoryId, "Unknown");
-                return new ConvertedSpendingDto(categoryId, categoryName, amount, count);
+                return new ConvertedSpendingResponse(categoryId, categoryName, amount, count);
             })
-            .sorted(Comparator.comparing(ConvertedSpendingDto::totalAmount).reversed())
+            .sorted(Comparator.comparing(ConvertedSpendingResponse::totalAmount).reversed())
             .toList();
     }
 
     @Transactional(readOnly = true)
-    public List<SpendingByCategoryDto> getSpendingByCategory(
+    public List<SpendingByCategoryResponse> getSpendingByCategory(
             Long userId, LocalDate from, LocalDate to, Long accountId) {
         // Scope to a single account only when the caller owns it; otherwise return
         // an empty breakdown rather than leaking another user's data.
@@ -296,35 +296,35 @@ public class AnalyticsService {
     }
 
     @Transactional(readOnly = true)
-    public List<IncomeExpenseTrendDto> getIncomeExpenseTrend(Long userId, LocalDate from, LocalDate to) {
+    public List<IncomeExpenseTrendResponse> getIncomeExpenseTrend(Long userId, LocalDate from, LocalDate to) {
         return analyticsRepository.incomeExpenseTrend(userId, from, to);
     }
 
     @Transactional(readOnly = true)
-    public List<BudgetProgressDto> getBudgetProgress(Long userId) {
+    public List<BudgetProgressResponse> getBudgetProgress(Long userId) {
         LocalDate today = LocalDate.now();
         List<Budget> budgets = budgetRepository.findAllByUserId(userId);
         return budgets.stream().map(b -> buildProgress(b, today)).toList();
     }
 
     @Transactional(readOnly = true)
-    public List<BudgetHistoryDto> getBudgetHistory(
+    public List<BudgetHistoryResponse> getBudgetHistory(
             Long userId, LocalDate from, LocalDate to, String currency) {
         if (from.isAfter(to)) {
             throw new IllegalArgumentException("from must be on or before to");
         }
-        List<BudgetHistoryDto> rows = new ArrayList<>();
+        List<BudgetHistoryResponse> rows = new ArrayList<>();
         budgetRepository.findAllByUserId(userId).stream()
                 .filter(b -> currency == null || currency.equals(b.getCurrency()))
                 .forEach(budget -> appendBudgetHistory(rows, budget, from, to));
         return rows.stream()
-                .sorted(Comparator.comparing(BudgetHistoryDto::periodStart)
-                        .thenComparing(BudgetHistoryDto::currency)
-                        .thenComparing(BudgetHistoryDto::budgetId))
+                .sorted(Comparator.comparing(BudgetHistoryResponse::periodStart)
+                        .thenComparing(BudgetHistoryResponse::currency)
+                        .thenComparing(BudgetHistoryResponse::budgetId))
                 .toList();
     }
 
-    private void appendBudgetHistory(List<BudgetHistoryDto> rows, Budget budget,
+    private void appendBudgetHistory(List<BudgetHistoryResponse> rows, Budget budget,
                                      LocalDate from, LocalDate to) {
         LocalDate effectiveFrom = from.isAfter(budget.getStartDate()) ? from : budget.getStartDate();
         if (effectiveFrom.isAfter(to)) {
@@ -343,7 +343,7 @@ public class AnalyticsService {
             BigDecimal remaining = limit.subtract(spent);
             BigDecimal percent = limit.signum() == 0 ? BigDecimal.ZERO
                     : spent.multiply(BigDecimal.valueOf(100)).divide(limit, 2, RoundingMode.HALF_UP);
-            rows.add(new BudgetHistoryDto(
+            rows.add(new BudgetHistoryResponse(
                     budget.getId(), budget.getCategory().getId(), budget.getCategory().getName(),
                     budget.getPeriod(), cursor, periodEnd, budget.getCurrency(), limit, spent,
                     remaining, percent, spent.compareTo(limit) > 0));
@@ -363,7 +363,7 @@ public class AnalyticsService {
     }
 
     @Transactional(readOnly = true)
-    public List<CurrencyBalanceDto> getBalances(Long userId) {
+    public List<CurrencyBalanceResponse> getBalances(Long userId) {
         List<Account> accounts = accountRepository.findAllByUserId(userId);
         Map<String, List<Account>> byCurrency = accounts.stream()
                 .collect(Collectors.groupingBy(Account::getCurrency));
@@ -374,11 +374,11 @@ public class AnalyticsService {
             BigDecimal totalBalance = group.stream()
                     .map(Account::getCurrentBalance)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
-            List<CurrencyBalanceDto.AccountBalanceDto> dtos = group.stream()
-                    .map(a -> new CurrencyBalanceDto.AccountBalanceDto(
+            List<CurrencyBalanceResponse.AccountBalanceDto> dtos = group.stream()
+                    .map(a -> new CurrencyBalanceResponse.AccountBalanceDto(
                             a.getId(), a.getName(), a.getAccountType().name(), a.getCurrentBalance()))
                     .toList();
-            return new CurrencyBalanceDto(currency, totalBalance, dtos);
+            return new CurrencyBalanceResponse(currency, totalBalance, dtos);
         }).toList();
     }
 
@@ -389,16 +389,16 @@ public class AnalyticsService {
      * always returned natively regardless of conversion success.
      */
     @Transactional(readOnly = true)
-    public BalancesSummaryDto getConvertedBalances(Long userId, String targetCurrency) {
-        List<CurrencyBalanceDto> buckets = getBalances(userId);
+    public BalancesSummaryResponse getConvertedBalances(Long userId, String targetCurrency) {
+        List<CurrencyBalanceResponse> buckets = getBalances(userId);
         String base = appProperties.getExchangeRate().getBase();
 
         BigDecimal total = BigDecimal.ZERO;
-        List<RateUsedDto> rates = new ArrayList<>();
-        List<ExcludedCurrencyDto> excludedCurrencies = new ArrayList<>();
+        List<RateUsedResponse> rates = new ArrayList<>();
+        List<ExcludedCurrencyResponse> excludedCurrencies = new ArrayList<>();
         boolean ratesUnavailable = false;
 
-        for (CurrencyBalanceDto bucket : buckets) {
+        for (CurrencyBalanceResponse bucket : buckets) {
             String currency = bucket.currency();
             BigDecimal nativeTotal = bucket.totalBalance();
             if (currency.equals(targetCurrency)) {
@@ -409,18 +409,18 @@ public class AnalyticsService {
                 BigDecimal converted = exchangeRateService.convert(nativeTotal, currency, targetCurrency);
                 BigDecimal displayRate = exchangeRateService.convert(BigDecimal.ONE, currency, targetCurrency);
                 total = total.add(converted);
-                rates.add(new RateUsedDto(currency, targetCurrency, displayRate));
+                rates.add(new RateUsedResponse(currency, targetCurrency, displayRate));
             } catch (ExchangeRateUnavailableException ex) {
                 log.warn("Rate unavailable for balances conversion {} → {}: {}", currency, targetCurrency, ex.getMessage());
                 ratesUnavailable = true;
-                excludedCurrencies.add(new ExcludedCurrencyDto(currency, nativeTotal));
+                excludedCurrencies.add(new ExcludedCurrencyResponse(currency, nativeTotal));
             }
         }
 
         Instant asOf = exchangeRateService.getAsOf(base).orElse(null);
         boolean stale = exchangeRateService.isStale(base);
 
-        return new BalancesSummaryDto(
+        return new BalancesSummaryResponse(
                 buckets,
                 targetCurrency,
                 total.setScale(4, RoundingMode.HALF_UP),
@@ -432,7 +432,7 @@ public class AnalyticsService {
         );
     }
 
-    private BudgetProgressDto buildProgress(Budget budget, LocalDate today) {
+    private BudgetProgressResponse buildProgress(Budget budget, LocalDate today) {
         LocalDate[] bounds = periodBounds(budget, today);
         BigDecimal spent = budget.getCategory() != null
                 ? budgetRepository.sumSpentInPeriod(
@@ -447,7 +447,7 @@ public class AnalyticsService {
                 ? BigDecimal.ZERO
                 : spent.multiply(BigDecimal.valueOf(100)).divide(limit, 2, RoundingMode.HALF_UP);
 
-        return new BudgetProgressDto(
+        return new BudgetProgressResponse(
                 budget.getId(),
                 budget.getCategory() != null ? budget.getCategory().getName() : null,
                 budget.getCategory() != null ? budget.getCategory().getId() : null,

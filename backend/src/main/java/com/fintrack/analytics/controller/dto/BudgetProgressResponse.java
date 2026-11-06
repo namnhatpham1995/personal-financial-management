@@ -2,7 +2,7 @@ package com.fintrack.analytics.controller.dto;
 
 import java.math.BigDecimal;
 
-public record BudgetProgressDto(
+public record BudgetProgressResponse(
         Long budgetId,
         String budgetName,
         Long categoryId,
