@@ -1,6 +1,6 @@
 package com.fintrack.apitoken.exception;
 
-import com.fintrack.apitoken.web.dto.ApiTokenResponse;
+import com.fintrack.apitoken.controller.dto.ApiTokenResponse;
 import lombok.Getter;
 
 /**

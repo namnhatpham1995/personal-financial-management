@@ -3,7 +3,7 @@ package com.fintrack.analytics.service;
 import com.fintrack.account.domain.Account;
 import com.fintrack.account.domain.AccountType;
 import com.fintrack.account.repository.AccountRepository;
-import com.fintrack.analytics.web.dto.BalancesSummaryDto;
+import com.fintrack.analytics.controller.dto.BalancesSummaryResponse;
 import com.fintrack.common.config.AppProperties;
 import com.fintrack.exchangerate.exception.ExchangeRateUnavailableException;
 import com.fintrack.exchangerate.service.ExchangeRateService;
@@ -69,7 +69,7 @@ class AnalyticsServiceConvertedBalancesTest {
         when(exchangeRateService.convert(BigDecimal.ONE, "EUR", "USD"))
                 .thenReturn(new BigDecimal("1.1000"));
 
-        BalancesSummaryDto result = analyticsService.getConvertedBalances(USER_ID, "USD");
+        BalancesSummaryResponse result = analyticsService.getConvertedBalances(USER_ID, "USD");
 
         assertThat(result.targetCurrency()).isEqualTo("USD");
         assertThat(result.convertedTotal()).isEqualByComparingTo("155.0000");
@@ -86,7 +86,7 @@ class AnalyticsServiceConvertedBalancesTest {
                 account("USD", "200.00")
         ));
 
-        BalancesSummaryDto result = analyticsService.getConvertedBalances(USER_ID, "USD");
+        BalancesSummaryResponse result = analyticsService.getConvertedBalances(USER_ID, "USD");
 
         assertThat(result.convertedTotal()).isEqualByComparingTo("200.0000");
         assertThat(result.rates()).isEmpty();
@@ -102,7 +102,7 @@ class AnalyticsServiceConvertedBalancesTest {
         when(exchangeRateService.convert(new BigDecimal("5000000"), "VND", "USD"))
                 .thenThrow(new ExchangeRateUnavailableException("No cached rate"));
 
-        BalancesSummaryDto result = analyticsService.getConvertedBalances(USER_ID, "USD");
+        BalancesSummaryResponse result = analyticsService.getConvertedBalances(USER_ID, "USD");
 
         assertThat(result.convertedTotal()).isEqualByComparingTo("100.0000");
         assertThat(result.ratesUnavailable()).isTrue();
@@ -121,7 +121,7 @@ class AnalyticsServiceConvertedBalancesTest {
         when(exchangeRateService.convert(new BigDecimal("50.00"), "EUR", "USD"))
                 .thenThrow(new ExchangeRateUnavailableException("Provider unreachable"));
 
-        BalancesSummaryDto result = analyticsService.getConvertedBalances(USER_ID, "USD");
+        BalancesSummaryResponse result = analyticsService.getConvertedBalances(USER_ID, "USD");
 
         assertThat(result.ratesUnavailable()).isTrue();
         assertThat(result.convertedTotal()).isEqualByComparingTo(BigDecimal.ZERO);
@@ -136,7 +136,7 @@ class AnalyticsServiceConvertedBalancesTest {
         when(accountRepository.findAllByUserId(USER_ID)).thenReturn(List.of(account("USD", "10.00")));
         when(exchangeRateService.isStale("USD")).thenReturn(true);
 
-        BalancesSummaryDto result = analyticsService.getConvertedBalances(USER_ID, "USD");
+        BalancesSummaryResponse result = analyticsService.getConvertedBalances(USER_ID, "USD");
 
         assertThat(result.stale()).isTrue();
     }

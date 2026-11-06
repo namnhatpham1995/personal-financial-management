@@ -7,7 +7,7 @@ import com.fintrack.recurring.domain.Frequency;
 import com.fintrack.recurring.domain.RecurringTransaction;
 import com.fintrack.recurring.mapper.RecurringTransactionMapper;
 import com.fintrack.recurring.repository.RecurringTransactionRepository;
-import com.fintrack.recurring.web.dto.RecurringResponse;
+import com.fintrack.recurring.controller.dto.RecurringResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fintrack.apitoken.domain.ApiToken;
 import com.fintrack.apitoken.service.ApiTokenService;
 import com.fintrack.common.config.AppProperties;
-import com.fintrack.common.dto.ApiError;
+import com.fintrack.common.dto.ApiErrorResponse;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.ConsumptionProbe;
@@ -138,7 +138,7 @@ public class PatAuthenticationFilter extends OncePerRequestFilter {
         response.setStatus(status);
         response.setContentType("application/json");
         response.getWriter().write(
-                objectMapper.writeValueAsString(ApiError.of(status, error, message, path)));
+                objectMapper.writeValueAsString(ApiErrorResponse.of(status, error, message, path)));
     }
 
     private void writeRateLimitError(HttpServletResponse response, String message,
@@ -146,7 +146,7 @@ public class PatAuthenticationFilter extends OncePerRequestFilter {
         response.setStatus(429);
         response.setContentType("application/json");
         response.getWriter().write(objectMapper.writeValueAsString(
-                ApiError.rateLimited(message, path, retryAfterSeconds)));
+                ApiErrorResponse.rateLimited(message, path, retryAfterSeconds)));
     }
 
     private record RateLimitDecision(boolean allowed, long retryAfterSeconds) {}

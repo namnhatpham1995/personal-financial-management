@@ -1,7 +1,7 @@
 package com.fintrack.transaction;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fintrack.auth.web.dto.TokenResponse;
+import com.fintrack.auth.controller.dto.TokenResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;

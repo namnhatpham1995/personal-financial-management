@@ -3,10 +3,10 @@ package com.fintrack.account.service;
 import com.fintrack.account.domain.Account;
 import com.fintrack.account.mapper.AccountMapper;
 import com.fintrack.account.repository.AccountRepository;
-import com.fintrack.account.web.dto.AccountDeletePreviewDto;
-import com.fintrack.account.web.dto.AccountResponse;
-import com.fintrack.account.web.dto.CreateAccountRequest;
-import com.fintrack.account.web.dto.UpdateAccountRequest;
+import com.fintrack.account.controller.dto.AccountDeletePreviewResponse;
+import com.fintrack.account.controller.dto.AccountResponse;
+import com.fintrack.account.controller.dto.CreateAccountRequest;
+import com.fintrack.account.controller.dto.UpdateAccountRequest;
 import com.fintrack.auth.domain.User;
 import com.fintrack.auth.repository.UserRepository;
 import com.fintrack.common.cache.CacheVersionService;
@@ -83,10 +83,10 @@ public class AccountService {
     }
 
     @Transactional(readOnly = true)
-    public AccountDeletePreviewDto getDeletePreview(Long userId, Long accountId) {
+    public AccountDeletePreviewResponse getDeletePreview(Long userId, Long accountId) {
         findOwned(userId, accountId);
         long count = accountRepository.countConnectedTransactions(accountId);
-        return new AccountDeletePreviewDto(accountId, count);
+        return new AccountDeletePreviewResponse(accountId, count);
     }
 
     @Transactional

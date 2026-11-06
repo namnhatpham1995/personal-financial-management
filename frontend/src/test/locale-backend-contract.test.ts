@@ -15,7 +15,7 @@ import { locales } from "@/i18n/config";
 
 const backendDtoPath = path.resolve(
   __dirname,
-  "../../../backend/src/main/java/com/fintrack/auth/web/dto/UpdateLanguageRequest.java"
+  "../../../backend/src/main/java/com/fintrack/auth/controller/dto/UpdateLanguageRequest.java"
 );
 
 function extractBackendLocales(): string[] {

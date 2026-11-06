@@ -2,9 +2,9 @@ package com.fintrack.common.exception;
 
 import com.fintrack.agent.exception.AgentFeatureUnavailableException;
 import com.fintrack.apitoken.exception.ApiTokenIdempotencyConflictException;
-import com.fintrack.apitoken.web.dto.ApiTokenConflictError;
+import com.fintrack.apitoken.controller.dto.ApiTokenConflictErrorResponse;
 import com.fintrack.auth.exception.RefreshAlreadyRotatedException;
-import com.fintrack.common.dto.ApiError;
+import com.fintrack.common.dto.ApiErrorResponse;
 import com.fintrack.exchangerate.exception.ExchangeRateUnavailableException;
 import com.fintrack.idempotency.exception.IdempotencyConflictException;
 import com.fintrack.idempotency.exception.IdempotencyOperationInProgressException;
@@ -32,186 +32,186 @@ import java.util.List;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiError> handleValidation(
+    public ResponseEntity<ApiErrorResponse> handleValidation(
             MethodArgumentNotValidException ex, HttpServletRequest req) {
-        List<ApiError.FieldError> fieldErrors = ex.getBindingResult().getFieldErrors().stream()
-                .map(fe -> new ApiError.FieldError(fe.getField(), fe.getDefaultMessage()))
+        List<ApiErrorResponse.FieldError> fieldErrors = ex.getBindingResult().getFieldErrors().stream()
+                .map(fe -> new ApiErrorResponse.FieldError(fe.getField(), fe.getDefaultMessage()))
                 .toList();
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiError.of(400, "Bad Request", "Validation failed", req.getRequestURI(), fieldErrors));
+                .body(ApiErrorResponse.of(400, "Bad Request", "Validation failed", req.getRequestURI(), fieldErrors));
     }
 
     // Spring Boot 3.x (Spring 6.1+) throws HandlerMethodValidationException for @RequestParam
     // constraint violations, unlike @RequestBody which throws MethodArgumentNotValidException.
     @ExceptionHandler(HandlerMethodValidationException.class)
-    public ResponseEntity<ApiError> handleMethodValidation(
+    public ResponseEntity<ApiErrorResponse> handleMethodValidation(
             HandlerMethodValidationException ex, HttpServletRequest req) {
-        List<ApiError.FieldError> fieldErrors = ex.getAllValidationResults().stream()
+        List<ApiErrorResponse.FieldError> fieldErrors = ex.getAllValidationResults().stream()
                 .flatMap(r -> r.getResolvableErrors().stream()
-                        .map(e -> new ApiError.FieldError(
+                        .map(e -> new ApiErrorResponse.FieldError(
                                 r.getMethodParameter().getParameterName(),
                                 e.getDefaultMessage())))
                 .toList();
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiError.of(400, "Bad Request", "Validation failed", req.getRequestURI(), fieldErrors));
+                .body(ApiErrorResponse.of(400, "Bad Request", "Validation failed", req.getRequestURI(), fieldErrors));
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ApiError> handleNotFound(
+    public ResponseEntity<ApiErrorResponse> handleNotFound(
             ResourceNotFoundException ex, HttpServletRequest req) {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
-                .body(ApiError.of(404, "Not Found", ex.getMessage(), req.getRequestURI()));
+                .body(ApiErrorResponse.of(404, "Not Found", ex.getMessage(), req.getRequestURI()));
     }
 
     @ExceptionHandler(ConflictException.class)
-    public ResponseEntity<ApiError> handleConflict(
+    public ResponseEntity<ApiErrorResponse> handleConflict(
             ConflictException ex, HttpServletRequest req) {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
-                .body(ApiError.of(409, "Conflict", ex.getMessage(), req.getRequestURI()));
+                .body(ApiErrorResponse.of(409, "Conflict", ex.getMessage(), req.getRequestURI()));
     }
 
     @ExceptionHandler(ForbiddenException.class)
-    public ResponseEntity<ApiError> handleForbidden(
+    public ResponseEntity<ApiErrorResponse> handleForbidden(
             ForbiddenException ex, HttpServletRequest req) {
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
-                .body(ApiError.of(403, "Forbidden", ex.getMessage(), req.getRequestURI()));
+                .body(ApiErrorResponse.of(403, "Forbidden", ex.getMessage(), req.getRequestURI()));
     }
 
     @ExceptionHandler(RateLimitException.class)
-    public ResponseEntity<ApiError> handleRateLimit(
+    public ResponseEntity<ApiErrorResponse> handleRateLimit(
             RateLimitException ex, HttpServletRequest req) {
         return ResponseEntity
                 .status(HttpStatus.TOO_MANY_REQUESTS)
-                .body(ApiError.of(429, "Too Many Requests", ex.getMessage(), req.getRequestURI()));
+                .body(ApiErrorResponse.of(429, "Too Many Requests", ex.getMessage(), req.getRequestURI()));
     }
 
     @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<ApiError> handleAuthenticationException(
+    public ResponseEntity<ApiErrorResponse> handleAuthenticationException(
             AuthenticationException ex, HttpServletRequest req) {
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
-                .body(ApiError.of(401, "Unauthorized", "Authentication required", req.getRequestURI()));
+                .body(ApiErrorResponse.of(401, "Unauthorized", "Authentication required", req.getRequestURI()));
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ApiError> handleAccessDenied(
+    public ResponseEntity<ApiErrorResponse> handleAccessDenied(
             AccessDeniedException ex, HttpServletRequest req) {
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
-                .body(ApiError.of(403, "Forbidden", "Access denied", req.getRequestURI()));
+                .body(ApiErrorResponse.of(403, "Forbidden", "Access denied", req.getRequestURI()));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ApiError> handleIllegalArgument(
+    public ResponseEntity<ApiErrorResponse> handleIllegalArgument(
             IllegalArgumentException ex, HttpServletRequest req) {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiError.of(400, "Bad Request", ex.getMessage(), req.getRequestURI()));
+                .body(ApiErrorResponse.of(400, "Bad Request", ex.getMessage(), req.getRequestURI()));
     }
 
     /** Covers unparseable enum query params, e.g. an unrecognized Vault stage or document type. */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<ApiError> handleTypeMismatch(
+    public ResponseEntity<ApiErrorResponse> handleTypeMismatch(
             MethodArgumentTypeMismatchException ex, HttpServletRequest req) {
         String message = "Invalid value for parameter '" + ex.getName() + "'";
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiError.of(400, "Bad Request", message, req.getRequestURI()));
+                .body(ApiErrorResponse.of(400, "Bad Request", message, req.getRequestURI()));
     }
 
     @ExceptionHandler(ExchangeRateUnavailableException.class)
-    public ResponseEntity<ApiError> handleExchangeRateUnavailable(
+    public ResponseEntity<ApiErrorResponse> handleExchangeRateUnavailable(
             ExchangeRateUnavailableException ex, HttpServletRequest req) {
         log.warn("Exchange rate unavailable: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.SERVICE_UNAVAILABLE)
-                .body(ApiError.of(503, "Service Unavailable", ex.getMessage(), req.getRequestURI()));
+                .body(ApiErrorResponse.of(503, "Service Unavailable", ex.getMessage(), req.getRequestURI()));
     }
 
     @ExceptionHandler(AgentFeatureUnavailableException.class)
-    public ResponseEntity<ApiError> handleAgentFeatureUnavailable(
+    public ResponseEntity<ApiErrorResponse> handleAgentFeatureUnavailable(
             AgentFeatureUnavailableException ex, HttpServletRequest req) {
         return ResponseEntity
                 .status(HttpStatus.SERVICE_UNAVAILABLE)
-                .body(ApiError.of(503, "Service Unavailable", ex.getMessage(), req.getRequestURI()));
+                .body(ApiErrorResponse.of(503, "Service Unavailable", ex.getMessage(), req.getRequestURI()));
     }
 
     @ExceptionHandler(InvalidIdempotencyKeyException.class)
-    public ResponseEntity<ApiError> handleInvalidIdempotencyKey(
+    public ResponseEntity<ApiErrorResponse> handleInvalidIdempotencyKey(
             InvalidIdempotencyKeyException ex, HttpServletRequest req) {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiError.of(400, "invalid_idempotency_key", ex.getMessage(), req.getRequestURI()));
+                .body(ApiErrorResponse.of(400, "invalid_idempotency_key", ex.getMessage(), req.getRequestURI()));
     }
 
     @ExceptionHandler(MissingIdempotencyKeyException.class)
-    public ResponseEntity<ApiError> handleMissingIdempotencyKey(
+    public ResponseEntity<ApiErrorResponse> handleMissingIdempotencyKey(
             MissingIdempotencyKeyException ex, HttpServletRequest req) {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiError.of(400, "missing_idempotency_key", ex.getMessage(), req.getRequestURI()));
+                .body(ApiErrorResponse.of(400, "missing_idempotency_key", ex.getMessage(), req.getRequestURI()));
     }
 
     @ExceptionHandler(IdempotencyConflictException.class)
-    public ResponseEntity<ApiError> handleIdempotencyConflict(
+    public ResponseEntity<ApiErrorResponse> handleIdempotencyConflict(
             IdempotencyConflictException ex, HttpServletRequest req) {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
-                .body(ApiError.of(409, "idempotency_key_conflict", ex.getMessage(), req.getRequestURI()));
+                .body(ApiErrorResponse.of(409, "idempotency_key_conflict", ex.getMessage(), req.getRequestURI()));
     }
 
     @ExceptionHandler(IdempotencyOperationInProgressException.class)
-    public ResponseEntity<ApiError> handleIdempotencyOperationInProgress(
+    public ResponseEntity<ApiErrorResponse> handleIdempotencyOperationInProgress(
             IdempotencyOperationInProgressException ex, HttpServletRequest req) {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
                 .header("Retry-After", Long.toString(ex.getRetryAfterSeconds()))
-                .body(ApiError.of(409, "operation_in_progress", ex.getMessage(), req.getRequestURI()));
+                .body(ApiErrorResponse.of(409, "operation_in_progress", ex.getMessage(), req.getRequestURI()));
     }
 
     @ExceptionHandler(RefreshAlreadyRotatedException.class)
-    public ResponseEntity<ApiError> handleRefreshAlreadyRotated(
+    public ResponseEntity<ApiErrorResponse> handleRefreshAlreadyRotated(
             RefreshAlreadyRotatedException ex, HttpServletRequest req) {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
-                .body(ApiError.of(409, "refresh_already_rotated", ex.getMessage(), req.getRequestURI()));
+                .body(ApiErrorResponse.of(409, "refresh_already_rotated", ex.getMessage(), req.getRequestURI()));
     }
 
     @ExceptionHandler(UnsupportedStatementFormatException.class)
-    public ResponseEntity<ApiError> handleUnsupportedStatementFormat(
+    public ResponseEntity<ApiErrorResponse> handleUnsupportedStatementFormat(
             UnsupportedStatementFormatException ex, HttpServletRequest req) {
         return ResponseEntity
                 .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
-                .body(ApiError.of(415, "unsupported_statement_format", ex.getMessage(), req.getRequestURI()));
+                .body(ApiErrorResponse.of(415, "unsupported_statement_format", ex.getMessage(), req.getRequestURI()));
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
-    public ResponseEntity<ApiError> handleMaxUploadSizeExceeded(
+    public ResponseEntity<ApiErrorResponse> handleMaxUploadSizeExceeded(
             MaxUploadSizeExceededException ex, HttpServletRequest req) {
         return ResponseEntity
                 .status(HttpStatus.PAYLOAD_TOO_LARGE)
-                .body(ApiError.of(413, "file_too_large",
+                .body(ApiErrorResponse.of(413, "file_too_large",
                         "Uploaded file exceeds the maximum allowed size of 10MB", req.getRequestURI()));
     }
 
     @ExceptionHandler(ApiTokenIdempotencyConflictException.class)
-    public ResponseEntity<ApiTokenConflictError> handleApiTokenIdempotencyConflict(
+    public ResponseEntity<ApiTokenConflictErrorResponse> handleApiTokenIdempotencyConflict(
             ApiTokenIdempotencyConflictException ex, HttpServletRequest req) {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
-                .body(ApiTokenConflictError.of(ex.getMessage(), req.getRequestURI(), ex.getExistingToken()));
+                .body(ApiTokenConflictErrorResponse.of(ex.getMessage(), req.getRequestURI(), ex.getExistingToken()));
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiError> handleGeneric(Exception ex, HttpServletRequest req) {
+    public ResponseEntity<ApiErrorResponse> handleGeneric(Exception ex, HttpServletRequest req) {
         log.error("Unhandled exception at {}: {}", req.getRequestURI(), ex.getMessage(), ex);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiError.of(500, "Internal Server Error", "An unexpected error occurred", req.getRequestURI()));
+                .body(ApiErrorResponse.of(500, "Internal Server Error", "An unexpected error occurred", req.getRequestURI()));
     }
 }

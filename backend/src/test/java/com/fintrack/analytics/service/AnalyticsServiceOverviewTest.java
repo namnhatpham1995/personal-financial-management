@@ -1,9 +1,9 @@
 package com.fintrack.analytics.service;
 
 import com.fintrack.analytics.repository.AnalyticsRepository;
-import com.fintrack.analytics.web.dto.ConvertedOverviewDto;
-import com.fintrack.analytics.web.dto.IncomeExpenseTrendDto;
-import com.fintrack.analytics.web.dto.SpendingByCategoryDto;
+import com.fintrack.analytics.controller.dto.ConvertedOverviewResponse;
+import com.fintrack.analytics.controller.dto.IncomeExpenseTrendResponse;
+import com.fintrack.analytics.controller.dto.SpendingByCategoryResponse;
 import com.fintrack.budget.repository.BudgetRepository;
 import com.fintrack.common.config.AppProperties;
 import com.fintrack.exchangerate.exception.ExchangeRateUnavailableException;
@@ -63,9 +63,9 @@ class AnalyticsServiceOverviewTest {
     @Test
     void getOverview_multiCurrency_mergesSpendingByCategory() {
         // Spending: same category from two currencies
-        List<SpendingByCategoryDto> spending = List.of(
-            new SpendingByCategoryDto("USD", 10L, "Food", new BigDecimal("200.00"), 3),
-            new SpendingByCategoryDto("VND", 10L, "Food", new BigDecimal("5000000"), 2)
+        List<SpendingByCategoryResponse> spending = List.of(
+            new SpendingByCategoryResponse("USD", 10L, "Food", new BigDecimal("200.00"), 3),
+            new SpendingByCategoryResponse("VND", 10L, "Food", new BigDecimal("5000000"), 2)
         );
         when(analyticsRepository.spendingByCategory(USER_ID, FROM, TO, null)).thenReturn(spending);
         when(analyticsRepository.incomeExpenseTrend(USER_ID, FROM, TO)).thenReturn(List.of());
@@ -77,7 +77,7 @@ class AnalyticsServiceOverviewTest {
         when(exchangeRateService.convert(BigDecimal.ONE, "VND", "USD"))
             .thenReturn(new BigDecimal("0.00004000"));
 
-        ConvertedOverviewDto result = analyticsService.getOverview(USER_ID, "USD", FROM, TO);
+        ConvertedOverviewResponse result = analyticsService.getOverview(USER_ID, "USD", FROM, TO);
 
         assertThat(result.targetCurrency()).isEqualTo("USD");
         assertThat(result.ratesUnavailable()).isFalse();
@@ -99,17 +99,17 @@ class AnalyticsServiceOverviewTest {
 
     @Test
     void getOverview_identityCurrency_passesThrough_noRatesEntry() {
-        List<SpendingByCategoryDto> spending = List.of(
-            new SpendingByCategoryDto("USD", 5L, "Groceries", new BigDecimal("300.00"), 4)
+        List<SpendingByCategoryResponse> spending = List.of(
+            new SpendingByCategoryResponse("USD", 5L, "Groceries", new BigDecimal("300.00"), 4)
         );
         when(analyticsRepository.spendingByCategory(USER_ID, FROM, TO, null)).thenReturn(spending);
 
-        List<IncomeExpenseTrendDto> trend = List.of(
-            new IncomeExpenseTrendDto("USD", 2026, 1, new BigDecimal("3000"), new BigDecimal("1200"), new BigDecimal("1800"))
+        List<IncomeExpenseTrendResponse> trend = List.of(
+            new IncomeExpenseTrendResponse("USD", 2026, 1, new BigDecimal("3000"), new BigDecimal("1200"), new BigDecimal("1800"))
         );
         when(analyticsRepository.incomeExpenseTrend(USER_ID, FROM, TO)).thenReturn(trend);
 
-        ConvertedOverviewDto result = analyticsService.getOverview(USER_ID, "USD", FROM, TO);
+        ConvertedOverviewResponse result = analyticsService.getOverview(USER_ID, "USD", FROM, TO);
 
         assertThat(result.ratesUnavailable()).isFalse();
         assertThat(result.rates()).isEmpty(); // no conversion needed
@@ -132,15 +132,15 @@ class AnalyticsServiceOverviewTest {
         when(exchangeRateService.convert(any(BigDecimal.class), eq("VND"), eq("USD")))
             .thenThrow(new ExchangeRateUnavailableException("Provider unreachable"));
 
-        List<SpendingByCategoryDto> spending = List.of(
-            new SpendingByCategoryDto("USD", 10L, "Food", new BigDecimal("100.00"), 1),
-            new SpendingByCategoryDto("VND", 10L, "Food", new BigDecimal("2500000"), 1)
+        List<SpendingByCategoryResponse> spending = List.of(
+            new SpendingByCategoryResponse("USD", 10L, "Food", new BigDecimal("100.00"), 1),
+            new SpendingByCategoryResponse("VND", 10L, "Food", new BigDecimal("2500000"), 1)
         );
         when(analyticsRepository.spendingByCategory(USER_ID, FROM, TO, null)).thenReturn(spending);
         when(analyticsRepository.incomeExpenseTrend(USER_ID, FROM, TO)).thenReturn(List.of());
 
         // Must NOT throw — overview always returns 200
-        ConvertedOverviewDto result = analyticsService.getOverview(USER_ID, "USD", FROM, TO);
+        ConvertedOverviewResponse result = analyticsService.getOverview(USER_ID, "USD", FROM, TO);
 
         assertThat(result.ratesUnavailable()).isTrue();
         assertThat(result.excludedCurrencies()).hasSize(1);
@@ -165,9 +165,9 @@ class AnalyticsServiceOverviewTest {
         when(analyticsRepository.incomeExpenseTrend(USER_ID, FROM, TO)).thenReturn(List.of());
 
         // Two rows of 1 VND (same category)
-        List<SpendingByCategoryDto> spending = List.of(
-            new SpendingByCategoryDto("VND", 99L, "Micro", new BigDecimal("1"), 1),
-            new SpendingByCategoryDto("VND", 99L, "Micro", new BigDecimal("1"), 1)
+        List<SpendingByCategoryResponse> spending = List.of(
+            new SpendingByCategoryResponse("VND", 99L, "Micro", new BigDecimal("1"), 1),
+            new SpendingByCategoryResponse("VND", 99L, "Micro", new BigDecimal("1"), 1)
         );
         when(analyticsRepository.spendingByCategory(USER_ID, FROM, TO, null)).thenReturn(spending);
 
@@ -177,7 +177,7 @@ class AnalyticsServiceOverviewTest {
         when(exchangeRateService.convert(BigDecimal.ONE, "VND", "USD"))
             .thenReturn(new BigDecimal("0.00005000"));
 
-        ConvertedOverviewDto result = analyticsService.getOverview(USER_ID, "USD", FROM, TO);
+        ConvertedOverviewResponse result = analyticsService.getOverview(USER_ID, "USD", FROM, TO);
 
         assertThat(result.spending()).hasSize(1);
         // Sum-then-convert: result is non-zero (0.0001)

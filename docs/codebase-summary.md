@@ -37,7 +37,7 @@
 - `JwtAuthenticationFilter` — extract Bearer, validate, set SecurityContext
 - `AuthRateLimitFilter` — Bucket4j per-IP on `/api/v1/auth/**`
 - `CorrelationIdFilter` — `X-Correlation-Id` header → MDC for all log lines
-- `GlobalExceptionHandler` — maps typed exceptions to `ApiError` JSON
+- `GlobalExceptionHandler` — maps typed exceptions to `ApiErrorResponse` JSON
 
 ## Frontend — Key Files
 

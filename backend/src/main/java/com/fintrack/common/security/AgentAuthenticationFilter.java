@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fintrack.agent.service.AgentTokenService;
 import com.fintrack.auth.domain.User;
 import com.fintrack.auth.repository.UserRepository;
-import com.fintrack.common.dto.ApiError;
+import com.fintrack.common.dto.ApiErrorResponse;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -104,6 +104,6 @@ public class AgentAuthenticationFilter extends OncePerRequestFilter {
         response.setStatus(status);
         response.setContentType("application/json");
         response.getWriter().write(
-                objectMapper.writeValueAsString(ApiError.of(status, error, message, path)));
+                objectMapper.writeValueAsString(ApiErrorResponse.of(status, error, message, path)));
     }
 }

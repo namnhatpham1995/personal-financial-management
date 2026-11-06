@@ -8,7 +8,7 @@ import com.fintrack.vault.domain.VaultDocument;
 import com.fintrack.vault.domain.VaultDocumentType;
 import com.fintrack.vault.domain.VaultStage;
 import com.fintrack.vault.domain.VaultStageMapper;
-import com.fintrack.vault.web.dto.VaultDocumentResponse;
+import com.fintrack.vault.controller.dto.VaultDocumentResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;

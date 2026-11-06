@@ -7,9 +7,9 @@ import com.fintrack.agent.domain.AgentRun;
 import com.fintrack.agent.domain.AgentRunStatus;
 import com.fintrack.agent.exception.AgentFeatureUnavailableException;
 import com.fintrack.agent.repository.AgentRunRepository;
-import com.fintrack.agent.web.dto.AgentDecisionRequest;
-import com.fintrack.agent.web.dto.ProposalDto;
-import com.fintrack.agent.web.dto.SubmitProposalsRequest;
+import com.fintrack.agent.controller.dto.AgentDecisionRequest;
+import com.fintrack.agent.controller.dto.ProposalDto;
+import com.fintrack.agent.controller.dto.SubmitProposalsRequest;
 import com.fintrack.auth.domain.User;
 import com.fintrack.auth.repository.UserRepository;
 import com.fintrack.category.domain.Category;
@@ -18,7 +18,7 @@ import com.fintrack.common.exception.ConflictException;
 import com.fintrack.common.exception.ResourceNotFoundException;
 import com.fintrack.exchangerate.service.ExchangeRateService;
 import com.fintrack.transaction.service.TransactionService;
-import com.fintrack.transaction.web.dto.TransactionResponse;
+import com.fintrack.transaction.controller.dto.TransactionResponse;
 import com.fintrack.vault.domain.VaultDocument;
 import com.fintrack.vault.domain.VaultDocumentType;
 import com.fintrack.vault.repository.VaultDocumentRepository;
@@ -279,8 +279,8 @@ class AgentRunServiceTest {
         assertThat(result.status()).isEqualTo(AgentRunStatus.COMMITTED);
         assertThat(result.createdTransactionIds()).containsExactly(501L);
         assertThat(result.accountId()).isEqualTo(7L);
-        ArgumentCaptor<com.fintrack.transaction.web.dto.CreateTransactionRequest> txCaptor =
-                ArgumentCaptor.forClass(com.fintrack.transaction.web.dto.CreateTransactionRequest.class);
+        ArgumentCaptor<com.fintrack.transaction.controller.dto.CreateTransactionRequest> txCaptor =
+                ArgumentCaptor.forClass(com.fintrack.transaction.controller.dto.CreateTransactionRequest.class);
         verify(transactionService).createWithImportMetadata(eq(USER_ID), txCaptor.capture(), any(), eq("doc-1"));
         assertThat(txCaptor.getValue().accountId()).isEqualTo(7L);
     }
@@ -312,8 +312,8 @@ class AgentRunServiceTest {
         var result = service.decide(USER_ID, 10L, new AgentDecisionRequest(true, List.of(proposal)));
 
         assertThat(result.accountId()).isEqualTo(7L);
-        ArgumentCaptor<com.fintrack.transaction.web.dto.CreateTransactionRequest> txCaptor =
-                ArgumentCaptor.forClass(com.fintrack.transaction.web.dto.CreateTransactionRequest.class);
+        ArgumentCaptor<com.fintrack.transaction.controller.dto.CreateTransactionRequest> txCaptor =
+                ArgumentCaptor.forClass(com.fintrack.transaction.controller.dto.CreateTransactionRequest.class);
         verify(transactionService).createWithImportMetadata(eq(USER_ID), txCaptor.capture(), any(), eq("doc-1"));
         assertThat(txCaptor.getValue().accountId()).isEqualTo(7L);
         verify(agentRunRepository, atLeastOnce()).save(run);

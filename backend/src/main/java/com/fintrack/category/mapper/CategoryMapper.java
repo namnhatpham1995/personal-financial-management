@@ -1,8 +1,8 @@
 package com.fintrack.category.mapper;
 
 import com.fintrack.category.domain.Category;
-import com.fintrack.category.web.dto.CategoryResponse;
-import com.fintrack.category.web.dto.CreateCategoryRequest;
+import com.fintrack.category.controller.dto.CategoryResponse;
+import com.fintrack.category.controller.dto.CreateCategoryRequest;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 

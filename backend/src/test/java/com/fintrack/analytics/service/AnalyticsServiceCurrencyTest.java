@@ -4,9 +4,9 @@ import com.fintrack.account.domain.Account;
 import com.fintrack.account.domain.AccountType;
 import com.fintrack.account.repository.AccountRepository;
 import com.fintrack.analytics.repository.AnalyticsRepository;
-import com.fintrack.analytics.web.dto.CurrencyBalanceDto;
-import com.fintrack.analytics.web.dto.IncomeExpenseTrendDto;
-import com.fintrack.analytics.web.dto.SpendingByCategoryDto;
+import com.fintrack.analytics.controller.dto.CurrencyBalanceResponse;
+import com.fintrack.analytics.controller.dto.IncomeExpenseTrendResponse;
+import com.fintrack.analytics.controller.dto.SpendingByCategoryResponse;
 import com.fintrack.budget.repository.BudgetRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,10 +43,10 @@ class AnalyticsServiceCurrencyTest {
         );
         when(accountRepository.findAllByUserId(USER_ID)).thenReturn(accounts);
 
-        List<CurrencyBalanceDto> result = analyticsService.getBalances(USER_ID);
+        List<CurrencyBalanceResponse> result = analyticsService.getBalances(USER_ID);
 
         assertThat(result).hasSize(1);
-        CurrencyBalanceDto usd = result.get(0);
+        CurrencyBalanceResponse usd = result.get(0);
         assertThat(usd.currency()).isEqualTo("USD");
         assertThat(usd.totalBalance()).isEqualByComparingTo(new BigDecimal("1500.00"));
         assertThat(usd.accounts()).hasSize(2);
@@ -60,16 +60,16 @@ class AnalyticsServiceCurrencyTest {
         );
         when(accountRepository.findAllByUserId(USER_ID)).thenReturn(accounts);
 
-        List<CurrencyBalanceDto> result = analyticsService.getBalances(USER_ID);
+        List<CurrencyBalanceResponse> result = analyticsService.getBalances(USER_ID);
 
         assertThat(result).hasSize(2);
-        assertThat(result).extracting(CurrencyBalanceDto::currency)
+        assertThat(result).extracting(CurrencyBalanceResponse::currency)
                 .containsExactlyInAnyOrder("USD", "EUR");
 
-        CurrencyBalanceDto usd = result.stream().filter(d -> "USD".equals(d.currency())).findFirst().orElseThrow();
+        CurrencyBalanceResponse usd = result.stream().filter(d -> "USD".equals(d.currency())).findFirst().orElseThrow();
         assertThat(usd.totalBalance()).isEqualByComparingTo(new BigDecimal("1000.00"));
 
-        CurrencyBalanceDto eur = result.stream().filter(d -> "EUR".equals(d.currency())).findFirst().orElseThrow();
+        CurrencyBalanceResponse eur = result.stream().filter(d -> "EUR".equals(d.currency())).findFirst().orElseThrow();
         assertThat(eur.totalBalance()).isEqualByComparingTo(new BigDecimal("800.00"));
     }
 
@@ -81,10 +81,10 @@ class AnalyticsServiceCurrencyTest {
         );
         when(accountRepository.findAllByUserId(USER_ID)).thenReturn(accounts);
 
-        List<CurrencyBalanceDto> result = analyticsService.getBalances(USER_ID);
+        List<CurrencyBalanceResponse> result = analyticsService.getBalances(USER_ID);
 
         assertThat(result).hasSize(1);
-        CurrencyBalanceDto usd = result.get(0);
+        CurrencyBalanceResponse usd = result.get(0);
         assertThat(usd.totalBalance()).isEqualByComparingTo(new BigDecimal("2400.00"));
     }
 
@@ -92,7 +92,7 @@ class AnalyticsServiceCurrencyTest {
     void getBalances_noAccounts_returnsEmptyList() {
         when(accountRepository.findAllByUserId(USER_ID)).thenReturn(List.of());
 
-        List<CurrencyBalanceDto> result = analyticsService.getBalances(USER_ID);
+        List<CurrencyBalanceResponse> result = analyticsService.getBalances(USER_ID);
 
         assertThat(result).isEmpty();
     }
@@ -103,16 +103,16 @@ class AnalyticsServiceCurrencyTest {
     void getSpendingByCategory_returnsCurrencySegregated() {
         LocalDate from = LocalDate.of(2025, 1, 1);
         LocalDate to = LocalDate.of(2025, 12, 31);
-        List<SpendingByCategoryDto> rows = List.of(
-                new SpendingByCategoryDto("USD", 1L, "Food", new BigDecimal("300.00"), 5),
-                new SpendingByCategoryDto("EUR", 2L, "Transport", new BigDecimal("150.00"), 3)
+        List<SpendingByCategoryResponse> rows = List.of(
+                new SpendingByCategoryResponse("USD", 1L, "Food", new BigDecimal("300.00"), 5),
+                new SpendingByCategoryResponse("EUR", 2L, "Transport", new BigDecimal("150.00"), 3)
         );
         when(analyticsRepository.spendingByCategory(USER_ID, from, to, null)).thenReturn(rows);
 
-        List<SpendingByCategoryDto> result = analyticsService.getSpendingByCategory(USER_ID, from, to, null);
+        List<SpendingByCategoryResponse> result = analyticsService.getSpendingByCategory(USER_ID, from, to, null);
 
         assertThat(result).hasSize(2);
-        assertThat(result).extracting(SpendingByCategoryDto::currency)
+        assertThat(result).extracting(SpendingByCategoryResponse::currency)
                 .containsExactlyInAnyOrder("USD", "EUR");
     }
 
@@ -122,16 +122,16 @@ class AnalyticsServiceCurrencyTest {
     void getIncomeExpenseTrend_returnsCurrencySegregated() {
         LocalDate from = LocalDate.of(2025, 1, 1);
         LocalDate to = LocalDate.of(2025, 12, 31);
-        List<IncomeExpenseTrendDto> rows = List.of(
-                new IncomeExpenseTrendDto("USD", 2025, 1, new BigDecimal("1000"), new BigDecimal("600"), new BigDecimal("400")),
-                new IncomeExpenseTrendDto("EUR", 2025, 1, new BigDecimal("500"), new BigDecimal("200"), new BigDecimal("300"))
+        List<IncomeExpenseTrendResponse> rows = List.of(
+                new IncomeExpenseTrendResponse("USD", 2025, 1, new BigDecimal("1000"), new BigDecimal("600"), new BigDecimal("400")),
+                new IncomeExpenseTrendResponse("EUR", 2025, 1, new BigDecimal("500"), new BigDecimal("200"), new BigDecimal("300"))
         );
         when(analyticsRepository.incomeExpenseTrend(USER_ID, from, to)).thenReturn(rows);
 
-        List<IncomeExpenseTrendDto> result = analyticsService.getIncomeExpenseTrend(USER_ID, from, to);
+        List<IncomeExpenseTrendResponse> result = analyticsService.getIncomeExpenseTrend(USER_ID, from, to);
 
         assertThat(result).hasSize(2);
-        assertThat(result).extracting(IncomeExpenseTrendDto::currency)
+        assertThat(result).extracting(IncomeExpenseTrendResponse::currency)
                 .containsExactlyInAnyOrder("USD", "EUR");
     }
 

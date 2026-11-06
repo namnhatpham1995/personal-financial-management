@@ -16,13 +16,13 @@ import com.fintrack.transaction.domain.Transaction;
 import com.fintrack.transaction.mapper.TransactionMapper;
 import com.fintrack.transaction.repository.TransactionRepository;
 import com.fintrack.transaction.repository.TransactionSpecification;
-import com.fintrack.transaction.web.dto.CreateTransactionRequest;
-import com.fintrack.transaction.web.dto.BatchTransactionResponse;
-import com.fintrack.transaction.web.dto.BatchTransactionRowRequest;
-import com.fintrack.transaction.web.dto.BatchTransactionRowResult;
-import com.fintrack.transaction.web.dto.TransactionResponse;
-import com.fintrack.transaction.web.dto.UpdateTransactionRequest;
-import com.fintrack.transaction.web.dto.MutationWarning;
+import com.fintrack.transaction.controller.dto.CreateTransactionRequest;
+import com.fintrack.transaction.controller.dto.BatchTransactionResponse;
+import com.fintrack.transaction.controller.dto.BatchTransactionRowRequest;
+import com.fintrack.transaction.controller.dto.BatchTransactionRowResponse;
+import com.fintrack.transaction.controller.dto.TransactionResponse;
+import com.fintrack.transaction.controller.dto.UpdateTransactionRequest;
+import com.fintrack.transaction.controller.dto.MutationWarningResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -121,7 +121,7 @@ public class TransactionService {
                                                String importDedupKey, String sourceDocumentId) {
         User user = userRepository.getReferenceById(userId);
         Account account = accountService.findOwned(userId, req.accountId());
-        List<MutationWarning> warnings = new ArrayList<>();
+        List<MutationWarningResponse> warnings = new ArrayList<>();
         boolean possibleDuplicate = importDedupKey == null && transactionRepository
                 .existsByUserIdAndAccountIdAndTransactionDateAndAmountAndTransactionTypeAndNote(
                         userId, req.accountId(), req.transactionDate(), req.amount(), req.transactionType(), req.note());
@@ -175,7 +175,7 @@ public class TransactionService {
      * batch-level resumability wrapper this method runs inside of.
      */
     public BatchTransactionResponse createBatch(Long userId, List<BatchTransactionRowRequest> rows) {
-        List<BatchTransactionRowResult> results = new ArrayList<>();
+        List<BatchTransactionRowResponse> results = new ArrayList<>();
         for (int index = 0; index < rows.size(); index++) {
             BatchTransactionRowRequest row = rows.get(index);
             if (row == null) {
@@ -200,21 +200,21 @@ public class TransactionService {
         return new BatchTransactionResponse(results);
     }
 
-    private BatchTransactionRowResult toRowResult(int index, String clientRequestId,
+    private BatchTransactionRowResponse toRowResult(int index, String clientRequestId,
                                                     BatchRowOutcome<TransactionResponse> outcome) {
         return switch (outcome.kind()) {
-            case CREATED -> new BatchTransactionRowResult(index, BatchTransactionRowResult.Status.CREATED,
+            case CREATED -> new BatchTransactionRowResponse(index, BatchTransactionRowResponse.Status.CREATED,
                     clientRequestId, outcome.result(), null);
-            case REPLAYED -> new BatchTransactionRowResult(index, BatchTransactionRowResult.Status.REPLAYED,
+            case REPLAYED -> new BatchTransactionRowResponse(index, BatchTransactionRowResponse.Status.REPLAYED,
                     clientRequestId, outcome.result(), null);
-            case CONFLICT -> new BatchTransactionRowResult(index, BatchTransactionRowResult.Status.CONFLICT,
+            case CONFLICT -> new BatchTransactionRowResponse(index, BatchTransactionRowResponse.Status.CONFLICT,
                     clientRequestId, null, outcome.errorMessage());
             case FAILED -> failed(index, clientRequestId, outcome.errorMessage());
         };
     }
 
-    private BatchTransactionRowResult failed(int index, String clientRequestId, String error) {
-        return new BatchTransactionRowResult(index, BatchTransactionRowResult.Status.FAILED, clientRequestId, null, error);
+    private BatchTransactionRowResponse failed(int index, String clientRequestId, String error) {
+        return new BatchTransactionRowResponse(index, BatchTransactionRowResponse.Status.FAILED, clientRequestId, null, error);
     }
 
     @Transactional(readOnly = true)
@@ -270,7 +270,7 @@ public class TransactionService {
                 ? (req.destinationAmount() == null ? oldDestinationAmount : req.destinationAmount())
                 : oldDestinationAmount;
 
-        List<MutationWarning> warnings = new ArrayList<>();
+        List<MutationWarningResponse> warnings = new ArrayList<>();
         BigDecimal balanceDelta = finalAmount.subtract(oldAmount);
         if (tx.getTransactionType() == TransactionType.EXPENSE || tx.getTransactionType() == TransactionType.TRANSFER) {
             TransactionWarningFactory.addNegativeBalanceWarning(warnings, tx.getAccount(), tx.getTransactionType(), balanceDelta);

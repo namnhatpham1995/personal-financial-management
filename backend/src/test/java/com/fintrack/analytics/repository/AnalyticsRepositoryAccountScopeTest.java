@@ -3,7 +3,7 @@ package com.fintrack.analytics.repository;
 import com.fintrack.account.domain.Account;
 import com.fintrack.account.domain.AccountType;
 import com.fintrack.account.repository.AccountRepository;
-import com.fintrack.analytics.web.dto.SpendingByCategoryDto;
+import com.fintrack.analytics.controller.dto.SpendingByCategoryResponse;
 import com.fintrack.auth.domain.User;
 import com.fintrack.auth.repository.UserRepository;
 import com.fintrack.category.domain.Category;
@@ -49,14 +49,14 @@ class AnalyticsRepositoryAccountScopeTest {
         expense(user, a, food, new BigDecimal("100.00"));
         expense(user, b, food, new BigDecimal("999.00")); // other account, must be excluded
 
-        List<SpendingByCategoryDto> scoped =
+        List<SpendingByCategoryResponse> scoped =
                 analyticsRepository.spendingByCategory(user.getId(), FROM, TO, a.getId());
 
         assertThat(scoped).hasSize(1);
         assertThat(scoped.get(0).categoryName()).isEqualTo("Food");
         assertThat(scoped.get(0).total()).isEqualByComparingTo(new BigDecimal("100.00"));
 
-        List<SpendingByCategoryDto> overall =
+        List<SpendingByCategoryResponse> overall =
                 analyticsRepository.spendingByCategory(user.getId(), FROM, TO, null);
         assertThat(overall).hasSize(1);
         assertThat(overall.get(0).total()).isEqualByComparingTo(new BigDecimal("1099.00"));

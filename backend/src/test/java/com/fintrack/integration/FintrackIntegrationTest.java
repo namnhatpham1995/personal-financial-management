@@ -1,7 +1,7 @@
 package com.fintrack.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fintrack.auth.web.dto.TokenResponse;
+import com.fintrack.auth.controller.dto.TokenResponse;
 import com.fintrack.audit.domain.AuditLogRepository;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;

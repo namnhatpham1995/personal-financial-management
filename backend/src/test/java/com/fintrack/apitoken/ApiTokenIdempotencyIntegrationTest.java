@@ -6,7 +6,7 @@ import com.fintrack.apitoken.domain.ApiToken;
 import com.fintrack.apitoken.repository.ApiTokenRepository;
 import com.fintrack.audit.domain.AuditLog;
 import com.fintrack.audit.domain.AuditLogRepository;
-import com.fintrack.auth.web.dto.TokenResponse;
+import com.fintrack.auth.controller.dto.TokenResponse;
 import com.fintrack.support.HttpTestHelper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

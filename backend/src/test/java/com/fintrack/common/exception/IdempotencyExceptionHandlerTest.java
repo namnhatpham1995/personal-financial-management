@@ -1,6 +1,6 @@
 package com.fintrack.common.exception;
 
-import com.fintrack.common.dto.ApiError;
+import com.fintrack.common.dto.ApiErrorResponse;
 import com.fintrack.idempotency.exception.IdempotencyConflictException;
 import com.fintrack.idempotency.exception.IdempotencyOperationInProgressException;
 import com.fintrack.idempotency.exception.InvalidIdempotencyKeyException;
@@ -30,7 +30,7 @@ class IdempotencyExceptionHandlerTest {
 
     @Test
     void invalidIdempotencyKey_mapsTo400() {
-        ResponseEntity<ApiError> response =
+        ResponseEntity<ApiErrorResponse> response =
                 handler.handleInvalidIdempotencyKey(new InvalidIdempotencyKeyException("too short"), request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
@@ -42,7 +42,7 @@ class IdempotencyExceptionHandlerTest {
 
     @Test
     void missingIdempotencyKey_mapsTo400() {
-        ResponseEntity<ApiError> response =
+        ResponseEntity<ApiErrorResponse> response =
                 handler.handleMissingIdempotencyKey(new MissingIdempotencyKeyException("header required"), request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
@@ -51,7 +51,7 @@ class IdempotencyExceptionHandlerTest {
 
     @Test
     void idempotencyConflict_mapsTo409() {
-        ResponseEntity<ApiError> response =
+        ResponseEntity<ApiErrorResponse> response =
                 handler.handleIdempotencyConflict(new IdempotencyConflictException("payload changed"), request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
@@ -60,7 +60,7 @@ class IdempotencyExceptionHandlerTest {
 
     @Test
     void idempotencyOperationInProgress_mapsTo409WithRetryAfterHeader() {
-        ResponseEntity<ApiError> response = handler.handleIdempotencyOperationInProgress(
+        ResponseEntity<ApiErrorResponse> response = handler.handleIdempotencyOperationInProgress(
                 new IdempotencyOperationInProgressException("still processing", 3), request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);

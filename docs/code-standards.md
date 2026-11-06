@@ -15,8 +15,15 @@
 | `domain/` | JPA entities, enums — no business logic |
 | `repository/` | Spring Data JPA interfaces — query methods + JPQL only |
 | `service/` | Business logic, ownership checks, transaction boundaries |
-| `web/` | Controllers: validate input → call service → return DTO |
+| `controller/` | REST controllers: validate input → call service → return DTO |
+| `controller/dto/` | Request/response bodies (see DTO naming below) |
 | `mapper/` | MapStruct interfaces — compile-time DTO ↔ entity mapping |
+
+### DTO Naming
+- `*Request` — body the client sends in (`CreateAccountRequest`)
+- `*Response` — body the API returns, including nested items and error bodies (`AccountResponse`, `ApiErrorResponse`)
+- `*Dto` — only for a type used in both directions (`ProposalDto`: returned in a run, sent back edited)
+- DTO class names become OpenAPI schema names — renaming one changes the contract; refresh `mcp-server/openapi.json` and regenerate its types
 
 ### Key Rules
 - **Never** return JPA entities from controllers — always map to DTO
@@ -26,7 +33,7 @@
 - Files > 200 lines: split by logical concern
 
 ### Error Handling
-- `GlobalExceptionHandler` maps domain exceptions to RFC 7807-style `ApiError`
+- `GlobalExceptionHandler` maps domain exceptions to RFC 7807-style `ApiErrorResponse`
 - Custom exceptions: `ResourceNotFoundException` (404), `ConflictException` (409), `ForbiddenException` (403), `RateLimitException` (429)
 - Never expose stack traces in HTTP responses
 

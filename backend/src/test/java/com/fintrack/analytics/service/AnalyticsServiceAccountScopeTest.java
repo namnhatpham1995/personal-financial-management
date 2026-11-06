@@ -2,7 +2,7 @@ package com.fintrack.analytics.service;
 
 import com.fintrack.account.repository.AccountRepository;
 import com.fintrack.analytics.repository.AnalyticsRepository;
-import com.fintrack.analytics.web.dto.SpendingByCategoryDto;
+import com.fintrack.analytics.controller.dto.SpendingByCategoryResponse;
 import com.fintrack.budget.repository.BudgetRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,12 +40,12 @@ class AnalyticsServiceAccountScopeTest {
 
     @Test
     void getSpendingByCategory_ownedAccount_scopesToThatAccount() {
-        List<SpendingByCategoryDto> rows = List.of(
-                new SpendingByCategoryDto("USD", 1L, "Food", new BigDecimal("120.00"), 4));
+        List<SpendingByCategoryResponse> rows = List.of(
+                new SpendingByCategoryResponse("USD", 1L, "Food", new BigDecimal("120.00"), 4));
         when(accountRepository.existsByIdAndUserId(ACCOUNT_ID, USER_ID)).thenReturn(true);
         when(analyticsRepository.spendingByCategory(USER_ID, FROM, TO, ACCOUNT_ID)).thenReturn(rows);
 
-        List<SpendingByCategoryDto> result =
+        List<SpendingByCategoryResponse> result =
                 analyticsService.getSpendingByCategory(USER_ID, FROM, TO, ACCOUNT_ID);
 
         assertThat(result).isEqualTo(rows);
@@ -55,7 +55,7 @@ class AnalyticsServiceAccountScopeTest {
     void getSpendingByCategory_unownedAccount_returnsEmptyWithoutQuerying() {
         when(accountRepository.existsByIdAndUserId(ACCOUNT_ID, USER_ID)).thenReturn(false);
 
-        List<SpendingByCategoryDto> result =
+        List<SpendingByCategoryResponse> result =
                 analyticsService.getSpendingByCategory(USER_ID, FROM, TO, ACCOUNT_ID);
 
         assertThat(result).isEmpty();
@@ -64,11 +64,11 @@ class AnalyticsServiceAccountScopeTest {
 
     @Test
     void getSpendingByCategory_nullAccount_skipsOwnershipCheck() {
-        List<SpendingByCategoryDto> rows = List.of(
-                new SpendingByCategoryDto("USD", 1L, "Food", new BigDecimal("50.00"), 2));
+        List<SpendingByCategoryResponse> rows = List.of(
+                new SpendingByCategoryResponse("USD", 1L, "Food", new BigDecimal("50.00"), 2));
         when(analyticsRepository.spendingByCategory(USER_ID, FROM, TO, null)).thenReturn(rows);
 
-        List<SpendingByCategoryDto> result =
+        List<SpendingByCategoryResponse> result =
                 analyticsService.getSpendingByCategory(USER_ID, FROM, TO, null);
 
         assertThat(result).isEqualTo(rows);

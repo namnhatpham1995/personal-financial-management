@@ -1,7 +1,7 @@
 package com.fintrack.analytics.repository;
 
-import com.fintrack.analytics.web.dto.IncomeExpenseTrendDto;
-import com.fintrack.analytics.web.dto.SpendingByCategoryDto;
+import com.fintrack.analytics.controller.dto.IncomeExpenseTrendResponse;
+import com.fintrack.analytics.controller.dto.SpendingByCategoryResponse;
 import com.fintrack.transaction.domain.Transaction;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -13,7 +13,7 @@ import java.util.List;
 public interface AnalyticsRepository extends JpaRepository<Transaction, Long> {
 
     @Query("""
-            SELECT new com.fintrack.analytics.web.dto.SpendingByCategoryDto(
+            SELECT new com.fintrack.analytics.controller.dto.SpendingByCategoryResponse(
                 t.account.currency, c.id, c.name,
                 COALESCE(SUM(t.amount), 0),
                 COUNT(t.id)
@@ -27,7 +27,7 @@ public interface AnalyticsRepository extends JpaRepository<Transaction, Long> {
             GROUP BY t.account.currency, c.id, c.name
             ORDER BY t.account.currency, SUM(t.amount) DESC
             """)
-    List<SpendingByCategoryDto> spendingByCategory(
+    List<SpendingByCategoryResponse> spendingByCategory(
             @Param("userId") Long userId,
             @Param("from") LocalDate from,
             @Param("to") LocalDate to,
@@ -55,7 +55,7 @@ public interface AnalyticsRepository extends JpaRepository<Transaction, Long> {
     );
 
     @Query("""
-            SELECT new com.fintrack.analytics.web.dto.IncomeExpenseTrendDto(
+            SELECT new com.fintrack.analytics.controller.dto.IncomeExpenseTrendResponse(
                 t.account.currency,
                 YEAR(t.transactionDate),
                 MONTH(t.transactionDate),
@@ -74,7 +74,7 @@ public interface AnalyticsRepository extends JpaRepository<Transaction, Long> {
             GROUP BY t.account.currency, YEAR(t.transactionDate), MONTH(t.transactionDate)
             ORDER BY t.account.currency, YEAR(t.transactionDate), MONTH(t.transactionDate)
             """)
-    List<IncomeExpenseTrendDto> incomeExpenseTrend(
+    List<IncomeExpenseTrendResponse> incomeExpenseTrend(
             @Param("userId") Long userId,
             @Param("from") LocalDate from,
             @Param("to") LocalDate to

@@ -1,7 +1,7 @@
 package com.fintrack.recurring.mapper;
 
 import com.fintrack.recurring.domain.RecurringTransaction;
-import com.fintrack.recurring.web.dto.RecurringResponse;
+import com.fintrack.recurring.controller.dto.RecurringResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 

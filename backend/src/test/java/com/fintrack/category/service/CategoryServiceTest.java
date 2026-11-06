@@ -5,8 +5,8 @@ import com.fintrack.auth.repository.UserRepository;
 import com.fintrack.category.domain.Category;
 import com.fintrack.category.mapper.CategoryMapper;
 import com.fintrack.category.repository.CategoryRepository;
-import com.fintrack.category.web.dto.CreateCategoryRequest;
-import com.fintrack.category.web.dto.UpdateCategoryRequest;
+import com.fintrack.category.controller.dto.CreateCategoryRequest;
+import com.fintrack.category.controller.dto.UpdateCategoryRequest;
 import com.fintrack.common.cache.CacheVersionService;
 import com.fintrack.common.domain.TransactionType;
 import com.fintrack.common.exception.ConflictException;
@@ -151,7 +151,7 @@ class CategoryServiceTest {
 
         // IllegalArgumentException, not ResponseStatusException: the latter bypasses
         // GlobalExceptionHandler and returns Spring's default ProblemDetail body instead of the
-        // app's own ApiError shape used by every other 400 in the API.
+        // app's own ApiErrorResponse shape used by every other 400 in the API.
         assertThatThrownBy(() -> categoryService.create(USER_ID, request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Category type must be INCOME or EXPENSE");

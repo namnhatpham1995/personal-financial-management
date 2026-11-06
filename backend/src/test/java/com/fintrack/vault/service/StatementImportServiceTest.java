@@ -12,8 +12,8 @@ import com.fintrack.vault.parser.CsvStatementParser;
 import com.fintrack.vault.parser.OfxStatementParser;
 import com.fintrack.vault.parser.ParsedStatementRow;
 import com.fintrack.vault.repository.VaultDocumentRepository;
-import com.fintrack.vault.web.dto.StagedRowResponse;
-import com.fintrack.vault.web.dto.VaultDocumentResponse;
+import com.fintrack.vault.controller.dto.StagedRowResponse;
+import com.fintrack.vault.controller.dto.VaultDocumentResponse;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -317,7 +317,7 @@ class StatementImportServiceTest {
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> importService.confirm(1L, "missing",
-                new com.fintrack.vault.web.dto.ConfirmImportRequest(List.of()), IDEMPOTENCY_KEY))
+                new com.fintrack.vault.controller.dto.ConfirmImportRequest(List.of()), IDEMPOTENCY_KEY))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -326,7 +326,7 @@ class StatementImportServiceTest {
         StatementImportService importService = newService();
 
         assertThatThrownBy(() -> importService.confirm(1L, "doc-1",
-                new com.fintrack.vault.web.dto.ConfirmImportRequest(List.of()), "too-short"))
+                new com.fintrack.vault.controller.dto.ConfirmImportRequest(List.of()), "too-short"))
                 .isInstanceOf(com.fintrack.idempotency.exception.InvalidIdempotencyKeyException.class);
 
         verifyNoInteractions(vaultDocumentRepository);

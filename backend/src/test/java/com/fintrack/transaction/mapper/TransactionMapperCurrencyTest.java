@@ -4,7 +4,7 @@ import com.fintrack.account.domain.Account;
 import com.fintrack.account.domain.AccountType;
 import com.fintrack.common.domain.TransactionType;
 import com.fintrack.transaction.domain.Transaction;
-import com.fintrack.transaction.web.dto.TransactionResponse;
+import com.fintrack.transaction.controller.dto.TransactionResponse;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 

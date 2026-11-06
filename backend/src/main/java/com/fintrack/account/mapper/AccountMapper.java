@@ -1,8 +1,8 @@
 package com.fintrack.account.mapper;
 
 import com.fintrack.account.domain.Account;
-import com.fintrack.account.web.dto.AccountResponse;
-import com.fintrack.account.web.dto.CreateAccountRequest;
+import com.fintrack.account.controller.dto.AccountResponse;
+import com.fintrack.account.controller.dto.CreateAccountRequest;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
@@ -29,5 +29,5 @@ public interface AccountMapper {
     @Mapping(target = "currentBalance", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    void updateEntity(com.fintrack.account.web.dto.UpdateAccountRequest request, @MappingTarget Account account);
+    void updateEntity(com.fintrack.account.controller.dto.UpdateAccountRequest request, @MappingTarget Account account);
 }
