@@ -12,12 +12,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthSessionService {
+
+    /**
+     * Minimum gap between {@code last_activity_at} writes. Without it every authenticated
+     * request (even a dashboard read) issues an UPDATE. Against a 24 h idle timeout, recording
+     * activity up to a minute late changes nothing a user can notice.
+     */
+    static final Duration TOUCH_INTERVAL = Duration.ofMinutes(1);
 
     private final AuthSessionRepository repository;
     private final AppProperties appProperties;
@@ -57,6 +65,7 @@ public class AuthSessionService {
         if (session == null) return false;
         Instant now = clock.instant();
         if (!session.isActive(now, appProperties.getJwt().getSessionIdleTimeoutMs())) return false;
+        if (session.getLastActivityAt().isAfter(now.minus(TOUCH_INTERVAL))) return true;
         return repository.touchIfActive(sessionId, now,
                 now.minusMillis(appProperties.getJwt().getSessionIdleTimeoutMs())) == 1;
     }

@@ -139,13 +139,6 @@
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
 
-        <!-- Rate limiting -->
-        <dependency>
-            <groupId>com.bucket4j</groupId>
-            <artifactId>bucket4j-core</artifactId>
-            <version>8.10.1</version>
-        </dependency>
-
         <!-- ShedLock: distributed scheduler coordination (one instance runs the daily job) -->
         <dependency>
             <groupId>net.javacrumbs.shedlock</groupId>

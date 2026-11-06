@@ -2,6 +2,7 @@ package com.fintrack.budget.repository;
 
 import com.fintrack.budget.domain.Budget;
 import com.fintrack.budget.domain.BudgetPeriod;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -12,6 +13,7 @@ import java.util.Optional;
 
 public interface BudgetRepository extends JpaRepository<Budget, Long> {
 
+    @EntityGraph(attributePaths = "category")
     List<Budget> findAllByUserId(Long userId);
 
     Optional<Budget> findByIdAndUserId(Long id, Long userId);
@@ -36,4 +38,21 @@ public interface BudgetRepository extends JpaRepository<Budget, Long> {
               AND t.account.currency = :currency
             """)
     BigDecimal sumSpentInPeriod(Long userId, Long categoryId, LocalDate periodStart, LocalDate periodEnd, String currency);
+
+    /**
+     * Daily EXPENSE totals per category and account currency over a date range — one query that
+     * lets budget history sum any number of budgets and periods in memory.
+     */
+    @Query("""
+            SELECT new com.fintrack.budget.repository.DailyCategorySpend(
+                t.category.id, t.account.currency, t.transactionDate, SUM(t.amount))
+            FROM Transaction t
+            WHERE t.user.id = :userId
+              AND t.category IS NOT NULL
+              AND t.transactionType = 'EXPENSE'
+              AND t.transactionDate >= :from
+              AND t.transactionDate <= :to
+            GROUP BY t.category.id, t.account.currency, t.transactionDate
+            """)
+    List<DailyCategorySpend> findDailyExpenseTotals(Long userId, LocalDate from, LocalDate to);
 }

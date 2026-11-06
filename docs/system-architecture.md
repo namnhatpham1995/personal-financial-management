@@ -13,7 +13,7 @@ Fintrack is a three-tier web application:
 ┌────────────────────────▼─────────────────────────────────┐
 │              Spring Boot 3.3.4 (Java 21)                 │
 │  SecurityFilter → Controller → Service → Repository      │
-│  Rate Limiting (Bucket4j) · Swagger UI · Actuator        │
+│  Rate Limiting (fixed window, Redis in prod) · Swagger UI · Actuator        │
 └──────────┬──────────────────────────────┬────────────────┘
            │ JDBC (Flyway migrations)      │ Spring Data MongoDB
 ┌──────────▼──────────────┐  ┌────────────▼───────────────┐
@@ -44,7 +44,7 @@ com.fintrack
     ├── dto/        ApiErrorResponse, PageResponse
     ├── exception/  GlobalExceptionHandler + typed exceptions
     ├── logging/    CorrelationIdFilter
-    ├── ratelimit/  AuthRateLimitFilter (Bucket4j)
+    ├── ratelimit/  AuthRateLimitFilter + FixedWindowRateLimiter (Redis counters in prod)
     └── security/   JwtAuthenticationFilter, PatAuthenticationFilter, PatEndpointPolicy, UserPrincipal, AuthMethod
 ```
 
@@ -57,13 +57,18 @@ Register/Login → AuthService → create auth session (24-hour idle / 30-day ab
   → generate 64-byte SecureRandom refresh token → SHA-256 hash → DB
 
 Request → JwtAuthenticationFilter → extract Bearer → validate JWT + auth session
-  → advance last_activity_at → UserPrincipal(userId) → SecurityContext
+  → advance last_activity_at (at most once a minute) → UserPrincipal(userId) → SecurityContext
 
 Refresh → POST /auth/refresh → validate hash in DB
   → validate idle/absolute session deadlines
   → revoke old token → issue new pair in the same session (rotation)
   → detect reuse (revoked): revoke ALL user tokens
 ```
+
+Rate limits (auth per client IP, PAT per token) use one-minute fixed windows. In prod
+(`app.rate-limit.redis-enabled`) counters live in Redis so the limit holds across replicas; locally,
+or if Redis errors, a per-instance map reset every window is used. The client IP is the rightmost
+`X-Forwarded-For` entry (appended by the Railway edge); leftmost entries are client-controlled.
 
 Browser auth sessions are persisted in PostgreSQL. `last_activity_at` advances only after
 server-accepted browser JWT activity, login/registration, or refresh; public-page activity does
@@ -85,7 +90,7 @@ POST /api/v1/tokens (JWT session only) → ApiTokenService.create()
 
 Request with "Bearer fintrack_pat_..." → PatAuthenticationFilter (runs before JwtAuthenticationFilter)
   → hash lookup → reject unknown/expired/revoked → touch last_used_at
-  → per-token Bucket4j rate limit (app.pat.requests-per-minute, default 60/min)
+  → per-token rate limit via FixedWindowRateLimiter (app.pat.requests-per-minute, default 60/min)
   → PatEndpointPolicy.isAllowed(method, uri, scope) — deny-by-default allowlist:
       read scope  → GET on accounts/transactions/categories/budgets/recurring-transactions/analytics
       write scope → additionally POST/PUT on transactions only
@@ -195,9 +200,9 @@ Every transaction mutation calls `AccountService.adjustBalance(accountId, delta)
 
 ## Recurring Transaction Scheduler
 
-Daily at 01:00 UTC (`@Scheduled(cron="0 0 1 * * *")`):
+Daily at 01:00 UTC (`@Scheduled(cron="0 0 1 * * *")`, ShedLock `recurringTransactionGeneration` so one replica runs it):
 1. `RecurringTransactionScheduler` fetches all active definitions where `next_run_date <= today`
-2. Delegates each definition to `RecurringOccurrenceProcessor.process()` (separate bean with `@Transactional` boundary)
+2. Delegates each definition to `RecurringOccurrenceProcessor.process()` (separate bean with `@Transactional` boundary); a failing definition is logged and skipped so the rest still run
    - Pre-check `existsByRecurringIdAndOccurrenceDate()` before insert — avoids PostgreSQL aborted-connection state that catching `DataIntegrityViolationException` would produce
    - Apply balance delta only on a new insert (no double-apply)
    - Advance `next_run_date` by `frequency × interval`
@@ -286,7 +291,7 @@ Key design decisions:
 - `DECIMAL(19,4)` for all `amount`/`balance` columns — no floating point
 - `user_id` FK on every domain table — enforced at service layer (not PostgreSQL row-level security)
 - Compound index on `audit_log(user_id, ts DESC)` for history queries
-- Soft index on `transactions(user_id, transaction_date)` for range queries
+- Composite index `idx_transactions_user_date` on `transactions(user_id, transaction_date)` (V20) for range queries; budget history loads daily category totals in one grouped query
 - Unique `(user_id, name)` on accounts and categories
 - Unique `(recurring_id, occurrence_date)` on transactions for idempotency
 - Partial unique index on `transactions.import_dedup_key WHERE NOT NULL` — prevents duplicate rows on statement re-import

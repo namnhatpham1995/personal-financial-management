@@ -5,9 +5,7 @@ import com.fintrack.apitoken.domain.ApiToken;
 import com.fintrack.apitoken.service.ApiTokenService;
 import com.fintrack.common.config.AppProperties;
 import com.fintrack.common.dto.ApiErrorResponse;
-import io.github.bucket4j.Bandwidth;
-import io.github.bucket4j.Bucket;
-import io.github.bucket4j.ConsumptionProbe;
+import com.fintrack.common.ratelimit.FixedWindowRateLimiter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,10 +22,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.time.Duration;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Authenticates requests bearing a Personal Access Token (prefix fintrack_pat_), registered
@@ -46,8 +41,7 @@ public class PatAuthenticationFilter extends OncePerRequestFilter {
     private final PatEndpointPolicy patEndpointPolicy;
     private final AppProperties appProperties;
     private final ObjectMapper objectMapper;
-
-    private final Map<Long, Bucket> tokenBuckets = new ConcurrentHashMap<>();
+    private final FixedWindowRateLimiter rateLimiter;
 
     @Override
     protected void doFilterInternal(
@@ -116,21 +110,9 @@ public class PatAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private RateLimitDecision tryConsume(Long tokenId) {
-        Bucket bucket = tokenBuckets.computeIfAbsent(tokenId, id -> createBucket());
-        ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
-        long retryAfterSeconds = probe.isConsumed()
-                ? 0
-                : Math.max(1, (probe.getNanosToWaitForRefill() + 999_999_999L) / 1_000_000_000L);
-        return new RateLimitDecision(probe.isConsumed(), retryAfterSeconds);
-    }
-
-    private Bucket createBucket() {
-        int limit = appProperties.getPat().getRequestsPerMinute();
-        Bandwidth bandwidth = Bandwidth.builder()
-                .capacity(limit)
-                .refillIntervally(limit, Duration.ofMinutes(1))
-                .build();
-        return Bucket.builder().addLimit(bandwidth).build();
+        long retryAfterSeconds = rateLimiter.tryAcquire(
+                "pat:" + tokenId, appProperties.getPat().getRequestsPerMinute());
+        return new RateLimitDecision(retryAfterSeconds == 0, retryAfterSeconds);
     }
 
     private void writeJsonError(HttpServletResponse response, int status, String error,

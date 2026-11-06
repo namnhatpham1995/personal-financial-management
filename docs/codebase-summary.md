@@ -35,7 +35,7 @@
 
 ### Common Infrastructure
 - `JwtAuthenticationFilter` — extract Bearer, validate, set SecurityContext
-- `AuthRateLimitFilter` — Bucket4j per-IP on `/api/v1/auth/**`
+- `AuthRateLimitFilter` — per-IP limit on `/api/v1/auth/**` via `FixedWindowRateLimiter` (Redis counters in prod, in-memory otherwise)
 - `CorrelationIdFilter` — `X-Correlation-Id` header → MDC for all log lines
 - `GlobalExceptionHandler` — maps typed exceptions to `ApiErrorResponse` JSON
 
