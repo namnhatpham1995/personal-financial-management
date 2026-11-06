@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fintrack.agent.service.AgentTokenService;
 import com.fintrack.apitoken.service.ApiTokenService;
 import com.fintrack.auth.repository.UserRepository;
+import com.fintrack.common.ratelimit.FixedWindowRateLimiter;
 import com.fintrack.auth.service.AuthSessionService;
 import com.fintrack.auth.service.JwtService;
 import com.fintrack.auth.service.UserDetailsServiceImpl;
@@ -54,6 +55,7 @@ public class SecurityConfig {
     private final AgentEndpointPolicy agentEndpointPolicy;
     private final UserRepository userRepository;
     private final AuthSessionService authSessionService;
+    private final FixedWindowRateLimiter rateLimiter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -75,7 +77,7 @@ public class SecurityConfig {
             .addFilterBefore(new JwtAuthenticationFilter(jwtService, userDetailsService, authSessionService),
                     UsernamePasswordAuthenticationFilter.class)
             // PAT runs before JWT so a fintrack_pat_ bearer never falls through to JWT parsing.
-            .addFilterBefore(new PatAuthenticationFilter(apiTokenService, patEndpointPolicy, appProperties, objectMapper),
+            .addFilterBefore(new PatAuthenticationFilter(apiTokenService, patEndpointPolicy, appProperties, objectMapper, rateLimiter),
                     JwtAuthenticationFilter.class)
             // Agent runs before both — it owns every scope=agent token outright so one can
             // never fall through and be accepted as a normal session JWT.

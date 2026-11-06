@@ -2,8 +2,6 @@ package com.fintrack.common.ratelimit;
 
 import com.fintrack.common.config.AppProperties;
 import com.fintrack.common.exception.RateLimitException;
-import io.github.bucket4j.Bandwidth;
-import io.github.bucket4j.Bucket;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,9 +12,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.time.Duration;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Per-IP rate limiter on auth endpoints only — prevents brute-force attacks.
@@ -26,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class AuthRateLimitFilter extends OncePerRequestFilter {
 
     private final AppProperties appProperties;
-    private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
+    private final FixedWindowRateLimiter rateLimiter;
 
     private static final String[] AUTH_PATHS = {
         "/api/v1/auth/login",
@@ -45,23 +40,12 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
             return;
         }
 
-        String clientIp = resolveClientIp(request);
-        Bucket bucket = buckets.computeIfAbsent(clientIp, k -> createBucket());
-
-        if (!bucket.tryConsume(1)) {
+        int limit = appProperties.getRateLimit().getAuthRequestsPerMinute();
+        if (rateLimiter.tryAcquire("auth:" + resolveClientIp(request), limit) > 0) {
             throw new RateLimitException("Too many requests. Please slow down.");
         }
 
         chain.doFilter(request, response);
-    }
-
-    private Bucket createBucket() {
-        int limit = appProperties.getRateLimit().getAuthRequestsPerMinute();
-        Bandwidth bandwidth = Bandwidth.builder()
-                .capacity(limit)
-                .refillIntervally(limit, Duration.ofMinutes(1))
-                .build();
-        return Bucket.builder().addLimit(bandwidth).build();
     }
 
     private boolean isAuthPath(String uri) {
@@ -71,10 +55,17 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
         return false;
     }
 
-    private String resolveClientIp(HttpServletRequest request) {
+    /**
+     * The browser calls the API directly, so exactly one trusted proxy (the Railway edge) sits in
+     * front of the app and appends the address it saw to {@code X-Forwarded-For}. Only that
+     * rightmost entry is trustworthy; everything to its left is whatever the client sent, so
+     * taking the leftmost entry would let a client pick its own rate-limit key.
+     */
+    static String resolveClientIp(HttpServletRequest request) {
         String forwarded = request.getHeader("X-Forwarded-For");
         if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
+            String last = forwarded.substring(forwarded.lastIndexOf(',') + 1).trim();
+            if (!last.isEmpty()) return last;
         }
         return request.getRemoteAddr();
     }

@@ -56,6 +56,8 @@ public class AppProperties {
     @Setter
     public static class RateLimit {
         private int authRequestsPerMinute = 10;
+        /** Keep counters in Redis so limits hold across replicas (prod); in-memory otherwise. */
+        private boolean redisEnabled = false;
     }
 
     @Getter

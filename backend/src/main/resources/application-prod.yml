@@ -9,6 +9,10 @@ spring:
       minimum-idle: 2
       connection-timeout: 30000
 
+app:
+  rate-limit:
+    redis-enabled: true   # counters shared across replicas
+
 logging:
   level:
     root: WARN

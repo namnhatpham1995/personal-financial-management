@@ -76,6 +76,7 @@ app:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,https://*.vercel.app}
   rate-limit:
     auth-requests-per-minute: ${RATE_LIMIT_AUTH:10}
+    redis-enabled: ${RATE_LIMIT_REDIS_ENABLED:false}   # true in prod: shared counters across replicas
   exchange-rate:
     base: ${EXCHANGE_RATE_BASE:USD}
     ttl-hours: ${EXCHANGE_RATE_TTL_HOURS:24}
