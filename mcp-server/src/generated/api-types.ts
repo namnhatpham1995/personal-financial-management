@@ -990,7 +990,7 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        AccountDeletePreviewDto: {
+        AccountDeletePreviewResponse: {
             /** Format: int64 */
             accountId?: number;
             /** Format: int64 */
@@ -1078,13 +1078,13 @@ export interface components {
             transactions: components["schemas"]["BatchTransactionRowRequest"][];
         };
         BatchTransactionResponse: {
-            results?: components["schemas"]["BatchTransactionRowResult"][];
+            results?: components["schemas"]["BatchTransactionRowResponse"][];
         };
         BatchTransactionRowRequest: {
             clientRequestId: string;
             transaction: components["schemas"]["CreateTransactionRequest"];
         };
-        BatchTransactionRowResult: {
+        BatchTransactionRowResponse: {
             clientRequestId?: string;
             error?: string;
             /** Format: int32 */
@@ -1093,7 +1093,7 @@ export interface components {
             status?: "CREATED" | "REPLAYED" | "CONFLICT" | "FAILED";
             transaction?: components["schemas"]["TransactionResponse"];
         };
-        BudgetHistoryDto: {
+        BudgetHistoryResponse: {
             amountLimit?: number;
             /** Format: int64 */
             budgetId?: number;
@@ -1112,7 +1112,7 @@ export interface components {
             remaining?: number;
             spent?: number;
         };
-        BudgetProgressDto: {
+        BudgetProgressResponse: {
             /** Format: int64 */
             budgetId?: number;
             budgetName?: string;
@@ -1183,18 +1183,18 @@ export interface components {
             rate?: number;
             to?: string;
         };
-        ConvertedOverviewDto: {
+        ConvertedOverviewResponse: {
             /** Format: date-time */
             asOf?: string;
-            excludedCurrencies?: components["schemas"]["ExcludedCurrencyDto"][];
-            rates?: components["schemas"]["RateUsedDto"][];
+            excludedCurrencies?: components["schemas"]["ExcludedCurrencyResponse"][];
+            rates?: components["schemas"]["RateUsedResponse"][];
             ratesUnavailable?: boolean;
-            spending?: components["schemas"]["ConvertedSpendingDto"][];
+            spending?: components["schemas"]["ConvertedSpendingResponse"][];
             stale?: boolean;
             targetCurrency?: string;
-            trend?: components["schemas"]["ConvertedTrendDto"][];
+            trend?: components["schemas"]["ConvertedTrendResponse"][];
         };
-        ConvertedSpendingDto: {
+        ConvertedSpendingResponse: {
             /** Format: int64 */
             categoryId?: number;
             categoryName?: string;
@@ -1202,7 +1202,7 @@ export interface components {
             /** Format: int64 */
             transactionCount?: number;
         };
-        ConvertedTrendDto: {
+        ConvertedTrendResponse: {
             expense?: number;
             income?: number;
             /** Format: int32 */
@@ -1279,7 +1279,7 @@ export interface components {
             plaintextToken?: string;
             token?: components["schemas"]["ApiTokenResponse"];
         };
-        ExcludedCurrencyDto: {
+        ExcludedCurrencyResponse: {
             currency?: string;
             nativeAmount?: number;
         };
@@ -1287,7 +1287,7 @@ export interface components {
             reason?: string;
             retryable?: boolean;
         };
-        IncomeExpenseTrendDto: {
+        IncomeExpenseTrendResponse: {
             currency?: string;
             /** Format: int32 */
             month?: number;
@@ -1297,7 +1297,7 @@ export interface components {
             /** Format: int32 */
             year?: number;
         };
-        IncomingTransferTotalDto: {
+        IncomingTransferTotalResponse: {
             /** Format: int64 */
             accountId?: number;
             total?: number;
@@ -1306,7 +1306,7 @@ export interface components {
             email: string;
             password: string;
         };
-        MutationWarning: {
+        MutationWarningResponse: {
             /** Format: int64 */
             accountId?: number;
             code?: string;
@@ -1392,7 +1392,7 @@ export interface components {
             flags?: string[];
             merchant: string;
         };
-        RateUsedDto: {
+        RateUsedResponse: {
             from?: string;
             rate?: number;
             to?: string;
@@ -1453,7 +1453,7 @@ export interface components {
             nullHandling?: string;
             property?: string;
         };
-        SpendingByCategoryDto: {
+        SpendingByCategoryResponse: {
             /** Format: int64 */
             categoryId?: number;
             categoryName?: string;
@@ -1517,7 +1517,7 @@ export interface components {
             transferAccountName?: string;
             /** Format: date-time */
             updatedAt?: string;
-            warnings?: components["schemas"]["MutationWarning"][];
+            warnings?: components["schemas"]["MutationWarningResponse"][];
         };
         UpdateAccountRequest: {
             /** @enum {string} */
@@ -1767,7 +1767,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["AccountDeletePreviewDto"];
+                    "*/*": components["schemas"]["AccountDeletePreviewResponse"];
                 };
             };
         };
@@ -2022,7 +2022,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["BudgetHistoryDto"][];
+                    "*/*": components["schemas"]["BudgetHistoryResponse"][];
                 };
             };
         };
@@ -2042,7 +2042,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["BudgetProgressDto"][];
+                    "*/*": components["schemas"]["BudgetProgressResponse"][];
                 };
             };
         };
@@ -2065,7 +2065,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["IncomeExpenseTrendDto"][];
+                    "*/*": components["schemas"]["IncomeExpenseTrendResponse"][];
                 };
             };
         };
@@ -2089,7 +2089,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["IncomingTransferTotalDto"];
+                    "*/*": components["schemas"]["IncomingTransferTotalResponse"];
                 };
             };
         };
@@ -2113,7 +2113,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ConvertedOverviewDto"];
+                    "*/*": components["schemas"]["ConvertedOverviewResponse"];
                 };
             };
         };
@@ -2137,7 +2137,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["SpendingByCategoryDto"][];
+                    "*/*": components["schemas"]["SpendingByCategoryResponse"][];
                 };
             };
         };

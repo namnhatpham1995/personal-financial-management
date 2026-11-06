@@ -1,7 +1,7 @@
 {
   "components" : {
     "schemas" : {
-      "AccountDeletePreviewDto" : {
+      "AccountDeletePreviewResponse" : {
         "properties" : {
           "accountId" : {
             "format" : "int64",
@@ -223,7 +223,7 @@
         "properties" : {
           "results" : {
             "items" : {
-              "$ref" : "#/components/schemas/BatchTransactionRowResult"
+              "$ref" : "#/components/schemas/BatchTransactionRowResponse"
             },
             "type" : "array"
           }
@@ -245,7 +245,7 @@
         "required" : [ "clientRequestId", "transaction" ],
         "type" : "object"
       },
-      "BatchTransactionRowResult" : {
+      "BatchTransactionRowResponse" : {
         "properties" : {
           "clientRequestId" : {
             "type" : "string"
@@ -267,7 +267,7 @@
         },
         "type" : "object"
       },
-      "BudgetHistoryDto" : {
+      "BudgetHistoryResponse" : {
         "properties" : {
           "amountLimit" : {
             "type" : "number"
@@ -313,7 +313,7 @@
         },
         "type" : "object"
       },
-      "BudgetProgressDto" : {
+      "BudgetProgressResponse" : {
         "properties" : {
           "budgetId" : {
             "format" : "int64",
@@ -495,7 +495,7 @@
         },
         "type" : "object"
       },
-      "ConvertedOverviewDto" : {
+      "ConvertedOverviewResponse" : {
         "properties" : {
           "asOf" : {
             "format" : "date-time",
@@ -503,13 +503,13 @@
           },
           "excludedCurrencies" : {
             "items" : {
-              "$ref" : "#/components/schemas/ExcludedCurrencyDto"
+              "$ref" : "#/components/schemas/ExcludedCurrencyResponse"
             },
             "type" : "array"
           },
           "rates" : {
             "items" : {
-              "$ref" : "#/components/schemas/RateUsedDto"
+              "$ref" : "#/components/schemas/RateUsedResponse"
             },
             "type" : "array"
           },
@@ -518,7 +518,7 @@
           },
           "spending" : {
             "items" : {
-              "$ref" : "#/components/schemas/ConvertedSpendingDto"
+              "$ref" : "#/components/schemas/ConvertedSpendingResponse"
             },
             "type" : "array"
           },
@@ -530,14 +530,14 @@
           },
           "trend" : {
             "items" : {
-              "$ref" : "#/components/schemas/ConvertedTrendDto"
+              "$ref" : "#/components/schemas/ConvertedTrendResponse"
             },
             "type" : "array"
           }
         },
         "type" : "object"
       },
-      "ConvertedSpendingDto" : {
+      "ConvertedSpendingResponse" : {
         "properties" : {
           "categoryId" : {
             "format" : "int64",
@@ -556,7 +556,7 @@
         },
         "type" : "object"
       },
-      "ConvertedTrendDto" : {
+      "ConvertedTrendResponse" : {
         "properties" : {
           "expense" : {
             "type" : "number"
@@ -764,7 +764,7 @@
         },
         "type" : "object"
       },
-      "ExcludedCurrencyDto" : {
+      "ExcludedCurrencyResponse" : {
         "properties" : {
           "currency" : {
             "type" : "string"
@@ -786,7 +786,7 @@
         },
         "type" : "object"
       },
-      "IncomeExpenseTrendDto" : {
+      "IncomeExpenseTrendResponse" : {
         "properties" : {
           "currency" : {
             "type" : "string"
@@ -811,7 +811,7 @@
         },
         "type" : "object"
       },
-      "IncomingTransferTotalDto" : {
+      "IncomingTransferTotalResponse" : {
         "properties" : {
           "accountId" : {
             "format" : "int64",
@@ -835,7 +835,7 @@
         "required" : [ "email", "password" ],
         "type" : "object"
       },
-      "MutationWarning" : {
+      "MutationWarningResponse" : {
         "properties" : {
           "accountId" : {
             "format" : "int64",
@@ -1067,7 +1067,7 @@
         "required" : [ "amount", "currency", "date", "merchant" ],
         "type" : "object"
       },
-      "RateUsedDto" : {
+      "RateUsedResponse" : {
         "properties" : {
           "from" : {
             "type" : "string"
@@ -1224,7 +1224,7 @@
         },
         "type" : "object"
       },
-      "SpendingByCategoryDto" : {
+      "SpendingByCategoryResponse" : {
         "properties" : {
           "categoryId" : {
             "format" : "int64",
@@ -1388,7 +1388,7 @@
           },
           "warnings" : {
             "items" : {
-              "$ref" : "#/components/schemas/MutationWarning"
+              "$ref" : "#/components/schemas/MutationWarningResponse"
             },
             "type" : "array"
           }
@@ -1864,7 +1864,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/AccountDeletePreviewDto"
+                  "$ref" : "#/components/schemas/AccountDeletePreviewResponse"
                 }
               }
             },
@@ -2227,7 +2227,7 @@
               "*/*" : {
                 "schema" : {
                   "items" : {
-                    "$ref" : "#/components/schemas/BudgetHistoryDto"
+                    "$ref" : "#/components/schemas/BudgetHistoryResponse"
                   },
                   "type" : "array"
                 }
@@ -2252,7 +2252,7 @@
               "*/*" : {
                 "schema" : {
                   "items" : {
-                    "$ref" : "#/components/schemas/BudgetProgressDto"
+                    "$ref" : "#/components/schemas/BudgetProgressResponse"
                   },
                   "type" : "array"
                 }
@@ -2294,7 +2294,7 @@
               "*/*" : {
                 "schema" : {
                   "items" : {
-                    "$ref" : "#/components/schemas/IncomeExpenseTrendDto"
+                    "$ref" : "#/components/schemas/IncomeExpenseTrendResponse"
                   },
                   "type" : "array"
                 }
@@ -2343,7 +2343,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/IncomingTransferTotalDto"
+                  "$ref" : "#/components/schemas/IncomingTransferTotalResponse"
                 }
               }
             },
@@ -2390,7 +2390,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ConvertedOverviewDto"
+                  "$ref" : "#/components/schemas/ConvertedOverviewResponse"
                 }
               }
             },
@@ -2438,7 +2438,7 @@
               "*/*" : {
                 "schema" : {
                   "items" : {
-                    "$ref" : "#/components/schemas/SpendingByCategoryDto"
+                    "$ref" : "#/components/schemas/SpendingByCategoryResponse"
                   },
                   "type" : "array"
                 }
